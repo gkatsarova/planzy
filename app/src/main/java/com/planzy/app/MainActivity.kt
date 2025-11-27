@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.planzy.app.ui.screens.welcome.WelcomeScreen
+import com.planzy.app.ui.Navigation
 import com.planzy.app.ui.theme.PlanzyTheme
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PlanzyTheme {
-                    WelcomeScreen()
+                    Navigation()
             }
         }
     }

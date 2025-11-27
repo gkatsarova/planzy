@@ -24,11 +24,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.planzy.app.R
 import com.planzy.app.ui.theme.Raleway
 
 @Composable
-fun WelcomeScreen() {
+fun WelcomeScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -75,7 +76,9 @@ fun WelcomeScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {
+                        navController.navigate(route = "login_screen")
+                    },
                     modifier = Modifier
                         .padding(10.dp)
                         .weight(1f)
@@ -95,7 +98,9 @@ fun WelcomeScreen() {
                 }
 
                 Button(
-                    onClick = {},
+                    onClick = {
+                        navController.navigate(route = "register_screen")
+                    },
                     modifier = Modifier
                         .padding(10.dp)
                         .weight(1f)
