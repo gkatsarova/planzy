@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,19 +18,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.planzy.app.R
-import com.planzy.app.ui.theme.Raleway
+import com.planzy.app.ui.screens.components.WelcomeButton
+import com.planzy.app.ui.navigation.Login
+import com.planzy.app.ui.navigation.Register
 
 @Composable
 fun WelcomeScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(color = MaterialTheme.colorScheme.background)
     ) {
 
         Image(
@@ -51,10 +51,10 @@ fun WelcomeScreen(navController: NavController) {
             verticalArrangement = Arrangement.Top
         ) {
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(height = 80.dp))
 
             Text(
-                text = "Welcome to Planzy!",
+                text = stringResource(id = R.string.welcome),
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 38.sp
             )
@@ -62,62 +62,36 @@ fun WelcomeScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Discover new destinations, create your dream itinerary, and make every journey unforgettable.",
+                text = stringResource(id = R.string.welcome_message),
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 24.sp,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(500.dp))
+            Spacer(modifier = Modifier.height(height = 500.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
-                    onClick = {
-                        navController.navigate(route = "login_screen")
-                    },
+                WelcomeButton(
+                    text = stringResource(id = R.string.login),
+                    onClick = { navController.navigate(route = Login.route) },
                     modifier = Modifier
+                        .weight(weight = 1f)
                         .padding(10.dp)
-                        .weight(1f)
-                        .height(70.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text(
-                        text = "Login",
-                        color = MaterialTheme.colorScheme.background,
-                        fontSize = 32.sp,
-                        textAlign = TextAlign.Center,
-                        fontFamily = Raleway
-                    )
-                }
+                        .height(70.dp)
+                )
 
-                Button(
-                    onClick = {
-                        navController.navigate(route = "register_screen")
-                    },
+                WelcomeButton(
+                    text = stringResource(id = R.string.register),
+                    onClick = { navController.navigate(route = Register.route) },
                     modifier = Modifier
+                        .weight(weight = 1f)
                         .padding(10.dp)
-                        .weight(1f)
-                        .height(70.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text(
-                        text = "Register",
-                        color = MaterialTheme.colorScheme.background,
-                        fontSize = 32.sp,
-                        textAlign = TextAlign.Center,
-                        fontFamily = Raleway
-                    )
-                }
+                        .height(70.dp)
+                )
             }
         }
     }

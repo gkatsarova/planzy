@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Planzy</string>
+    <string name="login">Login</string>
+    <string name="register">Register</string>
+    <string name="welcome_message">Discover new destinations, create your dream itinerary, and make every journey unforgettable.</string>
+    <string name="welcome">Welcome to Planzy!</string>
 </resources>

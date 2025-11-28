@@ -1,26 +1,26 @@
-package com.planzy.app.ui
+package com.planzy.app.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.planzy.app.ui.screens.register.RegisterScreen
+import com.planzy.app.ui.screens.registration.RegisterScreen
 import com.planzy.app.ui.screens.login.LoginScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 
 @Composable
-fun Navigation(){
+fun Navigation() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "welcome_screen"){
-        composable(route = "welcome_screen"){
+    NavHost(navController = navController, startDestination = Welcome.route) {
+        composable(route = Welcome.route) {
             WelcomeScreen(navController = navController)
         }
 
-        composable(route = "login_screen"){
+        composable(route = Login.route) {
             LoginScreen()
         }
 
-        composable(route = "register_screen"){
+        composable(route = Register.route) {
             RegisterScreen()
         }
 
