@@ -41,6 +41,7 @@ android {
 }
 
 dependencies {
+    val nav_version = "2.9.6"
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -62,4 +63,6 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.ktor:ktor-client-android:3.3.2")
     implementation(libs.kotlinx.serialization.json)
+
+    implementation("androidx.navigation:navigation-compose:${nav_version}")
 }
