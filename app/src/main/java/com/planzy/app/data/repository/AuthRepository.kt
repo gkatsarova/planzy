@@ -18,14 +18,18 @@ class AuthRepository {
         return try {
             Log.d(TAG, "SIGNUP START")
 
-            if (password.length < 6) {
-                return Result.failure(Exception("Password must be at least 6 characters"))
+            if (!isValidPassword(password)) {
+                return Result.failure(Exception("Password must be at least 8 characters including lowercase, uppercase, numbers and special symbols."))
             }
 
             val usernameExists = checkUsernameExists(username)
             if (usernameExists) {
                 Log.w(TAG, "Username already exists: $username")
                 return Result.failure(Exception("This username already exists"))
+            }
+
+            if(!isValidUsername(username)){
+                return Result.failure(Exception("Username must be 3-20 symbols, including lowercase, uppercase, numbers and special symbols(underscore, dot,)."))
             }
 
             val emailExists = checkEmailExistsInAuth(email)
@@ -43,10 +47,6 @@ class AuthRepository {
                     put("username", username)
                 }
             }
-
-            Log.d(TAG, "Auth response received")
-            Log.d(TAG, "Auth ID: ${authResponse?.id}")
-            Log.d(TAG, "Email: ${authResponse?.email}")
 
             if (authResponse?.id == null) {
                 Log.e(TAG, "Failed to create auth user - no ID returned")
@@ -122,5 +122,15 @@ class AuthRepository {
             Log.w(TAG, "Error checking username: ${e.message}")
             false
         }
+    }
+
+    fun isValidPassword(password: String): Boolean {
+        val regex = Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).{8,}$")
+        return regex.matches(password)
+    }
+
+    fun isValidUsername(username: String): Boolean {
+        val regex = Regex("^[a-z0-9._]{3,20}\$")
+        return regex.matches(username)
     }
 }

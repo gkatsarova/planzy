@@ -88,7 +88,8 @@ fun RegisterScreen() {
             enabled = !loading &&
                     email.isNotBlank() &&
                     username.isNotBlank() &&
-                    password.length >= 6
+                    username.length in 3..20 &&
+                    password.length >= 8
         ) {
             if (loading) {
                 CircularProgressIndicator(
