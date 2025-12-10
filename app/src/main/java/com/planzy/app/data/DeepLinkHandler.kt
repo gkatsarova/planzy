@@ -1,0 +1,95 @@
+package com.planzy.app.data
+
+import android.content.Intent
+import android.net.Uri
+import android.util.Log
+import com.planzy.app.data.repository.UserRepository
+import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.delay
+
+object DeepLinkHandler {
+    private const val TAG = "DeepLinkHandler"
+    private val userRepo = UserRepository()
+
+    suspend fun handleAuthDeepLink(intent: Intent?): DeepLinkResult {
+        val uri = intent?.data ?: return DeepLinkResult.NoDeepLink
+
+        return try {
+            when {
+                uri.scheme == "planzy" && uri.host == "auth-callback" -> {
+                    handleAuthCallback(uri)
+                }
+                else -> DeepLinkResult.Unknown
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error handling deep link: ${e.message}", e)
+            DeepLinkResult.Error(e.message ?: "Unknown error")
+        }
+    }
+
+    private suspend fun handleAuthCallback(uri: Uri): DeepLinkResult {
+        val type = uri.getQueryParameter("type")
+        val accessToken = uri.getQueryParameter("access_token")
+
+        return when (type) {
+            "signup", "email_confirmation" -> {
+                Log.d(TAG, "Email verification deep link received")
+                delay(2000)
+                handleEmailVerification()
+            }
+            "recovery" -> {
+                DeepLinkResult.PasswordRecovery(accessToken)
+            }
+            else -> DeepLinkResult.Unknown
+        }
+    }
+
+    private suspend fun handleEmailVerification(): DeepLinkResult {
+        return try {
+            Log.d(TAG, "Processing email verification...")
+
+            delay(1500)
+
+            val user = SupabaseClient.client.auth.currentUserOrNull()
+
+            if (user == null) {
+                Log.w(TAG, "No current user after verification")
+                return DeepLinkResult.Error("No active session")
+            }
+
+            Log.d(TAG, "User verified: ${user.email}")
+
+            val username = user.userMetadata?.get("username")?.toString()
+                ?: user.email?.substringBefore("@")
+                ?: "user"
+
+            Log.d(TAG, "Creating user record with username: $username")
+
+            val created = userRepo.createUserRecord(
+                authId = user.id,
+                email = user.email!!,
+                username = username
+            )
+
+            if (created) {
+                Log.i(TAG, "Email verified and user record created")
+                DeepLinkResult.EmailVerified(user.email!!)
+            } else {
+                Log.w(TAG, "Failed to create user record")
+                DeepLinkResult.Error("Error creating user record in database")
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during email verification: ${e.message}", e)
+            DeepLinkResult.Error(e.message ?: "Email verification error")
+        }
+    }
+}
+
+sealed class DeepLinkResult {
+    object NoDeepLink : DeepLinkResult()
+    object Unknown : DeepLinkResult()
+    data class EmailVerified(val email: String) : DeepLinkResult()
+    data class PasswordRecovery(val token: String?) : DeepLinkResult()
+    data class Error(val message: String) : DeepLinkResult()
+}
