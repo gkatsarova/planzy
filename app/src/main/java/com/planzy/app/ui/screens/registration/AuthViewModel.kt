@@ -31,6 +31,14 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
     private val _fieldErrors = MutableStateFlow(FieldError())
     val fieldErrors: StateFlow<FieldError> = _fieldErrors
 
+    private val _canResendEmail = MutableStateFlow(true)
+    val canResendEmail: StateFlow<Boolean> = _canResendEmail
+
+    private val _resendCooldownSeconds = MutableStateFlow(0)
+    val resendCooldownSeconds: StateFlow<Int> = _resendCooldownSeconds
+
+    private var resendCooldownJob: kotlinx.coroutines.Job? = null
+
     fun signUp(email: String, password: String, username: String) {
         viewModelScope.launch {
             _loading.value = true
@@ -44,6 +52,11 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
             if (result.isSuccess) {
                 _success.value = true
                 _successMessage.value = "Verification email is sent. Please check $email."
+
+                if (result.getOrNull()?.contains("Verification email", ignoreCase = true) == true) {
+                    startResendCooldown()
+                }
+
             } else {
                 _error.value = result.exceptionOrNull()?.message
             }
@@ -80,6 +93,38 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
         val error = repo.getPasswordValidationError(password)
         _fieldErrors.value = _fieldErrors.value.copy(passwordError = error)
 
+    }
+
+    fun resendVerificationEmail(email: String) {
+        viewModelScope.launch {
+            _loading.value = true
+            _error.value = null
+
+            val result = repo.resendVerificationEmail(email)
+
+            _loading.value = false
+            if (result.isSuccess) {
+                _successMessage.value = result.getOrNull()
+                startResendCooldown()
+            } else {
+                _error.value = result.exceptionOrNull()?.message
+            }
+        }
+    }
+
+    private fun startResendCooldown() {
+        _canResendEmail.value = false
+        _resendCooldownSeconds.value = 60
+
+        resendCooldownJob?.cancel()
+        resendCooldownJob = viewModelScope.launch {
+            repeat(60) {
+                kotlinx.coroutines.delay(1_000)
+                _resendCooldownSeconds.value = 60 - (it + 1)
+            }
+            _canResendEmail.value = true
+            _resendCooldownSeconds.value = 0
+        }
     }
 
     fun clearError() {

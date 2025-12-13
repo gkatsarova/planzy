@@ -11,12 +11,14 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.planzy.app.data.repository.AuthRepository
 import com.planzy.app.R
+import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.screens.components.InputTextField
 
 @Composable
-fun RegisterScreen() {
+fun RegisterScreen(navController: NavController) {
     val authRepo = remember { AuthRepository() }
     val authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModel.Factory(authRepo)
@@ -31,6 +33,8 @@ fun RegisterScreen() {
     val success by authViewModel.success.collectAsState()
     val successMessage by authViewModel.successMessage.collectAsState()
     val fieldErrors by authViewModel.fieldErrors.collectAsState()
+    val canResendEmail by authViewModel.canResendEmail.collectAsState()
+    val resendCooldownSeconds by authViewModel.resendCooldownSeconds.collectAsState()
 
     Column(
         modifier = Modifier
@@ -148,6 +152,18 @@ fun RegisterScreen() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        Text(
+            text = "Already have an account? Login"
+        )
+
+        OutlinedButton(
+            onClick = { navController.navigate(route = Login.route) },
+            modifier = Modifier.fillMaxWidth()) {
+            Text(text = "Login")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         error?.let { errorMessage ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -172,10 +188,44 @@ fun RegisterScreen() {
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             ) {
-                Text(
-                    text = successMessage!!,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = successMessage!!,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+
+                    if (successMessage!!.contains("Verification email", ignoreCase = true)) {
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedButton(
+                            onClick = {
+                                authViewModel.clearError()
+                                authViewModel.resendVerificationEmail(email)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !loading && canResendEmail
+                        ) {
+                            if (loading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Sending...")
+                            } else {
+                                Text(
+                                    if (canResendEmail) {
+                                        "Resend Verification Email"
+                                    } else {
+                                        "Resend in ${resendCooldownSeconds}s"
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

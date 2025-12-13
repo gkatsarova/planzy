@@ -11,7 +11,9 @@ import com.planzy.app.data.repository.Messages.ERROR_RECORD_DB_FAILED
 import com.planzy.app.data.repository.Messages.ERROR_REGISTRATION_FAILED
 import com.planzy.app.data.repository.Messages.ERROR_USERNAME_EXISTS
 import com.planzy.app.data.repository.Messages.ERROR_USERNAME_INVALID
+import com.planzy.app.data.repository.Messages.ERROR_VERIFICATION_EMAIL_RESEND
 import com.planzy.app.data.repository.Messages.SUCCESS_VERIFICATION_EMAIL_SENT
+import com.planzy.app.data.repository.Messages.SUCCESS_RESEND_VERIFICATION_EMAIL
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -150,5 +152,23 @@ class AuthRepository {
 
     suspend fun getEmailExistsError(email: String): String? {
         return if (checkEmailExistsInAuth(email)) ERROR_EMAIL_EXISTS else null
+    }
+
+    suspend fun resendVerificationEmail(email: String): Result<String> {
+        return try {
+            Log.d(TAG, "Resending verification email to: $email")
+
+            SupabaseClient.client.auth.resendEmail(
+                type = io.github.jan.supabase.auth.OtpType.Email.SIGNUP,
+                email = email
+            )
+
+            Log.i(TAG, "Verification email resent successfully")
+            Result.success(SUCCESS_RESEND_VERIFICATION_EMAIL)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to resend verification email: ${e.message}")
+            Result.failure(Exception(ERROR_VERIFICATION_EMAIL_RESEND))
+        }
     }
 }

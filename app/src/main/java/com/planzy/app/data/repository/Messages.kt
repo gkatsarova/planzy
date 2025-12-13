@@ -8,7 +8,9 @@ object Messages {
     const val ERROR_EMAIL_INVALID = "Invalid email format."
     const val ERROR_REGISTRATION_FAILED = "Registration failed. Please try again."
     const val ERROR_RECORD_DB_FAILED = "Account created but profile setup failed."
+    const val ERROR_VERIFICATION_EMAIL_RESEND = "Failed to resend email. Please try again."
 
     const val SUCCESS_REGISTRATION = "Registration successful! Welcome to Planzy."
     const val SUCCESS_VERIFICATION_EMAIL_SENT = "Verification email sent. Please check your inbox."
+    const val SUCCESS_RESEND_VERIFICATION_EMAIL = "Verification email has been resent. Please check your inbox."
 }

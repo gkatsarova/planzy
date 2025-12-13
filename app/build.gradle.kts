@@ -41,7 +41,6 @@ android {
 }
 
 dependencies {
-    val nav_version = "2.9.6"
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -62,6 +61,7 @@ dependencies {
     implementation(platform("io.github.jan-tennert.supabase:bom:3.2.6"))
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:storage-kt")
+    implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.ktor:ktor-client-android:3.3.2")
     implementation(libs.kotlinx.serialization.json)
 

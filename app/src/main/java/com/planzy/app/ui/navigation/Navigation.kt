@@ -62,7 +62,7 @@ fun Navigation() {
         }
 
         composable(route = Register.route) {
-            RegisterScreen()
+            RegisterScreen(navController = navController)
         }
     }
 }

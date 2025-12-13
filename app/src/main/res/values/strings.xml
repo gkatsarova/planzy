@@ -5,4 +5,7 @@
     <string name="welcome_message">Discover new destinations, create your dream itinerary, and make every journey unforgettable.</string>
     <string name="welcome">Welcome to Planzy!</string>
     <string name="register_screen">Register</string>
+    <string name="username">username</string>
+    <string name="email">email</string>
+    <string name="password">password</string>
 </resources>
