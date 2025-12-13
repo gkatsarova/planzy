@@ -8,6 +8,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+data class FieldError(
+    val usernameError: String? = null,
+    val emailError: String? = null,
+    val passwordError: String? = null
+)
+
 class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
 
     private val _loading = MutableStateFlow(false)
@@ -21,6 +27,9 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
 
     private val _successMessage = MutableStateFlow<String?>(null)
     val successMessage: StateFlow<String?> = _successMessage
+
+    private val _fieldErrors = MutableStateFlow(FieldError())
+    val fieldErrors: StateFlow<FieldError> = _fieldErrors
 
     fun signUp(email: String, password: String, username: String) {
         viewModelScope.launch {
@@ -39,6 +48,38 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
                 _error.value = result.exceptionOrNull()?.message
             }
         }
+    }
+
+    fun validateUsername(username: String) {
+        viewModelScope.launch {
+            val formatError = repo.getUsernameValidationError(username)
+            val existsError = if (formatError == null && username.isNotEmpty()) {
+                repo.getUsernameExistsError(username)
+            } else null
+
+            _fieldErrors.value = _fieldErrors.value.copy(
+                usernameError = formatError ?: existsError
+            )
+        }
+    }
+
+    fun validateEmail(email: String) {
+        viewModelScope.launch {
+            val formatError = repo.getEmailValidationError(email)
+            val existsError = if (formatError == null && email.isNotEmpty()) {
+                repo.getEmailExistsError(email)
+            } else null
+
+            _fieldErrors.value = _fieldErrors.value.copy(
+                emailError = formatError ?: existsError
+            )
+        }
+    }
+
+    fun validatePassword(password: String){
+        val error = repo.getPasswordValidationError(password)
+        _fieldErrors.value = _fieldErrors.value.copy(passwordError = error)
+
     }
 
     fun clearError() {

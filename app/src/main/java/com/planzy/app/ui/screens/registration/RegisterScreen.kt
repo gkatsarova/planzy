@@ -7,11 +7,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.planzy.app.data.repository.AuthRepository
 import com.planzy.app.R
+import com.planzy.app.ui.screens.components.InputTextField
 
 @Composable
 fun RegisterScreen() {
@@ -28,6 +30,7 @@ fun RegisterScreen() {
     val error by authViewModel.error.collectAsState()
     val success by authViewModel.success.collectAsState()
     val successMessage by authViewModel.successMessage.collectAsState()
+    val fieldErrors by authViewModel.fieldErrors.collectAsState()
 
     Column(
         modifier = Modifier
@@ -44,37 +47,75 @@ fun RegisterScreen() {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        OutlinedTextField(
+        InputTextField(
             value = username,
-            onValueChange = { username = it },
-            label = { Text("username") },
+            label = stringResource(id = R.string.username),
+            onValueChange = {
+                username = it
+                authViewModel.validateUsername(it)
+            },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !loading,
-            singleLine = true
+            visualTransformation = VisualTransformation.None,
+            isError = fieldErrors.usernameError != null
         )
+        fieldErrors.usernameError?.let { errorMsg ->
+            Text(
+                text = errorMsg,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 4.dp, top = 4.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(
+        InputTextField(
             value = email,
-            onValueChange = { email = it },
-            label = { Text("email") },
+            label = stringResource(id = R.string.email),
+            onValueChange = {
+                email = it
+                authViewModel.validateEmail(it)
+            },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !loading,
-            singleLine = true
+            visualTransformation = VisualTransformation.None,
+            isError = fieldErrors.emailError != null
         )
+        fieldErrors.emailError?.let { errorMsg ->
+            Text(
+                text = errorMsg,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 4.dp, top = 4.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(
+        InputTextField(
             value = password,
-            onValueChange = { password = it },
-            label = { Text("password") },
+            label = stringResource(id = R.string.password),
+            onValueChange = {
+                password = it
+                authViewModel.validatePassword(it)
+            },
             modifier = Modifier.fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(),
-            enabled = !loading,
-            singleLine = true
+            isError = fieldErrors.passwordError != null
         )
+        fieldErrors.passwordError?.let { errorMsg ->
+            Text(
+                text = errorMsg,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 4.dp, top = 4.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -88,8 +129,10 @@ fun RegisterScreen() {
             enabled = !loading &&
                     email.isNotBlank() &&
                     username.isNotBlank() &&
-                    username.length in 3..20 &&
-                    password.length >= 8
+                    password.isNotBlank() &&
+                    fieldErrors.usernameError == null &&
+                    fieldErrors.emailError == null &&
+                    fieldErrors.passwordError == null
         ) {
             if (loading) {
                 CircularProgressIndicator(
