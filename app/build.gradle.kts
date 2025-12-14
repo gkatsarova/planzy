@@ -66,4 +66,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.navigation.compose)
+
+    implementation("androidx.compose.material:material-icons-extended:1.7.5")
 }

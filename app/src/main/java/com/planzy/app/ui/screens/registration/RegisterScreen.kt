@@ -1,13 +1,16 @@
 package com.planzy.app.ui.screens.registration
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -15,7 +18,15 @@ import androidx.navigation.NavController
 import com.planzy.app.data.repository.AuthRepository
 import com.planzy.app.R
 import com.planzy.app.ui.navigation.Login
+import com.planzy.app.ui.screens.components.AuthButton
 import com.planzy.app.ui.screens.components.InputTextField
+import com.planzy.app.ui.screens.components.OutlinedAppButton
+import com.planzy.app.ui.screens.components.PasswordTextField
+import com.planzy.app.ui.theme.AmericanBlue
+import com.planzy.app.ui.theme.ErrorColor
+import com.planzy.app.ui.theme.Raleway
+import com.planzy.app.ui.screens.components.MessageCard
+import com.planzy.app.ui.screens.components.MessageType
 
 @Composable
 fun RegisterScreen(navController: NavController) {
@@ -36,197 +47,206 @@ fun RegisterScreen(navController: NavController) {
     val canResendEmail by authViewModel.canResendEmail.collectAsState()
     val resendCooldownSeconds by authViewModel.resendCooldownSeconds.collectAsState()
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(color = MaterialTheme.colorScheme.background)
     ) {
-        Text(
-            text = stringResource(id = R.string.register_screen),
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 38.sp
+        Image(
+            painter = painterResource(id = R.drawable.auth_screens_background),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter),
+            contentScale = ContentScale.FillWidth
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        InputTextField(
-            value = username,
-            label = stringResource(id = R.string.username),
-            onValueChange = {
-                username = it
-                authViewModel.validateUsername(it)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = VisualTransformation.None,
-            isError = fieldErrors.usernameError != null
-        )
-        fieldErrors.usernameError?.let { errorMsg ->
-            Text(
-                text = errorMsg,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 4.dp, top = 4.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        InputTextField(
-            value = email,
-            label = stringResource(id = R.string.email),
-            onValueChange = {
-                email = it
-                authViewModel.validateEmail(it)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = VisualTransformation.None,
-            isError = fieldErrors.emailError != null
-        )
-        fieldErrors.emailError?.let { errorMsg ->
-            Text(
-                text = errorMsg,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 4.dp, top = 4.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        InputTextField(
-            value = password,
-            label = stringResource(id = R.string.password),
-            onValueChange = {
-                password = it
-                authViewModel.validatePassword(it)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation(),
-            isError = fieldErrors.passwordError != null
-        )
-        fieldErrors.passwordError?.let { errorMsg ->
-            Text(
-                text = errorMsg,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 4.dp, top = 4.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = {
-                authViewModel.clearError()
-                authViewModel.clearSuccess()
-                authViewModel.signUp(email, password, username)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !loading &&
-                    email.isNotBlank() &&
-                    username.isNotBlank() &&
-                    password.isNotBlank() &&
-                    fieldErrors.usernameError == null &&
-                    fieldErrors.emailError == null &&
-                    fieldErrors.passwordError == null
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Registration in progress...")
-            } else {
-                Text("Register")
-            }
-        }
+            Spacer(modifier = Modifier.height(100.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(id = R.string.register_screen),
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 38.sp
+            )
 
-        Text(
-            text = "Already have an account? Login"
-        )
+            Spacer(modifier = Modifier.height(32.dp))
 
-        OutlinedButton(
-            onClick = { navController.navigate(route = Login.route) },
-            modifier = Modifier.fillMaxWidth()) {
-            Text(text = "Login")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        error?.let { errorMessage ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
+            InputTextField(
+                value = username,
+                label = stringResource(id = R.string.username),
+                onValueChange = {
+                    username = it
+                    authViewModel.validateUsername(it)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp)
+                    .height(70.dp),
+                isError = fieldErrors.usernameError != null
+            )
+            fieldErrors.usernameError?.let { errorMsg ->
                 Text(
-                    text = errorMessage,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
+                    text = errorMsg,
+                    color = ErrorColor,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 4.dp, top = 4.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-        }
+            Spacer(modifier = Modifier.height(12.dp))
 
-        if (success && successMessage != null) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+            InputTextField(
+                value = email,
+                label = stringResource(id = R.string.email),
+                onValueChange = {
+                    email = it
+                    authViewModel.validateEmail(it)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp)
+                    .height(70.dp),
+                isError = fieldErrors.emailError != null
+            )
+            fieldErrors.emailError?.let { errorMsg ->
+                Text(
+                    text = errorMsg,
+                    color = ErrorColor,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 4.dp, top = 4.dp)
                 )
-            ) {
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            PasswordTextField(
+                value = password,
+                label = stringResource(id = R.string.password),
+                onValueChange = {
+                    password = it
+                    authViewModel.validatePassword(it)
+                },
+                isError = fieldErrors.passwordError != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp)
+                    .height(70.dp)
+            )
+            fieldErrors.passwordError?.let { errorMsg ->
+                Text(
+                    text = errorMsg,
+                    color = ErrorColor,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 4.dp, top = 4.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            AuthButton(
+                text = stringResource(id = R.string.register),
+                onClick = {
+                    authViewModel.clearError()
+                    authViewModel.clearSuccess()
+                    authViewModel.signUp(email, password, username)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp)
+                    .height(60.dp),
+                enabled = !loading &&
+                        email.isNotBlank() &&
+                        username.isNotBlank() &&
+                        password.isNotBlank() &&
+                        fieldErrors.usernameError == null &&
+                        fieldErrors.emailError == null &&
+                        fieldErrors.passwordError == null,
+                loading = loading,
+                loadingText = stringResource(id = R.string.registering)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            error?.let { errorMessage ->
+                MessageCard(
+                    message = errorMessage,
+                    type = MessageType.ERROR,
+                    modifier = Modifier.padding(horizontal = 20.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (success && successMessage != null) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
                 ) {
-                    Text(
-                        text = successMessage!!,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    MessageCard(
+                        message = successMessage!!,
+                        type = MessageType.SUCCESS,
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     if (successMessage!!.contains("Verification email", ignoreCase = true)) {
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        OutlinedButton(
+                        OutlinedAppButton(
+                            text = if (canResendEmail) {
+                                stringResource(id = R.string.resend_verification_email)
+                            } else {
+                                "Resend in ${resendCooldownSeconds}s"
+                            },
                             onClick = {
                                 authViewModel.clearError()
                                 authViewModel.resendVerificationEmail(email)
                             },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !loading && canResendEmail
-                        ) {
-                            if (loading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Sending...")
-                            } else {
-                                Text(
-                                    if (canResendEmail) {
-                                        "Resend Verification Email"
-                                    } else {
-                                        "Resend in ${resendCooldownSeconds}s"
-                                    }
-                                )
-                            }
-                        }
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            enabled = canResendEmail,
+                            loading = loading,
+                            loadingText = stringResource(id = R.string.sending),
+                            fontSize = 20.sp
+                        )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = stringResource(id = R.string.already_have_account),
+                color = AmericanBlue,
+                fontFamily = Raleway,
+                fontSize = 16.sp,
+                textAlign = TextAlign.Left,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp)
+            )
+
+            OutlinedAppButton(
+                text = stringResource(R.string.login),
+                onClick = { navController.navigate(route = Login.route) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp)
+                    .height(60.dp),
+                fontSize = 30.sp
+            )
         }
     }
 }

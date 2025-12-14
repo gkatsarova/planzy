@@ -8,4 +8,10 @@
     <string name="username">username</string>
     <string name="email">email</string>
     <string name="password">password</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+    <string name="registering">Registering…</string>
+    <string name="already_have_account">Already have an account? Login</string>
+    <string name="sending">Sending…</string>
+    <string name="resend_verification_email">Resend verification email</string>
 </resources>
