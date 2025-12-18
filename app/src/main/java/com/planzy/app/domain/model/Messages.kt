@@ -1,9 +1,9 @@
-package com.planzy.app.data.repository
+package com.planzy.app.domain.model
 
 object Messages {
     const val ERROR_PASSWORD_INVALID = "Password must be at least 8 characters including lowercase, uppercase, numbers and special symbols."
     const val ERROR_USERNAME_EXISTS = "This username already exists"
-    const val ERROR_USERNAME_INVALID = "Username must be 3-20 symbols, including lowercase, uppercase, numbers and special symbols(underscore, dot,)."
+    const val ERROR_USERNAME_INVALID = "Username must be 3-20 symbols, including lowercase, numbers and special symbols(underscore, dot,)."
     const val ERROR_EMAIL_EXISTS = "This email is already registered. Please try logging in or use password reset."
     const val ERROR_EMAIL_INVALID = "Invalid email format."
     const val ERROR_REGISTRATION_FAILED = "Registration failed. Please try again."

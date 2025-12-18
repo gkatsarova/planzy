@@ -1,9 +1,11 @@
 package com.planzy.app.ui.screens.registration
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.planzy.app.data.repository.AuthRepository
+import com.planzy.app.domain.model.Messages
+import com.planzy.app.domain.service.AuthService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -14,7 +16,12 @@ data class FieldError(
     val passwordError: String? = null
 )
 
-class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
+class RegisterViewModel(private val authService: AuthService) : ViewModel() {
+
+    companion object {
+        private val USERNAME_REGEX = Regex("^[a-z0-9._]{3,20}$")
+        private val PASSWORD_REGEX = Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).{8,}$")
+    }
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
@@ -46,17 +53,21 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
             _success.value = false
             _successMessage.value = null
 
-            val result = repo.signUp(email, password, username)
+            val result = authService.registerUser(email, password, username)
 
             _loading.value = false
             if (result.isSuccess) {
                 _success.value = true
-                _successMessage.value = "Verification email is sent. Please check $email."
-
-                if (result.getOrNull()?.contains("Verification email", ignoreCase = true) == true) {
-                    startResendCooldown()
+                val message = result.getOrNull()!!
+                _successMessage.value = if (message.contains("Verification email", ignoreCase = true)) {
+                    "Verification email is sent. Please check $email."
+                } else {
+                    message
                 }
 
+                if (message.contains("Verification email", ignoreCase = true)) {
+                    startResendCooldown()
+                }
             } else {
                 _error.value = result.exceptionOrNull()?.message
             }
@@ -65,34 +76,62 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
 
     fun validateUsername(username: String) {
         viewModelScope.launch {
-            val formatError = repo.getUsernameValidationError(username)
-            val existsError = if (formatError == null && username.isNotEmpty()) {
-                repo.getUsernameExistsError(username)
+            val formatError = if (username.isNotEmpty() && !USERNAME_REGEX.matches(username)) {
+                Messages.ERROR_USERNAME_INVALID
+            } else null
+
+            val availabilityError = if (formatError == null && username.isNotEmpty()) {
+                checkUsernameAvailability(username)
             } else null
 
             _fieldErrors.value = _fieldErrors.value.copy(
-                usernameError = formatError ?: existsError
+                usernameError = formatError ?: availabilityError
             )
         }
     }
 
     fun validateEmail(email: String) {
         viewModelScope.launch {
-            val formatError = repo.getEmailValidationError(email)
-            val existsError = if (formatError == null && email.isNotEmpty()) {
-                repo.getEmailExistsError(email)
+            val formatError = if (email.isNotEmpty() && !isValidEmail(email)) {
+                Messages.ERROR_EMAIL_INVALID
+            } else null
+
+            val availabilityError = if (formatError == null && email.isNotEmpty()) {
+                checkEmailAvailability(email)
             } else null
 
             _fieldErrors.value = _fieldErrors.value.copy(
-                emailError = formatError ?: existsError
+                emailError = formatError ?: availabilityError
             )
         }
     }
 
-    fun validatePassword(password: String){
-        val error = repo.getPasswordValidationError(password)
-        _fieldErrors.value = _fieldErrors.value.copy(passwordError = error)
+    fun validatePassword(password: String) {
+        val error = if (password.isNotEmpty() && !PASSWORD_REGEX.matches(password)) {
+            Messages.ERROR_PASSWORD_INVALID
+        } else null
 
+        _fieldErrors.value = _fieldErrors.value.copy(passwordError = error)
+    }
+
+    private fun isValidEmail(email: String): Boolean {
+        return Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    private suspend fun checkUsernameAvailability(username: String): String? {
+        val result = authService.checkUsernameAvailability(username)
+        return if (result.isSuccess) {
+            val isAvailable = result.getOrNull() ?: true
+            if (isAvailable) null else Messages.ERROR_USERNAME_EXISTS
+        } else null
+    }
+
+    private suspend fun checkEmailAvailability(email: String): String? {
+        val result = authService.checkEmailAvailability(email)
+        return if (result.isSuccess) {
+            val isAvailable = result.getOrNull() ?: true
+            if (isAvailable) null else Messages.ERROR_EMAIL_EXISTS
+        } else null
     }
 
     fun resendVerificationEmail(email: String) {
@@ -100,7 +139,7 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
             _loading.value = true
             _error.value = null
 
-            val result = repo.resendVerificationEmail(email)
+            val result = authService.resendVerificationEmail(email)
 
             _loading.value = false
             if (result.isSuccess) {
@@ -136,11 +175,11 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
         _successMessage.value = null
     }
 
-    class Factory(private val repo: AuthRepository) : ViewModelProvider.Factory {
+    class Factory(private val authService: AuthService) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
+            if (modelClass.isAssignableFrom(RegisterViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
-                return AuthViewModel(repo) as T
+                return RegisterViewModel(authService) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

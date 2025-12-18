@@ -15,7 +15,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.planzy.app.data.repository.AuthRepository
+import com.planzy.app.data.repository.AuthRepositoryImpl
+import com.planzy.app.data.repository.UserRepositoryImpl
+import com.planzy.app.domain.service.AuthService
 import com.planzy.app.R
 import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.screens.components.AuthButton
@@ -30,22 +32,25 @@ import com.planzy.app.ui.screens.components.MessageType
 
 @Composable
 fun RegisterScreen(navController: NavController) {
-    val authRepo = remember { AuthRepository() }
-    val authViewModel: AuthViewModel = viewModel(
-        factory = AuthViewModel.Factory(authRepo)
+    val authRepo = remember { AuthRepositoryImpl() }
+    val userRepo = remember { UserRepositoryImpl() }
+    val authService = remember { AuthService(authRepo, userRepo) }
+
+    val viewModel: RegisterViewModel = viewModel(
+        factory = RegisterViewModel.Factory(authService)
     )
 
     var email by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val loading by authViewModel.loading.collectAsState()
-    val error by authViewModel.error.collectAsState()
-    val success by authViewModel.success.collectAsState()
-    val successMessage by authViewModel.successMessage.collectAsState()
-    val fieldErrors by authViewModel.fieldErrors.collectAsState()
-    val canResendEmail by authViewModel.canResendEmail.collectAsState()
-    val resendCooldownSeconds by authViewModel.resendCooldownSeconds.collectAsState()
+    val loading by viewModel.loading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val success by viewModel.success.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
+    val fieldErrors by viewModel.fieldErrors.collectAsState()
+    val canResendEmail by viewModel.canResendEmail.collectAsState()
+    val resendCooldownSeconds by viewModel.resendCooldownSeconds.collectAsState()
 
     Box(
         modifier = Modifier
@@ -82,7 +87,7 @@ fun RegisterScreen(navController: NavController) {
                 label = stringResource(id = R.string.username),
                 onValueChange = {
                     username = it
-                    authViewModel.validateUsername(it)
+                    viewModel.validateUsername(it)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -108,7 +113,7 @@ fun RegisterScreen(navController: NavController) {
                 label = stringResource(id = R.string.email),
                 onValueChange = {
                     email = it
-                    authViewModel.validateEmail(it)
+                    viewModel.validateEmail(it)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -134,7 +139,7 @@ fun RegisterScreen(navController: NavController) {
                 label = stringResource(id = R.string.password),
                 onValueChange = {
                     password = it
-                    authViewModel.validatePassword(it)
+                    viewModel.validatePassword(it)
                 },
                 isError = fieldErrors.passwordError != null,
                 modifier = Modifier
@@ -158,9 +163,9 @@ fun RegisterScreen(navController: NavController) {
             AuthButton(
                 text = stringResource(id = R.string.register),
                 onClick = {
-                    authViewModel.clearError()
-                    authViewModel.clearSuccess()
-                    authViewModel.signUp(email, password, username)
+                    viewModel.clearError()
+                    viewModel.clearSuccess()
+                    viewModel.signUp(email, password, username)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -210,8 +215,8 @@ fun RegisterScreen(navController: NavController) {
                                 "Resend in ${resendCooldownSeconds}s"
                             },
                             onClick = {
-                                authViewModel.clearError()
-                                authViewModel.resendVerificationEmail(email)
+                                viewModel.clearError()
+                                viewModel.resendVerificationEmail(email)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()

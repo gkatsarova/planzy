@@ -1,4 +1,4 @@
-package com.planzy.app.data
+package com.planzy.app.data.remote
 
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
@@ -19,12 +19,12 @@ object SupabaseClient {
             socketTimeout = 30_000
         }
 
-        install(Auth) {
+        install(Auth.Companion) {
             scheme = "planzy"
             host = "auth-callback"
             alwaysAutoRefresh = true
         }
 
-        install(Postgrest)
+        install(Postgrest.Companion)
     }
 }

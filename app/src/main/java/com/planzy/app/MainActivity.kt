@@ -7,7 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
-import com.planzy.app.data.DeepLinkHandler
+import com.planzy.app.data.repository.DeepLinkHandler
 import com.planzy.app.ui.navigation.Navigation
 import com.planzy.app.ui.screens.registration.DeepLinkViewModel
 import com.planzy.app.ui.theme.PlanzyTheme

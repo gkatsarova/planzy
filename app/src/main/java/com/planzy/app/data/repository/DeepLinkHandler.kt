@@ -1,15 +1,15 @@
-package com.planzy.app.data
+package com.planzy.app.data.repository
 
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import com.planzy.app.data.repository.UserRepository
+import com.planzy.app.data.remote.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.delay
 
 object DeepLinkHandler {
     private const val TAG = "DeepLinkHandler"
-    private val userRepo = UserRepository()
+    private val userRepo = UserRepositoryImpl()
 
     suspend fun handleAuthDeepLink(intent: Intent?): DeepLinkResult {
         val uri = intent?.data ?: return DeepLinkResult.NoDeepLink
@@ -65,13 +65,13 @@ object DeepLinkHandler {
 
             Log.d(TAG, "Creating user record with username: $username")
 
-            val created = userRepo.createUserRecord(
+            val result = userRepo.createUserRecord(
                 authId = user.id,
                 email = user.email!!,
                 username = username
             )
 
-            if (created) {
+            if (result.isSuccess) {
                 Log.i(TAG, "Email verified and user record created")
                 DeepLinkResult.EmailVerified(user.email!!)
             } else {

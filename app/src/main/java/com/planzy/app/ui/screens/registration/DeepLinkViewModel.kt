@@ -1,7 +1,7 @@
 package com.planzy.app.ui.screens.registration
 
 import androidx.lifecycle.ViewModel
-import com.planzy.app.data.DeepLinkResult
+import com.planzy.app.data.repository.DeepLinkResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
