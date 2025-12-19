@@ -4,11 +4,19 @@ import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.planzy.app.domain.model.Messages
-import com.planzy.app.domain.service.AuthService
+import com.planzy.app.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.repository.AuthRepository
+import com.planzy.app.domain.repository.UserRepository
+import com.planzy.app.domain.usecase.CheckEmailAvailabilityUseCase
+import com.planzy.app.domain.usecase.CheckUsernameAvailabilityUseCase
+import com.planzy.app.domain.usecase.RegisterUserUseCase
+import com.planzy.app.domain.usecase.ResendVerificationEmailUseCase
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 data class FieldError(
     val usernameError: String? = null,
@@ -16,7 +24,12 @@ data class FieldError(
     val passwordError: String? = null
 )
 
-class RegisterViewModel(private val authService: AuthService) : ViewModel() {
+class RegisterViewModel(
+    private val registerUserUseCase: RegisterUserUseCase,
+    private val checkUsernameAvailabilityUseCase: CheckUsernameAvailabilityUseCase,
+    private val checkEmailAvailabilityUseCase: CheckEmailAvailabilityUseCase,
+    private val resendVerificationEmailUseCase: ResendVerificationEmailUseCase,
+    private val resourceProvider: ResourceProvider) : ViewModel() {
 
     companion object {
         private val USERNAME_REGEX = Regex("^[a-z0-9._]{3,20}$")
@@ -44,7 +57,7 @@ class RegisterViewModel(private val authService: AuthService) : ViewModel() {
     private val _resendCooldownSeconds = MutableStateFlow(0)
     val resendCooldownSeconds: StateFlow<Int> = _resendCooldownSeconds
 
-    private var resendCooldownJob: kotlinx.coroutines.Job? = null
+    private var resendCooldownJob: Job? = null
 
     fun signUp(email: String, password: String, username: String) {
         viewModelScope.launch {
@@ -53,19 +66,19 @@ class RegisterViewModel(private val authService: AuthService) : ViewModel() {
             _success.value = false
             _successMessage.value = null
 
-            val result = authService.registerUser(email, password, username)
+            val result = registerUserUseCase(email, password, username)
 
             _loading.value = false
             if (result.isSuccess) {
                 _success.value = true
-                val message = result.getOrNull()!!
-                _successMessage.value = if (message.contains("Verification email", ignoreCase = true)) {
-                    "Verification email is sent. Please check $email."
+                val message = result.getOrNull() ?: ""
+                _successMessage.value = if (message.contains(resourceProvider.getString(R.string.verification_email), ignoreCase = true)) {
+                    resourceProvider.getString(R.string.success_verification_email_sent)
                 } else {
                     message
                 }
 
-                if (message.contains("Verification email", ignoreCase = true)) {
+                if (message.contains(resourceProvider.getString(R.string.verification_email), ignoreCase = true)) {
                     startResendCooldown()
                 }
             } else {
@@ -77,7 +90,7 @@ class RegisterViewModel(private val authService: AuthService) : ViewModel() {
     fun validateUsername(username: String) {
         viewModelScope.launch {
             val formatError = if (username.isNotEmpty() && !USERNAME_REGEX.matches(username)) {
-                Messages.ERROR_USERNAME_INVALID
+                resourceProvider.getString(R.string.error_username_invalid)
             } else null
 
             val availabilityError = if (formatError == null && username.isNotEmpty()) {
@@ -93,7 +106,7 @@ class RegisterViewModel(private val authService: AuthService) : ViewModel() {
     fun validateEmail(email: String) {
         viewModelScope.launch {
             val formatError = if (email.isNotEmpty() && !isValidEmail(email)) {
-                Messages.ERROR_EMAIL_INVALID
+                resourceProvider.getString(R.string.error_email_invalid)
             } else null
 
             val availabilityError = if (formatError == null && email.isNotEmpty()) {
@@ -108,7 +121,7 @@ class RegisterViewModel(private val authService: AuthService) : ViewModel() {
 
     fun validatePassword(password: String) {
         val error = if (password.isNotEmpty() && !PASSWORD_REGEX.matches(password)) {
-            Messages.ERROR_PASSWORD_INVALID
+            resourceProvider.getString(R.string.error_password_invalid)
         } else null
 
         _fieldErrors.value = _fieldErrors.value.copy(passwordError = error)
@@ -119,18 +132,18 @@ class RegisterViewModel(private val authService: AuthService) : ViewModel() {
     }
 
     private suspend fun checkUsernameAvailability(username: String): String? {
-        val result = authService.checkUsernameAvailability(username)
+        val result = checkUsernameAvailabilityUseCase(username)
         return if (result.isSuccess) {
             val isAvailable = result.getOrNull() ?: true
-            if (isAvailable) null else Messages.ERROR_USERNAME_EXISTS
+            if (isAvailable) null else resourceProvider.getString(R.string.error_username_exists)
         } else null
     }
 
     private suspend fun checkEmailAvailability(email: String): String? {
-        val result = authService.checkEmailAvailability(email)
+        val result = checkEmailAvailabilityUseCase(email)
         return if (result.isSuccess) {
             val isAvailable = result.getOrNull() ?: true
-            if (isAvailable) null else Messages.ERROR_EMAIL_EXISTS
+            if (isAvailable) null else resourceProvider.getString(R.string.error_email_exists)
         } else null
     }
 
@@ -139,7 +152,7 @@ class RegisterViewModel(private val authService: AuthService) : ViewModel() {
             _loading.value = true
             _error.value = null
 
-            val result = authService.resendVerificationEmail(email)
+            val result = resendVerificationEmailUseCase(email)
 
             _loading.value = false
             if (result.isSuccess) {
@@ -158,7 +171,7 @@ class RegisterViewModel(private val authService: AuthService) : ViewModel() {
         resendCooldownJob?.cancel()
         resendCooldownJob = viewModelScope.launch {
             repeat(60) {
-                kotlinx.coroutines.delay(1_000)
+                delay(1_000)
                 _resendCooldownSeconds.value = 60 - (it + 1)
             }
             _canResendEmail.value = true
@@ -175,11 +188,20 @@ class RegisterViewModel(private val authService: AuthService) : ViewModel() {
         _successMessage.value = null
     }
 
-    class Factory(private val authService: AuthService) : ViewModelProvider.Factory {
+    class Factory(
+        private val authRepository: AuthRepository,
+        private val userRepository: UserRepository,
+        private val resourceProvider: ResourceProvider) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(RegisterViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
-                return RegisterViewModel(authService) as T
+                return RegisterViewModel(
+                    RegisterUserUseCase(authRepository, resourceProvider),
+                    CheckUsernameAvailabilityUseCase(userRepository, resourceProvider),
+                    CheckEmailAvailabilityUseCase(authRepository, resourceProvider),
+                    ResendVerificationEmailUseCase(authRepository, resourceProvider),
+                    resourceProvider
+                ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

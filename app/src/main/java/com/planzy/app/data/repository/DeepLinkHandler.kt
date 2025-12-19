@@ -3,12 +3,16 @@ package com.planzy.app.data.repository
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import com.planzy.app.R
 import com.planzy.app.data.remote.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.delay
+import com.planzy.app.data.util.ResourceProviderImpl
 
-object DeepLinkHandler {
-    private const val TAG = "DeepLinkHandler"
+class DeepLinkHandler(
+    private val resourceProvider: ResourceProviderImpl
+) {
+    private val TAG = DeepLinkHandler::class.java.simpleName
     private val userRepo = UserRepositoryImpl()
 
     suspend fun handleAuthDeepLink(intent: Intent?): DeepLinkResult {
@@ -23,7 +27,7 @@ object DeepLinkHandler {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error handling deep link: ${e.message}", e)
-            DeepLinkResult.Error(e.message ?: "Unknown error")
+            DeepLinkResult.Error(e.message ?: resourceProvider.getString(R.string.unknown_error))
         }
     }
 
@@ -54,10 +58,13 @@ object DeepLinkHandler {
 
             if (user == null) {
                 Log.w(TAG, "No current user after verification")
-                return DeepLinkResult.Error("No active session")
+                return DeepLinkResult.Error(resourceProvider.getString(R.string.error_active_session))
             }
 
             Log.d(TAG, "User verified: ${user.email}")
+
+            val email = user.email
+                ?: return DeepLinkResult.Error(resourceProvider.getString(R.string.error_verified_user_email))
 
             val username = user.userMetadata?.get("username")?.toString()
                 ?: user.email?.substringBefore("@")
@@ -67,21 +74,21 @@ object DeepLinkHandler {
 
             val result = userRepo.createUserRecord(
                 authId = user.id,
-                email = user.email!!,
+                email = email,
                 username = username
             )
 
             if (result.isSuccess) {
                 Log.i(TAG, "Email verified and user record created")
-                DeepLinkResult.EmailVerified(user.email!!)
+                DeepLinkResult.EmailVerified(email)
             } else {
                 Log.w(TAG, "Failed to create user record")
-                DeepLinkResult.Error("Error creating user record in database")
+                DeepLinkResult.Error(resourceProvider.getString(R.string.error_record_db_failed))
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error during email verification: ${e.message}", e)
-            DeepLinkResult.Error(e.message ?: "Email verification error")
+            DeepLinkResult.Error(e.message ?: resourceProvider.getString(R.string.error_email_verification))
         }
     }
 }

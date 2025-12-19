@@ -7,7 +7,7 @@ import com.planzy.app.domain.repository.UserRepository
 import io.github.jan.supabase.postgrest.postgrest
 
 class UserRepositoryImpl : UserRepository {
-    private val TAG = "UserRepositoryImpl"
+    private val TAG = UserRepositoryImpl::class.java.simpleName
 
     override suspend fun createUserRecord(
         authId: String,

@@ -1,8 +1,10 @@
 package com.planzy.app.data.repository
 
 import android.util.Log
+import com.planzy.app.R
 import com.planzy.app.data.model.User
 import com.planzy.app.data.remote.SupabaseClient
+import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.repository.AuthRepository
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
@@ -13,8 +15,10 @@ import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class AuthRepositoryImpl : AuthRepository {
-    private val TAG = "AuthRepositoryImpl"
+class AuthRepositoryImpl(
+    private val resourceProvider: ResourceProviderImpl
+) : AuthRepository {
+    private val TAG = AuthRepositoryImpl::class.java.simpleName
 
     override suspend fun signUp(
         email: String,
@@ -34,7 +38,7 @@ class AuthRepositoryImpl : AuthRepository {
 
             if (authResponse?.id == null) {
                 Log.e(TAG, "Failed to create auth user - no ID returned")
-                Result.failure(Exception("Failed to create auth user"))
+                Result.failure(Exception(resourceProvider.getString(R.string.error_creating_auth_user)))
             } else {
                 Log.i(TAG, "Auth user created with ID: ${authResponse.id}")
                 Result.success(authResponse)

@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.planzy.app.data.repository.DeepLinkHandler
+import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.ui.navigation.Navigation
 import com.planzy.app.ui.screens.registration.DeepLinkViewModel
 import com.planzy.app.ui.theme.PlanzyTheme
@@ -15,6 +16,8 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val deepLinkViewModel: DeepLinkViewModel by viewModels()
+    private val resourceProvider = ResourceProviderImpl(this)
+    val deepLinkHandler = DeepLinkHandler(resourceProvider)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,7 +40,7 @@ class MainActivity : ComponentActivity() {
 
     private fun handleDeepLink(intent: Intent?) {
         lifecycleScope.launch {
-            val result = DeepLinkHandler.handleAuthDeepLink(intent)
+            val result = deepLinkHandler.handleAuthDeepLink(intent)
 
             deepLinkViewModel.handleDeepLinkResult(result)
         }

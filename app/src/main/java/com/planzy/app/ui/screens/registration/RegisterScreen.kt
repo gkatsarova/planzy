@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -17,8 +18,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.repository.UserRepositoryImpl
-import com.planzy.app.domain.service.AuthService
 import com.planzy.app.R
+import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.screens.components.AuthButton
 import com.planzy.app.ui.screens.components.InputTextField
@@ -32,12 +33,17 @@ import com.planzy.app.ui.screens.components.MessageType
 
 @Composable
 fun RegisterScreen(navController: NavController) {
-    val authRepo = remember { AuthRepositoryImpl() }
+    val context = LocalContext.current
+    val resourceProvider = remember { ResourceProviderImpl(context = context) }
+    val authRepo = remember { AuthRepositoryImpl(resourceProvider = ResourceProviderImpl(context)) }
     val userRepo = remember { UserRepositoryImpl() }
-    val authService = remember { AuthService(authRepo, userRepo) }
 
     val viewModel: RegisterViewModel = viewModel(
-        factory = RegisterViewModel.Factory(authService)
+        factory = RegisterViewModel.Factory(
+            resourceProvider = resourceProvider,
+            authRepository = authRepo,
+            userRepository = userRepo
+        )
     )
 
     var email by remember { mutableStateOf("") }
@@ -91,7 +97,7 @@ fun RegisterScreen(navController: NavController) {
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp)
+                    .padding(horizontal = 20.dp)
                     .height(70.dp),
                 isError = fieldErrors.usernameError != null
             )
@@ -117,7 +123,7 @@ fun RegisterScreen(navController: NavController) {
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp)
+                    .padding(horizontal = 20.dp)
                     .height(70.dp),
                 isError = fieldErrors.emailError != null
             )
@@ -169,7 +175,7 @@ fun RegisterScreen(navController: NavController) {
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp)
+                    .padding(horizontal = 20.dp)
                     .height(60.dp),
                 enabled = !loading &&
                         email.isNotBlank() &&
@@ -205,7 +211,7 @@ fun RegisterScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    if (successMessage!!.contains("Verification email", ignoreCase = true)) {
+                    if (successMessage!!.contains(stringResource(id = R.string.verification_email), ignoreCase = true)) {
                         Spacer(modifier = Modifier.height(12.dp))
 
                         OutlinedAppButton(
@@ -240,7 +246,7 @@ fun RegisterScreen(navController: NavController) {
                 textAlign = TextAlign.Left,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp)
+                    .padding(horizontal = 20.dp)
             )
 
             OutlinedAppButton(
@@ -248,7 +254,7 @@ fun RegisterScreen(navController: NavController) {
                 onClick = { navController.navigate(route = Login.route) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp)
+                    .padding(horizontal = 20.dp)
                     .height(60.dp),
                 fontSize = 30.sp
             )
