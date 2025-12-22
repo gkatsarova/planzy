@@ -45,7 +45,7 @@ class AuthRepositoryImpl(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error in signUp: ${e.message}", e)
-            Result.failure(e)
+            Result.failure(handleGeneralException(e))
         }
     }
 
@@ -62,7 +62,7 @@ class AuthRepositoryImpl(
 
         } catch (e: Exception) {
             Log.w(TAG, "Error checking email in auth.users: ${e.message}")
-            Result.failure(e)
+            Result.failure(handleGeneralException(e))
         }
     }
 
@@ -83,7 +83,7 @@ class AuthRepositoryImpl(
 
         } catch (e: Exception) {
             Log.w(TAG, "Error checking username: ${e.message}")
-            Result.failure(e)
+            Result.failure(handleGeneralException(e))
         }
     }
 
@@ -101,11 +101,25 @@ class AuthRepositoryImpl(
 
         } catch (e: Exception) {
             Log.e(TAG, "Failed to resend verification email: ${e.message}")
-            Result.failure(e)
+            Result.failure(handleGeneralException(e))
         }
     }
 
     override suspend fun getCurrentUser(): UserInfo? {
         return SupabaseClient.client.auth.currentUserOrNull()
+    }
+
+    private fun handleGeneralException(e: Exception): Exception {
+        Log.e(TAG, "Error caught in repository: ${e.message}", e)
+
+        return when {
+            e is java.io.IOException || e.toString().contains("UnknownException", ignoreCase = true) -> {
+                Exception(resourceProvider.getString(R.string.error_no_internet))
+            }
+            e.message.isNullOrBlank() -> {
+                Exception(resourceProvider.getString(R.string.unknown_error))
+            }
+            else -> e
+        }
     }
 }

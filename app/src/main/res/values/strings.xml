@@ -30,6 +30,7 @@
     <string name="error_verified_user_email">Email missing from verified user</string>
     <string name="error_email_verification">Email verification error</string>
     <string name="error_creating_auth_user">Failed to create auth user</string>
+    <string name="error_no_internet">No internet connection. Please check your connection and try again.</string>
 
     <string name="success_registration">Registration successful! Welcome to Planzy.</string>
     <string name="success_verification_email_sent">Verification email sent. Please check your inbox.</string>
