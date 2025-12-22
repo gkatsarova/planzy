@@ -49,6 +49,33 @@ class AuthRepositoryImpl(
         }
     }
 
+    override suspend fun signIn(
+        email: String,
+        password: String
+    ): Result<UserInfo> {
+        return try {
+            Log.d(TAG, "Signing in user...")
+
+            SupabaseClient.client.auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+            }
+
+            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
+
+            if (currentUser == null) {
+                Log.e(TAG, "Failed to get user after sign in")
+                Result.failure(Exception(resourceProvider.getString(R.string.error_login_failed)))
+            } else {
+                Log.i(TAG, "Sign in successful for user: ${currentUser.id}")
+                Result.success(currentUser)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in signIn: ${e.message}", e)
+            Result.failure(handleGeneralException(e))
+        }
+    }
+
     override suspend fun checkEmailExistsInAuth(email: String): Result<Boolean> {
         return try {
             val response = SupabaseClient.client.postgrest.rpc(

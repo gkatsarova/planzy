@@ -8,9 +8,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.planzy.app.data.repository.DeepLinkResult
-import com.planzy.app.ui.screens.registration.DeepLinkViewModel
-import com.planzy.app.ui.screens.registration.RegisterScreen
-import com.planzy.app.ui.screens.login.LoginScreen
+import com.planzy.app.ui.screens.auth.registration.DeepLinkViewModel
+import com.planzy.app.ui.screens.auth.registration.RegisterScreen
+import com.planzy.app.ui.screens.auth.login.LoginScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 
 @Composable

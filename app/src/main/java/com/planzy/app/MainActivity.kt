@@ -10,7 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import com.planzy.app.data.repository.DeepLinkHandler
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.ui.navigation.Navigation
-import com.planzy.app.ui.screens.registration.DeepLinkViewModel
+import com.planzy.app.ui.screens.auth.registration.DeepLinkViewModel
 import com.planzy.app.ui.theme.PlanzyTheme
 import kotlinx.coroutines.launch
 

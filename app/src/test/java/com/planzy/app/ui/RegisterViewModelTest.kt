@@ -6,7 +6,7 @@ import com.planzy.app.domain.usecase.CheckEmailAvailabilityUseCase
 import com.planzy.app.domain.usecase.CheckUsernameAvailabilityUseCase
 import com.planzy.app.domain.usecase.RegisterUserUseCase
 import com.planzy.app.domain.usecase.ResendVerificationEmailUseCase
-import com.planzy.app.ui.screens.registration.RegisterViewModel
+import com.planzy.app.ui.screens.auth.registration.RegisterViewModel
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk

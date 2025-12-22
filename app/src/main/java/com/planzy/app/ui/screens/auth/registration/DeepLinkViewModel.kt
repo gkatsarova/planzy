@@ -1,4 +1,4 @@
-package com.planzy.app.ui.screens.registration
+package com.planzy.app.ui.screens.auth.registration
 
 import androidx.lifecycle.ViewModel
 import com.planzy.app.data.repository.DeepLinkResult
