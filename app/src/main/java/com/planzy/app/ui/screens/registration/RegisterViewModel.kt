@@ -1,6 +1,5 @@
 package com.planzy.app.ui.screens.registration
 
-import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -34,6 +33,7 @@ class RegisterViewModel(
     companion object {
         private val USERNAME_REGEX = Regex("^[a-z0-9._]{3,20}$")
         private val PASSWORD_REGEX = Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).{8,}$")
+        private val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
     }
 
     private val _loading = MutableStateFlow(false)
@@ -128,7 +128,7 @@ class RegisterViewModel(
     }
 
     private fun isValidEmail(email: String): Boolean {
-        return Patterns.EMAIL_ADDRESS.matcher(email).matches()
+        return EMAIL_REGEX.matches(email)
     }
 
     private suspend fun checkUsernameAvailability(username: String): String? {

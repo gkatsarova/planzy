@@ -199,39 +199,45 @@ fun RegisterScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            if (success && successMessage != null) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                ) {
-                    MessageCard(
-                        message = successMessage!!,
-                        type = MessageType.SUCCESS,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    if (successMessage!!.contains(stringResource(id = R.string.verification_email), ignoreCase = true)) {
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        OutlinedAppButton(
-                            text = if (canResendEmail) {
-                                stringResource(id = R.string.resend_verification_email)
-                            } else {
-                                "Resend in ${resendCooldownSeconds}s"
-                            },
-                            onClick = {
-                                viewModel.clearError()
-                                viewModel.resendVerificationEmail(email)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
-                            enabled = canResendEmail,
-                            loading = loading,
-                            loadingText = stringResource(id = R.string.sending),
-                            fontSize = 20.sp
+            if (success) {
+                successMessage?.let { message ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                    ) {
+                        MessageCard(
+                            message = message,
+                            type = MessageType.SUCCESS,
+                            modifier = Modifier.fillMaxWidth()
                         )
+
+                        if (message.contains(
+                                stringResource(id = R.string.verification_email),
+                                ignoreCase = true
+                            )
+                        ) {
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedAppButton(
+                                text = if (canResendEmail) {
+                                    stringResource(id = R.string.resend_verification_email)
+                                } else {
+                                    "Resend in ${resendCooldownSeconds}s"
+                                },
+                                onClick = {
+                                    viewModel.clearError()
+                                    viewModel.resendVerificationEmail(email)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp),
+                                enabled = canResendEmail,
+                                loading = loading,
+                                loadingText = stringResource(id = R.string.sending),
+                                fontSize = 20.sp
+                            )
+                        }
                     }
                 }
             }
