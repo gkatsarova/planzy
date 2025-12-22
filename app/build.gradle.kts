@@ -32,16 +32,21 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
     buildFeatures {
         compose = true
     }
+
+    testOptions{
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
-    val nav_version = "2.9.6"
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -59,10 +64,20 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    implementation(platform("io.github.jan-tennert.supabase:bom:3.2.6"))
-    implementation("io.github.jan-tennert.supabase:postgrest-kt")
-    implementation("io.ktor:ktor-client-android:3.3.2")
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.postgrest.kt)
+    implementation(libs.supabase.storage.kt)
+    implementation(libs.supabase.auth.kt)
+    implementation(libs.ktor.client.android)
     implementation(libs.kotlinx.serialization.json)
 
-    implementation("androidx.navigation:navigation-compose:${nav_version}")
+    implementation(libs.androidx.navigation.compose)
+
+    implementation(libs.androidx.material.icons.extended)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.androidx.core.testing)
 }

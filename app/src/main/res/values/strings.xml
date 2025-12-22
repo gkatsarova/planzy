@@ -4,4 +4,35 @@
     <string name="register">Register</string>
     <string name="welcome_message">Discover new destinations, create your dream itinerary, and make every journey unforgettable.</string>
     <string name="welcome">Welcome to Planzy!</string>
+    <string name="register_screen">Register</string>
+    <string name="username">username</string>
+    <string name="email">email</string>
+    <string name="password">password</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+    <string name="registering">Registering…</string>
+    <string name="already_have_account">Already have an account? Login</string>
+    <string name="sending">Sending…</string>
+    <string name="resend_verification_email">Resend verification email</string>
+    <string name="loading">Loading…</string>
+    <string name="verification_email">Verification email</string>
+
+    <string name="error_password_invalid">Password must be at least 8 characters including lowercase, uppercase, numbers and special symbols.</string>
+    <string name="error_username_exists">This username already exists</string>
+    <string name="error_username_invalid">Username must be 3–20 symbols, including lowercase, numbers and special symbols(underscore, dot,).</string>
+    <string name="error_email_exists">This email is already registered. Please try logging in or use password reset.</string>
+    <string name="error_email_invalid">Invalid email format.</string>
+    <string name="error_registration_failed">Registration failed. Please try again.</string>
+    <string name="error_record_db_failed">Account created but profile setup failed</string>
+    <string name="error_verification_email_resend">Failed to resend email. Please try again.</string>
+    <string name="unknown_error">Unknown error</string>
+    <string name="error_active_session">No active session</string>
+    <string name="error_verified_user_email">Email missing from verified user</string>
+    <string name="error_email_verification">Email verification error</string>
+    <string name="error_creating_auth_user">Failed to create auth user</string>
+    <string name="error_no_internet">No internet connection. Please check your connection and try again.</string>
+
+    <string name="success_registration">Registration successful! Welcome to Planzy.</string>
+    <string name="success_verification_email_sent">Verification email sent. Please check your inbox.</string>
+    <string name="success_resend_verification_email">Verification email has been resent. Please check your inbox.</string>
 </resources>
