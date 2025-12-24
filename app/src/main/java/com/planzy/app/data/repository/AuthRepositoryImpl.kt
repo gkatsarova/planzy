@@ -8,6 +8,7 @@ import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.repository.AuthRepository
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.postgrest.postgrest
@@ -70,6 +71,9 @@ class AuthRepositoryImpl(
                 Log.i(TAG, "Sign in successful for user: ${currentUser.id}")
                 Result.success(currentUser)
             }
+        } catch (e: AuthRestException) {
+            Log.e(TAG, "Auth error in signIn: ${e.message}", e)
+            Result.failure(handleAuthException(e))
         } catch (e: Exception) {
             Log.e(TAG, "Error in signIn: ${e.message}", e)
             Result.failure(handleGeneralException(e))
@@ -136,11 +140,32 @@ class AuthRepositoryImpl(
         return SupabaseClient.client.auth.currentUserOrNull()
     }
 
+    private fun handleAuthException(e: AuthRestException): Exception {
+        Log.e(TAG, "Handling auth exception: ${e.error}", e)
+
+        val errorMessage = when {
+            e.error.contains(resourceProvider.getString(R.string.auth_error_keyword_invalid_credentials), ignoreCase = true) -> {
+                resourceProvider.getString(R.string.error_invalid_credentials)
+            }
+            e.error.contains(resourceProvider.getString(R.string.auth_error_keyword_email_not_confirmed), ignoreCase = true) ||
+                    e.error.contains(resourceProvider.getString(R.string.auth_error_keyword_not_confirmed), ignoreCase = true) -> {
+                resourceProvider.getString(R.string.error_email_not_verified)
+            }
+            else -> {
+                e.message ?: resourceProvider.getString(R.string.error_auth_failed)
+            }
+        }
+
+        return Exception(errorMessage)
+    }
+
     private fun handleGeneralException(e: Exception): Exception {
         Log.e(TAG, "Error caught in repository: ${e.message}", e)
 
         return when {
-            e is java.io.IOException || e.toString().contains("UnknownException", ignoreCase = true) -> {
+            e is java.io.IOException || e.toString().contains(
+                resourceProvider.getString(R.string.auth_error_keyword_unknown_exception),
+                ignoreCase = true) -> {
                 Exception(resourceProvider.getString(R.string.error_no_internet))
             }
             e.message.isNullOrBlank() -> {
