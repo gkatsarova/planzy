@@ -58,7 +58,7 @@ fun Navigation() {
         }
 
         composable(route = Login.route) {
-            LoginScreen()
+            LoginScreen(navController = navController)
         }
 
         composable(route = Register.route) {

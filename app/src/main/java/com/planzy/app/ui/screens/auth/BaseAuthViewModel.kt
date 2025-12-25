@@ -2,6 +2,7 @@ package com.planzy.app.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -10,12 +11,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 abstract class BaseAuthViewModel(
-    protected val resourceProvider: ResourceProvider
+    protected val resourceProvider: ResourceProvider,
+    protected val cooldownManager: CooldownManager
 ) : ViewModel() {
 
     companion object {
         val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
         val PASSWORD_REGEX = Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).{8,}$")
+        const val DEFAULT_RESEND_COOLDOWN_SECONDS = 60
     }
 
     protected val _loading = MutableStateFlow(false)
@@ -35,6 +38,10 @@ abstract class BaseAuthViewModel(
 
     private var resendCooldownJob: Job? = null
 
+    init {
+        checkExistingCooldown()
+    }
+
     protected fun isValidEmail(email: String): Boolean {
         return EMAIL_REGEX.matches(email)
     }
@@ -43,9 +50,19 @@ abstract class BaseAuthViewModel(
         return PASSWORD_REGEX.matches(password)
     }
 
-    protected fun startResendCooldown(seconds: Int = 60) {
+    private fun checkExistingCooldown() {
+        val remainingSeconds = cooldownManager.getRemainingCooldownSeconds()
+        if (remainingSeconds > 0) {
+            startResendCooldown(remainingSeconds)
+        }
+    }
+
+    protected fun startResendCooldown(seconds: Int = DEFAULT_RESEND_COOLDOWN_SECONDS) {
         _canResendEmail.value = false
         _resendCooldownSeconds.value = seconds
+
+        val endTimeMillis = System.currentTimeMillis() + (seconds * 1000L)
+        cooldownManager.setCooldownEndTime(endTimeMillis)
 
         resendCooldownJob?.cancel()
         resendCooldownJob = viewModelScope.launch {
@@ -55,6 +72,7 @@ abstract class BaseAuthViewModel(
             }
             _canResendEmail.value = true
             _resendCooldownSeconds.value = 0
+            cooldownManager.clearCooldown()
         }
     }
 

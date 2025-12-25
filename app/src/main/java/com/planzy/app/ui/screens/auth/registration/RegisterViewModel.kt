@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
+import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.repository.AuthRepository
 import com.planzy.app.domain.repository.UserRepository
@@ -27,8 +28,9 @@ class RegisterViewModel(
     private val checkUsernameAvailabilityUseCase: CheckUsernameAvailabilityUseCase,
     private val checkEmailAvailabilityUseCase: CheckEmailAvailabilityUseCase,
     private val resendVerificationEmailUseCase: ResendVerificationEmailUseCase,
-    resourceProvider: ResourceProvider
-) : BaseAuthViewModel(resourceProvider) {
+    resourceProvider: ResourceProvider,
+    cooldownManager: CooldownManager
+) : BaseAuthViewModel(resourceProvider, cooldownManager) {
 
     companion object {
         private val USERNAME_REGEX = Regex("^[a-z0-9._]{3,20}$")
@@ -53,7 +55,11 @@ class RegisterViewModel(
             if (result.isSuccess) {
                 _success.value = true
                 val message = result.getOrNull() ?: ""
-                _successMessage.value = if (message.contains(resourceProvider.getString(R.string.verification_email), ignoreCase = true)) {
+                _successMessage.value = if (message.contains(
+                        resourceProvider.getString(R.string.verification_email),
+                        ignoreCase = true
+                    )
+                ) {
                     resourceProvider.getString(R.string.success_verification_email_sent)
                 } else {
                     message
@@ -144,7 +150,8 @@ class RegisterViewModel(
     class Factory(
         private val authRepository: AuthRepository,
         private val userRepository: UserRepository,
-        private val resourceProvider: ResourceProvider
+        private val resourceProvider: ResourceProvider,
+        private val cooldownManager: CooldownManager
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(RegisterViewModel::class.java)) {
@@ -154,7 +161,8 @@ class RegisterViewModel(
                     CheckUsernameAvailabilityUseCase(userRepository, resourceProvider),
                     CheckEmailAvailabilityUseCase(authRepository, resourceProvider),
                     ResendVerificationEmailUseCase(authRepository, resourceProvider),
-                    resourceProvider
+                    resourceProvider,
+                    cooldownManager
                 ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")

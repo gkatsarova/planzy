@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
+import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.repository.AuthRepository
 import com.planzy.app.domain.usecase.LoginUseCase
@@ -21,8 +22,9 @@ data class LoginFieldError(
 class LoginViewModel(
     private val loginUseCase: LoginUseCase,
     private val resendVerificationEmailUseCase: ResendVerificationEmailUseCase,
-    resourceProvider: ResourceProvider
-) : BaseAuthViewModel(resourceProvider) {
+    resourceProvider: ResourceProvider,
+    cooldownManager: CooldownManager
+) : BaseAuthViewModel(resourceProvider, cooldownManager) {
 
     private val _success = MutableStateFlow(false)
     val success: StateFlow<Boolean> = _success
@@ -99,7 +101,8 @@ class LoginViewModel(
 
     class Factory(
         private val authRepository: AuthRepository,
-        private val resourceProvider: ResourceProvider
+        private val resourceProvider: ResourceProvider,
+        private val cooldownManager: CooldownManager
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
@@ -107,7 +110,8 @@ class LoginViewModel(
                 return LoginViewModel(
                     LoginUseCase(authRepository, resourceProvider),
                     ResendVerificationEmailUseCase(authRepository, resourceProvider),
-                    resourceProvider
+                    resourceProvider,
+                    cooldownManager
                 ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")

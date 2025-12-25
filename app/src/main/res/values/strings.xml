@@ -16,6 +16,8 @@
     <string name="resend_verification_email">Resend verification email</string>
     <string name="loading">Loading…</string>
     <string name="verification_email">Verification email</string>
+    <string name="logging_in">Logging in</string>
+    <string name="dont_have_account">Don\'t have an account? Register</string>
 
     <string name="error_password_invalid">Password must be at least 8 characters including lowercase, uppercase, numbers and special symbols.</string>
     <string name="error_username_exists">This username already exists</string>

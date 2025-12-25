@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.R
+import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.screens.components.AuthButton
@@ -37,12 +38,14 @@ fun RegisterScreen(navController: NavController) {
     val resourceProvider = remember { ResourceProviderImpl(context = context) }
     val authRepo = remember { AuthRepositoryImpl(resourceProvider = ResourceProviderImpl(context)) }
     val userRepo = remember { UserRepositoryImpl() }
+    val cooldownManager = remember { CooldownManager(context) }
 
     val viewModel: RegisterViewModel = viewModel(
         factory = RegisterViewModel.Factory(
             resourceProvider = resourceProvider,
             authRepository = authRepo,
-            userRepository = userRepo
+            userRepository = userRepo,
+            cooldownManager = cooldownManager
         )
     )
 

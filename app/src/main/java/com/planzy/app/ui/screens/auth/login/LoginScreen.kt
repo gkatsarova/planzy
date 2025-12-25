@@ -1,37 +1,48 @@
 package com.planzy.app.ui.screens.auth.login
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.R
+import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.ui.navigation.Register
 import com.planzy.app.ui.screens.components.AuthButton
 import com.planzy.app.ui.screens.components.InputTextField
 import com.planzy.app.ui.screens.components.OutlinedAppButton
 import com.planzy.app.ui.screens.components.PasswordTextField
+import com.planzy.app.ui.theme.AmericanBlue
 import com.planzy.app.ui.theme.ErrorColor
+import com.planzy.app.ui.theme.Raleway
 import com.planzy.app.ui.screens.components.MessageCard
 import com.planzy.app.ui.screens.components.MessageType
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(navController: NavController) {
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context = context) }
     val authRepo = remember { AuthRepositoryImpl(resourceProvider = ResourceProviderImpl(context)) }
+    val cooldownManager = remember { CooldownManager(context) }
 
     val viewModel: LoginViewModel = viewModel(
         factory = LoginViewModel.Factory(
             authRepository = authRepo,
-            resourceProvider = resourceProvider
+            resourceProvider = resourceProvider,
+            cooldownManager = cooldownManager
         )
     )
 
@@ -52,14 +63,25 @@ fun LoginScreen() {
             .fillMaxSize()
             .background(color = MaterialTheme.colorScheme.background)
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.auth_screens_background),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter),
+            contentScale = ContentScale.FillWidth
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize(),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            Spacer(modifier = Modifier.height(100.dp))
+
             Text(
-                text = "Login",
+                text = stringResource(id = R.string.login),
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 38.sp
             )
@@ -135,7 +157,7 @@ fun LoginScreen() {
                         fieldErrors.emailError == null &&
                         fieldErrors.passwordError == null,
                 loading = loading,
-                loadingText = "Logging in"
+                loadingText = stringResource(id = R.string.logging_in)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -189,6 +211,29 @@ fun LoginScreen() {
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = stringResource(id = R.string.dont_have_account),
+                color = AmericanBlue,
+                fontFamily = Raleway,
+                fontSize = 16.sp,
+                textAlign = TextAlign.Left,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+            )
+
+            OutlinedAppButton(
+                text = stringResource(id = R.string.register),
+                onClick = { navController.navigate(route = Register.route) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .height(60.dp),
+                fontSize = 30.sp
+            )
         }
     }
 }
