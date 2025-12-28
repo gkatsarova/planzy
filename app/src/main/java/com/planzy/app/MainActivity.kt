@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PlanzyTheme {
-                Navigation()
+                Navigation(deepLinkViewModel)
             }
         }
     }
@@ -39,6 +39,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleDeepLink(intent: Intent?) {
+        val data = intent?.data
+        if (data == null) {
+            return
+        }
         lifecycleScope.launch {
             val result = deepLinkHandler.handleAuthDeepLink(intent)
 

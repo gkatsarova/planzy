@@ -33,7 +33,10 @@ import com.planzy.app.ui.screens.components.MessageCard
 import com.planzy.app.ui.screens.components.MessageType
 
 @Composable
-fun RegisterScreen(navController: NavController) {
+fun RegisterScreen(
+    navController: NavController,
+    deepLinkViewModel: DeepLinkViewModel
+) {
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context = context) }
     val authRepo = remember { AuthRepositoryImpl(resourceProvider = ResourceProviderImpl(context)) }
@@ -60,6 +63,12 @@ fun RegisterScreen(navController: NavController) {
     val fieldErrors by viewModel.fieldErrors.collectAsState()
     val canResendEmail by viewModel.canResendEmail.collectAsState()
     val resendCooldownSeconds by viewModel.resendCooldownSeconds.collectAsState()
+
+    LaunchedEffect(success) {
+        if (success) {
+            deepLinkViewModel.savePendingCredentials(email, password)
+        }
+    }
 
     Box(
         modifier = Modifier

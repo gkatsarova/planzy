@@ -36,6 +36,9 @@ abstract class BaseAuthViewModel(
     protected val _resendCooldownSeconds = MutableStateFlow(0)
     val resendCooldownSeconds: StateFlow<Int> = _resendCooldownSeconds
 
+    private val _success = MutableStateFlow(false)
+    open val success: StateFlow<Boolean> = _success
+
     private var resendCooldownJob: Job? = null
 
     init {
@@ -87,5 +90,11 @@ abstract class BaseAuthViewModel(
     override fun onCleared() {
         super.onCleared()
         resendCooldownJob?.cancel()
+    }
+
+    fun setError(message: String) {
+        _error.value = message
+        _success.value = false
+        _successMessage.value = null
     }
 }

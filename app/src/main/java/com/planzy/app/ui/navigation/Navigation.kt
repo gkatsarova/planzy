@@ -1,9 +1,7 @@
 package com.planzy.app.ui.navigation
 
-import android.widget.Toast
 import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -11,44 +9,48 @@ import com.planzy.app.data.repository.DeepLinkResult
 import com.planzy.app.ui.screens.auth.registration.DeepLinkViewModel
 import com.planzy.app.ui.screens.auth.registration.RegisterScreen
 import com.planzy.app.ui.screens.auth.login.LoginScreen
+import com.planzy.app.ui.screens.home.HomeScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 
 @Composable
-fun Navigation() {
+fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
     val navController = rememberNavController()
-    val deepLinkViewModel: DeepLinkViewModel = viewModel()
-    val context = LocalContext.current
-
     val deepLinkResult by deepLinkViewModel.deepLinkResult.collectAsState()
+    var hasHandledDeepLink by remember { mutableStateOf(false) }
 
     LaunchedEffect(deepLinkResult) {
-        when (val result = deepLinkResult) {
+        when (deepLinkResult) {
             is DeepLinkResult.EmailVerified -> {
-                Toast.makeText(
-                    context,
-                    "Email is verified",
-                    Toast.LENGTH_LONG
-                ).show()
+                if (!hasHandledDeepLink) {
+                    hasHandledDeepLink = true
 
-                deepLinkViewModel.clearDeepLinkResult()
+                    navController.navigate(Home.route) {
+                        popUpTo(Welcome.route) { inclusive = true }
+                    }
+
+                    deepLinkViewModel.clearDeepLinkResult()
+                    deepLinkViewModel.clearPendingCredentials()
+                }
             }
             is DeepLinkResult.Error -> {
-                println("Error in navigation: ${result.message}")
-
-                Toast.makeText(
-                    context,
-                    "Error: ${result.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-
+                navController.navigate(Login.route) {
+                    popUpTo(Welcome.route) { inclusive = false }
+                }
                 deepLinkViewModel.clearDeepLinkResult()
             }
-            is DeepLinkResult.PasswordRecovery -> {
-                deepLinkViewModel.clearDeepLinkResult()
-            }
-            DeepLinkResult.NoDeepLink, DeepLinkResult.Unknown -> {
+            else -> {}
+        }
+    }
 
+    DisposableEffect(navController) {
+        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+            destination.route?.let { route ->
+                deepLinkViewModel.saveLastRoute(route)
             }
+        }
+        navController.addOnDestinationChangedListener(listener)
+        onDispose {
+            navController.removeOnDestinationChangedListener(listener)
         }
     }
 
@@ -58,11 +60,21 @@ fun Navigation() {
         }
 
         composable(route = Login.route) {
-            LoginScreen(navController = navController)
+            LoginScreen(
+                navController = navController,
+                deepLinkViewModel = deepLinkViewModel
+            )
         }
 
         composable(route = Register.route) {
-            RegisterScreen(navController = navController)
+            RegisterScreen(
+                navController = navController,
+                deepLinkViewModel = deepLinkViewModel
+            )
+        }
+
+        composable(route = Home.route) {
+            HomeScreen()
         }
     }
 }

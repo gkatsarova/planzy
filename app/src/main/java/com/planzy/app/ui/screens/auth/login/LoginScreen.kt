@@ -18,9 +18,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.R
+import com.planzy.app.data.repository.DeepLinkResult
 import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.ui.navigation.Register
+import com.planzy.app.ui.navigation.Home
+import com.planzy.app.ui.screens.auth.registration.DeepLinkViewModel
 import com.planzy.app.ui.screens.components.AuthButton
 import com.planzy.app.ui.screens.components.InputTextField
 import com.planzy.app.ui.screens.components.OutlinedAppButton
@@ -32,7 +35,10 @@ import com.planzy.app.ui.screens.components.MessageCard
 import com.planzy.app.ui.screens.components.MessageType
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(
+    navController: NavController,
+    deepLinkViewModel: DeepLinkViewModel
+) {
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context = context) }
     val authRepo = remember { AuthRepositoryImpl(resourceProvider = ResourceProviderImpl(context)) }
@@ -57,6 +63,40 @@ fun LoginScreen(navController: NavController) {
     val showResendVerification by viewModel.showResendVerification.collectAsState()
     val canResendEmail by viewModel.canResendEmail.collectAsState()
     val resendCooldownSeconds by viewModel.resendCooldownSeconds.collectAsState()
+
+    val deepLinkResult by deepLinkViewModel.deepLinkResult.collectAsState()
+
+    LaunchedEffect(success) {
+        if (success) {
+            navController.navigate(Home.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    LaunchedEffect(deepLinkResult) {
+        when (val result = deepLinkResult) {
+            is DeepLinkResult.Error -> {
+                viewModel.setError(result.message)
+                deepLinkViewModel.clearDeepLinkResult()
+            }
+            else -> { }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val (savedEmail, savedPassword) = deepLinkViewModel.getPendingCredentials()
+        if (savedEmail != null && savedPassword != null) {
+            email = savedEmail
+            password = savedPassword
+        }
+    }
+
+    LaunchedEffect(email, password) {
+        if (email.isNotBlank() && password.isNotBlank()) {
+            deepLinkViewModel.savePendingCredentials(email, password)
+        }
+    }
 
     Box(
         modifier = Modifier

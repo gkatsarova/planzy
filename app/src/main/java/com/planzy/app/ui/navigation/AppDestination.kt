@@ -15,3 +15,7 @@ data object Register : AppDestination {
 data object Welcome : AppDestination {
     override val route = "welcome_screen"
 }
+
+data object Home : AppDestination {
+    override val route = "home_screen"
+}

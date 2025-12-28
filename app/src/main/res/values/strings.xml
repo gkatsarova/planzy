@@ -18,6 +18,7 @@
     <string name="verification_email">Verification email</string>
     <string name="logging_in">Logging in</string>
     <string name="dont_have_account">Don\'t have an account? Register</string>
+    <string name="email_verified_login">Your email is verified. You can log in now.</string>
 
     <string name="error_password_invalid">Password must be at least 8 characters including lowercase, uppercase, numbers and special symbols.</string>
     <string name="error_username_exists">This username already exists</string>
@@ -46,4 +47,7 @@
     <string name="auth_error_keyword_invalid_credentials">invalid_credentials</string>
     <string name="auth_error_keyword_email_not_confirmed">email_not_confirmed</string>
     <string name="auth_error_keyword_not_confirmed">not_confirmed</string>
+    <string name="duplicate">duplicate</string>
+    <string name="already_exists">already exists</string>
+    <string name="unique">unique</string>
 </resources>

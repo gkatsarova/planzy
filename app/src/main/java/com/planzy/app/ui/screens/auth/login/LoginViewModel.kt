@@ -27,7 +27,7 @@ class LoginViewModel(
 ) : BaseAuthViewModel(resourceProvider, cooldownManager) {
 
     private val _success = MutableStateFlow(false)
-    val success: StateFlow<Boolean> = _success
+    override val success: StateFlow<Boolean> = _success
 
     private val _fieldErrors = MutableStateFlow(LoginFieldError())
     val fieldErrors: StateFlow<LoginFieldError> = _fieldErrors
