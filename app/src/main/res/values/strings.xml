@@ -36,6 +36,11 @@
     <string name="error_no_internet">No internet connection. Please check your connection and try again.</string>
     <string name="error_login_failed">Login failed. Please check your credentials and try again.</string>
     <string name="error_email_not_verified">Please verify your email before logging in.</string>
+    <string name="error_email_not_found">This email is not registered</string>
+    <string name="error_session_expired">Session expired. Please request a new reset link.</string>
+    <string name="error_update_password">"Failed to update password. Please try again.</string>
+    <string name="error_session">Session expired or invalid</string>
+    <string name="error_invalid_reset_link">Invalid reset link</string>
 
     <string name="success_registration">Registration successful! Welcome to Planzy.</string>
     <string name="success_verification_email_sent">Verification email sent. Please check your inbox.</string>
@@ -50,4 +55,15 @@
     <string name="duplicate">duplicate</string>
     <string name="already_exists">already exists</string>
     <string name="unique">unique</string>
+    <string name="password_reset_email_sent">Check your email for reset instructions.</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="reset_password_description">Enter your new password below</string>
+    <string name="new_password">new password</string>
+    <string name="confirm_password">confirm password</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="resetting">Resetting…</string>
+    <string name="password_reset_success">Password reset successfully!</string>
+    <string name="error_passwords_dont_match">Passwords don\'t match</string>
+    <string name="cancel">Cancel</string>
+    <string name="redirecting">Redirecting</string>
 </resources>

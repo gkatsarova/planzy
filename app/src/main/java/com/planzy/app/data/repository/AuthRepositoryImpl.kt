@@ -4,6 +4,7 @@ import android.util.Log
 import com.planzy.app.R
 import com.planzy.app.data.model.User
 import com.planzy.app.data.remote.SupabaseClient
+import com.planzy.app.data.util.RecoverySessionManager
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.repository.AuthRepository
 import io.github.jan.supabase.auth.OtpType
@@ -11,13 +12,16 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
+import io.github.jan.supabase.auth.parseFragmentAndImportSession
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
+import io.github.jan.supabase.annotations.SupabaseInternal
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 class AuthRepositoryImpl(
-    private val resourceProvider: ResourceProviderImpl
+    private val resourceProvider: ResourceProviderImpl,
+    private val recoverySessionManager: RecoverySessionManager? = null
 ) : AuthRepository {
     private val TAG = AuthRepositoryImpl::class.java.simpleName
 
@@ -132,6 +136,64 @@ class AuthRepositoryImpl(
 
         } catch (e: Exception) {
             Log.e(TAG, "Failed to resend verification email: ${e.message}")
+            Result.failure(handleGeneralException(e))
+        }
+    }
+
+    override suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return try {
+            Log.d(TAG, "Sending password reset email to: $email")
+
+            SupabaseClient.client.auth.resetPasswordForEmail(email)
+
+            Log.i(TAG, "Password reset email sent successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send password reset email: ${e.message}", e)
+            Result.failure(handleGeneralException(e))
+        }
+    }
+
+    @OptIn(SupabaseInternal::class)
+    override suspend fun updatePassword(newPassword: String): Result<Unit> {
+        return try {
+            Log.d(TAG, "Updating password...")
+
+            val recoverySession = recoverySessionManager?.getRecoverySession()
+
+            if (recoverySession == null) {
+                Log.e(TAG, "No recovery session found")
+                return Result.failure(Exception(resourceProvider.getString(R.string.error_session_expired)))
+            }
+
+            try {
+                val fragmentUrl = "planzy://auth-callback#" +
+                        "access_token=${recoverySession.accessToken}&" +
+                        "refresh_token=${recoverySession.refreshToken}&" +
+                        "expires_in=3600&" +
+                        "token_type=bearer&" +
+                        "type=recovery"
+
+                SupabaseClient.client.auth.parseFragmentAndImportSession(fragmentUrl)
+
+                SupabaseClient.client.auth.updateUser {
+                    password = newPassword
+                }
+
+                Log.i(TAG, "Password updated successfully")
+
+                recoverySessionManager.clearRecoverySession()
+
+                return Result.success(Unit)
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to update password: ${e.message}", e)
+                recoverySessionManager.clearRecoverySession()
+                return Result.failure(Exception(resourceProvider.getString(R.string.error_update_password)))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in updatePassword: ${e.message}", e)
+            recoverySessionManager?.clearRecoverySession()
             Result.failure(handleGeneralException(e))
         }
     }

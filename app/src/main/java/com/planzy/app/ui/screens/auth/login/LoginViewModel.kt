@@ -10,6 +10,7 @@ import com.planzy.app.domain.repository.AuthRepository
 import com.planzy.app.domain.usecase.LoginUseCase
 import com.planzy.app.domain.usecase.ResendVerificationEmailUseCase
 import com.planzy.app.ui.screens.auth.BaseAuthViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -22,6 +23,7 @@ data class LoginFieldError(
 class LoginViewModel(
     private val loginUseCase: LoginUseCase,
     private val resendVerificationEmailUseCase: ResendVerificationEmailUseCase,
+    private val authRepository: AuthRepository,
     resourceProvider: ResourceProvider,
     cooldownManager: CooldownManager
 ) : BaseAuthViewModel(resourceProvider, cooldownManager) {
@@ -34,6 +36,30 @@ class LoginViewModel(
 
     private val _showResendVerification = MutableStateFlow(false)
     val showResendVerification: StateFlow<Boolean> = _showResendVerification
+
+    private val _forgotPasswordLoading = MutableStateFlow(false)
+    val forgotPasswordLoading: StateFlow<Boolean> = _forgotPasswordLoading
+
+    private val _forgotPasswordSuccess = MutableStateFlow(false)
+    val forgotPasswordSuccess: StateFlow<Boolean> = _forgotPasswordSuccess
+
+    private val _forgotPasswordMessage = MutableStateFlow<String?>(null)
+    val forgotPasswordMessage: StateFlow<String?> = _forgotPasswordMessage
+
+    private val _isResetPasswordMode = MutableStateFlow(false)
+    val isResetPasswordMode: StateFlow<Boolean> = _isResetPasswordMode
+
+    private val _resetPasswordLoading = MutableStateFlow(false)
+    val resetPasswordLoading: StateFlow<Boolean> = _resetPasswordLoading
+
+    private val _newPasswordError = MutableStateFlow<String?>(null)
+    val newPasswordError: StateFlow<String?> = _newPasswordError
+
+    private val _confirmPasswordError = MutableStateFlow<String?>(null)
+    val confirmPasswordError: StateFlow<String?> = _confirmPasswordError
+
+    private val _justResetPassword = MutableStateFlow(false)
+    val justResetPassword: StateFlow<Boolean> = _justResetPassword
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
@@ -99,6 +125,96 @@ class LoginViewModel(
         }
     }
 
+    fun sendPasswordResetEmail(email: String) {
+        viewModelScope.launch {
+            _forgotPasswordLoading.value = true
+            _forgotPasswordSuccess.value = false
+            _forgotPasswordMessage.value = null
+
+            val emailExists = authRepository.checkEmailExistsInAuth(email)
+
+            if (emailExists.isSuccess && emailExists.getOrNull() == true) {
+                val result = authRepository.sendPasswordResetEmail(email)
+
+                _forgotPasswordLoading.value = false
+                if (result.isSuccess) {
+                    _forgotPasswordSuccess.value = true
+                    _forgotPasswordMessage.value = resourceProvider.getString(R.string.password_reset_email_sent)
+                } else {
+                    _forgotPasswordSuccess.value = false
+                    _error.value = result.exceptionOrNull()?.message
+                }
+            } else {
+                _forgotPasswordLoading.value = false
+                _forgotPasswordSuccess.value = false
+                _error.value = resourceProvider.getString(R.string.error_email_not_found)
+            }
+        }
+    }
+
+    fun clearForgotPassword() {
+        _forgotPasswordLoading.value = false
+        _forgotPasswordSuccess.value = false
+        _forgotPasswordMessage.value = null
+    }
+
+    fun enableResetPasswordMode() {
+        _isResetPasswordMode.value = true
+    }
+
+    fun resetPassword(newPassword: String, confirmPassword: String) {
+        viewModelScope.launch {
+            _resetPasswordLoading.value = true
+            _error.value = null
+            _success.value = false
+            _successMessage.value = null
+
+            if (newPassword != confirmPassword) {
+                _error.value = resourceProvider.getString(R.string.error_passwords_dont_match)
+                _resetPasswordLoading.value = false
+                return@launch
+            }
+
+            if (!isValidPassword(newPassword)) {
+                _error.value = resourceProvider.getString(R.string.error_password_invalid)
+                _resetPasswordLoading.value = false
+                return@launch
+            }
+
+            val result = authRepository.updatePassword(newPassword)
+
+            _resetPasswordLoading.value = false
+            if (result.isSuccess) {
+                _justResetPassword.value = true
+                _success.value = true
+                _successMessage.value = resourceProvider.getString(R.string.password_reset_success)
+
+                viewModelScope.launch {
+                    delay(100)
+                    _justResetPassword.value = false
+                }
+            } else {
+                _error.value = result.exceptionOrNull()?.message
+            }
+        }
+    }
+
+    fun validateNewPassword(password: String) {
+        val error = if (password.isNotEmpty() && !isValidPassword(password)) {
+            resourceProvider.getString(R.string.error_password_invalid)
+        } else null
+
+        _newPasswordError.value = error
+    }
+
+    fun validateConfirmPassword(newPassword: String, confirmPassword: String) {
+        val error = if (confirmPassword.isNotEmpty() && newPassword != confirmPassword) {
+            resourceProvider.getString(R.string.error_passwords_dont_match)
+        } else null
+
+        _confirmPasswordError.value = error
+    }
+
     class Factory(
         private val authRepository: AuthRepository,
         private val resourceProvider: ResourceProvider,
@@ -110,6 +226,7 @@ class LoginViewModel(
                 return LoginViewModel(
                     LoginUseCase(authRepository, resourceProvider),
                     ResendVerificationEmailUseCase(authRepository, resourceProvider),
+                    authRepository,
                     resourceProvider,
                     cooldownManager
                 ) as T

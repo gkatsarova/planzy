@@ -8,5 +8,7 @@ interface AuthRepository {
     suspend fun checkEmailExistsInAuth(email: String): Result<Boolean>
     suspend fun checkUsernameExists(username: String): Result<Boolean>
     suspend fun resendVerificationEmail(email: String): Result<Unit>
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit>
+    suspend fun updatePassword(newPassword: String): Result<Unit>
     suspend fun getCurrentUser(): UserInfo?
 }

@@ -20,6 +20,7 @@ import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.R
 import com.planzy.app.data.repository.DeepLinkResult
 import com.planzy.app.data.util.CooldownManager
+import com.planzy.app.data.util.RecoverySessionManager
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.ui.navigation.Register
 import com.planzy.app.ui.navigation.Home
@@ -33,6 +34,7 @@ import com.planzy.app.ui.theme.ErrorColor
 import com.planzy.app.ui.theme.Raleway
 import com.planzy.app.ui.screens.components.MessageCard
 import com.planzy.app.ui.screens.components.MessageType
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
@@ -41,7 +43,13 @@ fun LoginScreen(
 ) {
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context = context) }
-    val authRepo = remember { AuthRepositoryImpl(resourceProvider = ResourceProviderImpl(context)) }
+    val recoverySessionManager = remember { RecoverySessionManager(context) }
+    val authRepo = remember {
+        AuthRepositoryImpl(
+            resourceProvider = resourceProvider,
+            recoverySessionManager = recoverySessionManager
+        )
+    }
     val cooldownManager = remember { CooldownManager(context) }
 
     val viewModel: LoginViewModel = viewModel(
@@ -54,6 +62,8 @@ fun LoginScreen(
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
 
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -65,6 +75,15 @@ fun LoginScreen(
     val resendCooldownSeconds by viewModel.resendCooldownSeconds.collectAsState()
 
     val deepLinkResult by deepLinkViewModel.deepLinkResult.collectAsState()
+
+    val forgotPasswordLoading by viewModel.forgotPasswordLoading.collectAsState()
+    val forgotPasswordSuccess by viewModel.forgotPasswordSuccess.collectAsState()
+    val forgotPasswordMessage by viewModel.forgotPasswordMessage.collectAsState()
+    val isResetPasswordMode by viewModel.isResetPasswordMode.collectAsState()
+    val resetPasswordLoading by viewModel.resetPasswordLoading.collectAsState()
+    val newPasswordError by viewModel.newPasswordError.collectAsState()
+    val confirmPasswordError by viewModel.confirmPasswordError.collectAsState()
+    val justResetPassword by viewModel.justResetPassword.collectAsState()
 
     LaunchedEffect(success) {
         if (success) {
@@ -78,6 +97,10 @@ fun LoginScreen(
         when (val result = deepLinkResult) {
             is DeepLinkResult.Error -> {
                 viewModel.setError(result.message)
+                deepLinkViewModel.clearDeepLinkResult()
+            }
+            is DeepLinkResult.PasswordReset -> {
+                viewModel.enableResetPasswordMode()
                 deepLinkViewModel.clearDeepLinkResult()
             }
             else -> { }
@@ -95,6 +118,13 @@ fun LoginScreen(
     LaunchedEffect(email, password) {
         if (email.isNotBlank() && password.isNotBlank()) {
             deepLinkViewModel.savePendingCredentials(email, password)
+        }
+    }
+
+    LaunchedEffect(forgotPasswordSuccess) {
+        if (forgotPasswordSuccess) {
+            delay(5000)
+            viewModel.clearForgotPassword()
         }
     }
 
@@ -154,51 +184,154 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            PasswordTextField(
-                value = password,
-                label = stringResource(id = R.string.password),
-                onValueChange = {
-                    password = it
-                    viewModel.validatePassword(it)
-                },
-                isError = fieldErrors.passwordError != null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .height(70.dp)
-            )
-            fieldErrors.passwordError?.let { errorMsg ->
-                Text(
-                    text = errorMsg,
-                    color = ErrorColor,
-                    fontSize = 12.sp,
+            if (isResetPasswordMode || justResetPassword) {
+                PasswordTextField(
+                    value = newPassword,
+                    label = stringResource(id = R.string.new_password),
+                    onValueChange = {
+                        newPassword = it
+                        viewModel.validateNewPassword(it)
+                    },
+                    isError = newPasswordError != null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 24.dp, top = 4.dp)
+                        .padding(horizontal = 20.dp)
+                        .height(70.dp)
+                )
+                newPasswordError?.let { errorMsg ->
+                    Text(
+                        text = errorMsg,
+                        color = ErrorColor,
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 24.dp, top = 4.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                PasswordTextField(
+                    value = confirmPassword,
+                    label = stringResource(id = R.string.confirm_password),
+                    onValueChange = {
+                        confirmPassword = it
+                        viewModel.validateConfirmPassword(newPassword, it)
+                    },
+                    isError = confirmPasswordError != null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(70.dp)
+                )
+                confirmPasswordError?.let { errorMsg ->
+                    Text(
+                        text = errorMsg,
+                        color = ErrorColor,
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 24.dp, top = 4.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                AuthButton(
+                    text = if (justResetPassword) {
+                        stringResource(id = R.string.redirecting)
+                    } else {
+                        stringResource(id = R.string.reset_password)
+                    },
+                    onClick = {
+                        if (!justResetPassword) {
+                            viewModel.clearError()
+                            viewModel.clearSuccess()
+                            viewModel.resetPassword(newPassword, confirmPassword)
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(60.dp),
+                    enabled = !resetPasswordLoading && !justResetPassword &&
+                            newPassword.isNotBlank() &&
+                            confirmPassword.isNotBlank() &&
+                            newPasswordError == null &&
+                            confirmPasswordError == null,
+                    loading = resetPasswordLoading || justResetPassword,
+                    loadingText = if (justResetPassword) {
+                        stringResource(id = R.string.redirecting)
+                    } else {
+                        stringResource(id = R.string.resetting)
+                    }
+                )
+            } else {
+                PasswordTextField(
+                    value = password,
+                    label = stringResource(id = R.string.password),
+                    onValueChange = {
+                        password = it
+                        viewModel.validatePassword(it)
+                    },
+                    isError = fieldErrors.passwordError != null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(70.dp)
+                )
+                fieldErrors.passwordError?.let { errorMsg ->
+                    Text(
+                        text = errorMsg,
+                        color = ErrorColor,
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 24.dp, top = 4.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedAppButton(
+                    text = stringResource(id = R.string.forgot_password),
+                    onClick = {
+                        viewModel.clearError()
+                        viewModel.clearForgotPassword()
+                        viewModel.sendPasswordResetEmail(email)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(50.dp),
+                    enabled = email.isNotBlank() && !forgotPasswordLoading,
+                    loading = forgotPasswordLoading,
+                    loadingText = stringResource(id = R.string.sending),
+                    fontSize = 16.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                AuthButton(
+                    text = stringResource(id = R.string.login),
+                    onClick = {
+                        viewModel.clearError()
+                        viewModel.clearSuccess()
+                        viewModel.login(email, password)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(60.dp),
+                    enabled = !loading &&
+                            email.isNotBlank() &&
+                            password.isNotBlank() &&
+                            fieldErrors.emailError == null &&
+                            fieldErrors.passwordError == null,
+                    loading = loading,
+                    loadingText = stringResource(id = R.string.logging_in)
                 )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            AuthButton(
-                text = stringResource(id = R.string.login),
-                onClick = {
-                    viewModel.clearError()
-                    viewModel.clearSuccess()
-                    viewModel.login(email, password)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .height(60.dp),
-                enabled = !loading &&
-                        email.isNotBlank() &&
-                        password.isNotBlank() &&
-                        fieldErrors.emailError == null &&
-                        fieldErrors.passwordError == null,
-                loading = loading,
-                loadingText = stringResource(id = R.string.logging_in)
-            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -206,6 +339,15 @@ fun LoginScreen(
                 MessageCard(
                     message = errorMessage,
                     type = MessageType.ERROR,
+                    modifier = Modifier.padding(horizontal = 20.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            forgotPasswordMessage?.let { message ->
+                MessageCard(
+                    message = message,
+                    type = MessageType.SUCCESS,
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -224,7 +366,7 @@ fun LoginScreen(
                 }
             }
 
-            if (showResendVerification) {
+            if (showResendVerification && !isResetPasswordMode && !justResetPassword) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
