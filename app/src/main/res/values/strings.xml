@@ -66,4 +66,5 @@
     <string name="error_passwords_dont_match">Passwords don\'t match</string>
     <string name="cancel">Cancel</string>
     <string name="redirecting">Redirecting</string>
+    <string name="resend_reset_email">Resend reset email</string>
 </resources>

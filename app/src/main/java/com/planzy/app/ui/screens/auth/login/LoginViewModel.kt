@@ -74,7 +74,6 @@ class LoginViewModel(
             _loading.value = false
             if (result.isSuccess) {
                 _success.value = true
-                _successMessage.value = result.getOrNull()
             } else {
                 val errorMessage = result.exceptionOrNull()?.message
                 _error.value = errorMessage
@@ -140,6 +139,7 @@ class LoginViewModel(
                 if (result.isSuccess) {
                     _forgotPasswordSuccess.value = true
                     _forgotPasswordMessage.value = resourceProvider.getString(R.string.password_reset_email_sent)
+                    startResendCooldown()
                 } else {
                     _forgotPasswordSuccess.value = false
                     _error.value = result.exceptionOrNull()?.message
@@ -187,7 +187,6 @@ class LoginViewModel(
             if (result.isSuccess) {
                 _justResetPassword.value = true
                 _success.value = true
-                _successMessage.value = resourceProvider.getString(R.string.password_reset_success)
 
                 viewModelScope.launch {
                     delay(100)

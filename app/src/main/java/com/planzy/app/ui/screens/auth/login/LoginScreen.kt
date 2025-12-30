@@ -266,6 +266,31 @@ fun LoginScreen(
                         stringResource(id = R.string.resetting)
                     }
                 )
+
+                if (!justResetPassword) {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedAppButton(
+                        text = if (canResendEmail) {
+                            "Resend reset email"
+                        } else {
+                            "Resend in ${resendCooldownSeconds}s"
+                        },
+                        onClick = {
+                            viewModel.clearError()
+                            viewModel.clearForgotPassword()
+                            viewModel.sendPasswordResetEmail(email)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .height(50.dp),
+                        enabled = email.isNotBlank() && !forgotPasswordLoading && canResendEmail,
+                        loading = forgotPasswordLoading,
+                        loadingText = stringResource(id = R.string.sending),
+                        fontSize = 16.sp
+                    )
+                }
             } else {
                 PasswordTextField(
                     value = password,
