@@ -45,11 +45,11 @@ abstract class BaseAuthViewModel(
         checkExistingCooldown()
     }
 
-    protected fun isValidEmail(email: String): Boolean {
+    fun isValidEmail(email: String): Boolean {
         return EMAIL_REGEX.matches(email)
     }
 
-    protected fun isValidPassword(password: String): Boolean {
+    fun isValidPassword(password: String): Boolean {
         return PASSWORD_REGEX.matches(password)
     }
 
@@ -60,7 +60,7 @@ abstract class BaseAuthViewModel(
         }
     }
 
-    protected fun startResendCooldown(seconds: Int = DEFAULT_RESEND_COOLDOWN_SECONDS) {
+    fun startResendCooldown(seconds: Int = DEFAULT_RESEND_COOLDOWN_SECONDS) {
         _canResendEmail.value = false
         _resendCooldownSeconds.value = seconds
 

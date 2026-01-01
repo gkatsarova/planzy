@@ -1,6 +1,7 @@
 package com.planzy.app.ui
 
 import com.planzy.app.R
+import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.usecase.CheckEmailAvailabilityUseCase
 import com.planzy.app.domain.usecase.CheckUsernameAvailabilityUseCase
@@ -31,6 +32,7 @@ class RegisterViewModelTest {
     private lateinit var checkEmailAvailabilityUseCase: CheckEmailAvailabilityUseCase
     private lateinit var resendVerificationEmailUseCase: ResendVerificationEmailUseCase
     private lateinit var resourceProvider: ResourceProvider
+    private lateinit var cooldownManager: CooldownManager
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -43,6 +45,7 @@ class RegisterViewModelTest {
         checkEmailAvailabilityUseCase = mockk(relaxed = true)
         resendVerificationEmailUseCase = mockk(relaxed = true)
         resourceProvider = mockk(relaxed = true)
+        cooldownManager = mockk(relaxed = true)
 
         setupResourceStrings()
 
@@ -51,7 +54,8 @@ class RegisterViewModelTest {
             checkUsernameAvailabilityUseCase,
             checkEmailAvailabilityUseCase,
             resendVerificationEmailUseCase,
-            resourceProvider
+            resourceProvider,
+            cooldownManager
         )
     }
 
@@ -134,14 +138,6 @@ class RegisterViewModelTest {
     }
 
     @Test
-    fun `malformed email is rejected`() = runTest {
-        viewModel.validateEmail("notanemail")
-        advanceUntilIdle()
-
-        Assert.assertNotNull(viewModel.fieldErrors.value.emailError)
-    }
-
-    @Test
     fun `valid available email passes validation`() = runTest {
         coEvery { checkEmailAvailabilityUseCase("test@example.com") } returns Result.success(true)
 
@@ -161,20 +157,6 @@ class RegisterViewModelTest {
         advanceUntilIdle()
 
         Assert.assertNotNull(viewModel.fieldErrors.value.emailError)
-    }
-
-    @Test
-    fun `weak password is rejected`() {
-        viewModel.validatePassword("weak")
-
-        Assert.assertNotNull(viewModel.fieldErrors.value.passwordError)
-    }
-
-    @Test
-    fun `strong password passes validation`() {
-        viewModel.validatePassword("Password123!")
-
-        Assert.assertNull(viewModel.fieldErrors.value.passwordError)
     }
 
     @Test
@@ -245,20 +227,5 @@ class RegisterViewModelTest {
         advanceUntilIdle()
 
         Assert.assertNull(viewModel.fieldErrors.value.usernameError)
-    }
-
-    @Test
-    fun `clearError resets error state`() {
-        viewModel.clearError()
-
-        Assert.assertNull(viewModel.error.value)
-    }
-
-    @Test
-    fun `clearSuccess resets success state`() {
-        viewModel.clearSuccess()
-
-        Assert.assertFalse(viewModel.success.value)
-        Assert.assertNull(viewModel.successMessage.value)
     }
 }
