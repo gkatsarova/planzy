@@ -42,7 +42,7 @@ class LoginUseCase(
             }
 
             Log.i(TAG, "Login successful for user: ${authUser.id}")
-            Result.success(resourceProvider.getString(R.string.success_login))
+            return Result.success(resourceProvider.getString(R.string.success_login))
 
         } catch (e: Exception) {
             Log.e(TAG, "Login error: ${e.message}", e)

@@ -160,41 +160,34 @@ class AuthRepositoryImpl(
             Log.d(TAG, "Updating password...")
 
             val recoverySession = recoverySessionManager?.getRecoverySession()
-
-            if (recoverySession == null) {
-                Log.e(TAG, "No recovery session found")
-                return Result.failure(Exception(resourceProvider.getString(R.string.error_session_expired)))
-            }
-
-            try {
-                val fragmentUrl = "planzy://auth-callback#" +
-                        "access_token=${recoverySession.accessToken}&" +
-                        "refresh_token=${recoverySession.refreshToken}&" +
-                        "expires_in=3600&" +
-                        "token_type=bearer&" +
-                        "type=recovery"
-
-                SupabaseClient.client.auth.parseFragmentAndImportSession(fragmentUrl)
-
-                SupabaseClient.client.auth.updateUser {
-                    password = newPassword
+                ?: run {
+                    Log.e(TAG, "No recovery session found")
+                    return Result.failure(Exception(resourceProvider.getString(R.string.error_session_expired)))
                 }
 
-                Log.i(TAG, "Password updated successfully")
+            val fragmentUrl = "planzy://auth-callback#" +
+                    "access_token=${recoverySession.accessToken}&" +
+                    "refresh_token=${recoverySession.refreshToken}&" +
+                    "expires_in=3600&" +
+                    "token_type=bearer&" +
+                    "type=recovery"
 
-                recoverySessionManager.clearRecoverySession()
+            SupabaseClient.client.auth.parseFragmentAndImportSession(fragmentUrl)
 
-                return Result.success(Unit)
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to update password: ${e.message}", e)
-                recoverySessionManager.clearRecoverySession()
-                return Result.failure(Exception(resourceProvider.getString(R.string.error_update_password)))
+            SupabaseClient.client.auth.updateUser {
+                password = newPassword
             }
+
+            Log.i(TAG, "Password updated successfully")
+
+            recoverySessionManager.clearRecoverySession()
+
+            Result.success(Unit)
+
         } catch (e: Exception) {
-            Log.e(TAG, "Error in updatePassword: ${e.message}", e)
+            Log.e(TAG, "Error updating password: ${e.message}", e)
             recoverySessionManager?.clearRecoverySession()
-            Result.failure(handleGeneralException(e))
+            Result.failure(Exception(resourceProvider.getString(R.string.error_update_password)))
         }
     }
 

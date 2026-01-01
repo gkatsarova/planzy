@@ -41,6 +41,7 @@
     <string name="error_update_password">"Failed to update password. Please try again.</string>
     <string name="error_session">Session expired or invalid</string>
     <string name="error_invalid_reset_link">Invalid reset link</string>
+    <string name="error_password_reset_email_failed">Failed to send password reset email</string>
 
     <string name="success_registration">Registration successful! Welcome to Planzy.</string>
     <string name="success_verification_email_sent">Verification email sent. Please check your inbox.</string>
@@ -67,4 +68,5 @@
     <string name="cancel">Cancel</string>
     <string name="redirecting">Redirecting</string>
     <string name="resend_reset_email">Resend reset email</string>
+    <string name="success_password_updated">Password updated successfully</string>
 </resources>

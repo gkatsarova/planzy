@@ -9,6 +9,8 @@ import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.repository.AuthRepository
 import com.planzy.app.domain.usecase.LoginUseCase
 import com.planzy.app.domain.usecase.ResendVerificationEmailUseCase
+import com.planzy.app.domain.usecase.SendPasswordResetEmailUseCase
+import com.planzy.app.domain.usecase.UpdatePasswordUseCase
 import com.planzy.app.ui.screens.auth.BaseAuthViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +25,8 @@ data class LoginFieldError(
 class LoginViewModel(
     private val loginUseCase: LoginUseCase,
     private val resendVerificationEmailUseCase: ResendVerificationEmailUseCase,
+    private val sendPasswordResetEmailUseCase: SendPasswordResetEmailUseCase,
+    private val updatePasswordUseCase: UpdatePasswordUseCase,
     private val authRepository: AuthRepository,
     resourceProvider: ResourceProvider,
     cooldownManager: CooldownManager
@@ -133,12 +137,12 @@ class LoginViewModel(
             val emailExists = authRepository.checkEmailExistsInAuth(email)
 
             if (emailExists.isSuccess && emailExists.getOrNull() == true) {
-                val result = authRepository.sendPasswordResetEmail(email)
+                val result = sendPasswordResetEmailUseCase(email)
 
                 _forgotPasswordLoading.value = false
                 if (result.isSuccess) {
                     _forgotPasswordSuccess.value = true
-                    _forgotPasswordMessage.value = resourceProvider.getString(R.string.password_reset_email_sent)
+                    _forgotPasswordMessage.value = result.getOrNull()
                     startResendCooldown()
                 } else {
                     _forgotPasswordSuccess.value = false
@@ -181,7 +185,7 @@ class LoginViewModel(
                 return@launch
             }
 
-            val result = authRepository.updatePassword(newPassword)
+            val result = updatePasswordUseCase(newPassword)
 
             _resetPasswordLoading.value = false
             if (result.isSuccess) {
@@ -225,6 +229,8 @@ class LoginViewModel(
                 return LoginViewModel(
                     LoginUseCase(authRepository, resourceProvider),
                     ResendVerificationEmailUseCase(authRepository, resourceProvider),
+                    SendPasswordResetEmailUseCase(authRepository, resourceProvider),
+                    UpdatePasswordUseCase(authRepository, resourceProvider),
                     authRepository,
                     resourceProvider,
                     cooldownManager
