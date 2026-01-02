@@ -34,7 +34,6 @@ import com.planzy.app.ui.theme.ErrorColor
 import com.planzy.app.ui.theme.Raleway
 import com.planzy.app.ui.screens.components.MessageCard
 import com.planzy.app.ui.screens.components.MessageType
-import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
@@ -77,7 +76,6 @@ fun LoginScreen(
     val deepLinkResult by deepLinkViewModel.deepLinkResult.collectAsState()
 
     val forgotPasswordLoading by viewModel.forgotPasswordLoading.collectAsState()
-    val forgotPasswordSuccess by viewModel.forgotPasswordSuccess.collectAsState()
     val forgotPasswordMessage by viewModel.forgotPasswordMessage.collectAsState()
     val isResetPasswordMode by viewModel.isResetPasswordMode.collectAsState()
     val resetPasswordLoading by viewModel.resetPasswordLoading.collectAsState()
@@ -118,13 +116,6 @@ fun LoginScreen(
     LaunchedEffect(email, password) {
         if (email.isNotBlank() && password.isNotBlank()) {
             deepLinkViewModel.savePendingCredentials(email, password)
-        }
-    }
-
-    LaunchedEffect(forgotPasswordSuccess) {
-        if (forgotPasswordSuccess) {
-            delay(5000)
-            viewModel.clearForgotPassword()
         }
     }
 
@@ -178,7 +169,7 @@ fun LoginScreen(
                     fontSize = 12.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 24.dp, top = 4.dp)
+                        .padding(start = 24.dp, top = 4.dp, end = 24.dp)
                 )
             }
 
@@ -205,7 +196,7 @@ fun LoginScreen(
                         fontSize = 12.sp,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 24.dp, top = 4.dp)
+                            .padding(start = 24.dp, top = 4.dp, end = 24.dp)
                     )
                 }
 
@@ -231,7 +222,7 @@ fun LoginScreen(
                         fontSize = 12.sp,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 24.dp, top = 4.dp)
+                            .padding(start = 24.dp, top = 4.dp, end = 24.dp)
                     )
                 }
 
@@ -312,14 +303,18 @@ fun LoginScreen(
                         fontSize = 12.sp,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 24.dp, top = 4.dp)
+                            .padding(start = 24.dp, top = 4.dp, end = 24.dp)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedAppButton(
-                    text = stringResource(id = R.string.forgot_password),
+                    text = if (canResendEmail) {
+                        stringResource(id = R.string.forgot_password)
+                    } else {
+                        "Resend in ${resendCooldownSeconds}s"
+                    },
                     onClick = {
                         viewModel.clearError()
                         viewModel.clearForgotPassword()
@@ -329,7 +324,7 @@ fun LoginScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                         .height(50.dp),
-                    enabled = email.isNotBlank() && !forgotPasswordLoading,
+                    enabled = email.isNotBlank() && !forgotPasswordLoading && canResendEmail,
                     loading = forgotPasswordLoading,
                     loadingText = stringResource(id = R.string.sending),
                     fontSize = 16.sp

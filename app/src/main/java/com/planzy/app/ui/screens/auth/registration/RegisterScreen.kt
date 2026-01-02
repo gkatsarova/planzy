@@ -120,7 +120,7 @@ fun RegisterScreen(
                     fontSize = 12.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 4.dp, top = 4.dp)
+                        .padding(start = 24.dp, top = 4.dp, end = 24.dp)
                 )
             }
 
@@ -146,7 +146,7 @@ fun RegisterScreen(
                     fontSize = 12.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 4.dp, top = 4.dp)
+                        .padding(start = 24.dp, top = 4.dp, end = 24.dp)
                 )
             }
 
@@ -162,7 +162,7 @@ fun RegisterScreen(
                 isError = fieldErrors.passwordError != null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp)
+                    .padding(horizontal = 20.dp)
                     .height(70.dp)
             )
             fieldErrors.passwordError?.let { errorMsg ->
@@ -172,7 +172,7 @@ fun RegisterScreen(
                     fontSize = 12.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 4.dp, top = 4.dp)
+                        .padding(start = 24.dp, top = 4.dp, end = 24.dp)
                 )
             }
 
