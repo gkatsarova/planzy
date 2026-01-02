@@ -4,19 +4,24 @@ import android.util.Log
 import com.planzy.app.R
 import com.planzy.app.data.model.User
 import com.planzy.app.data.remote.SupabaseClient
+import com.planzy.app.data.util.RecoverySessionManager
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.repository.AuthRepository
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
+import io.github.jan.supabase.auth.parseFragmentAndImportSession
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
+import io.github.jan.supabase.annotations.SupabaseInternal
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 class AuthRepositoryImpl(
-    private val resourceProvider: ResourceProviderImpl
+    private val resourceProvider: ResourceProviderImpl,
+    private val recoverySessionManager: RecoverySessionManager? = null
 ) : AuthRepository {
     private val TAG = AuthRepositoryImpl::class.java.simpleName
 
@@ -45,6 +50,36 @@ class AuthRepositoryImpl(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error in signUp: ${e.message}", e)
+            Result.failure(handleGeneralException(e))
+        }
+    }
+
+    override suspend fun signIn(
+        email: String,
+        password: String
+    ): Result<UserInfo> {
+        return try {
+            Log.d(TAG, "Signing in user...")
+
+            SupabaseClient.client.auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+            }
+
+            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
+
+            if (currentUser == null) {
+                Log.e(TAG, "Failed to get user after sign in")
+                Result.failure(Exception(resourceProvider.getString(R.string.error_login_failed)))
+            } else {
+                Log.i(TAG, "Sign in successful for user: ${currentUser.id}")
+                Result.success(currentUser)
+            }
+        } catch (e: AuthRestException) {
+            Log.e(TAG, "Auth error in signIn: ${e.message}", e)
+            Result.failure(handleAuthException(e))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in signIn: ${e.message}", e)
             Result.failure(handleGeneralException(e))
         }
     }
@@ -105,15 +140,87 @@ class AuthRepositoryImpl(
         }
     }
 
+    override suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return try {
+            Log.d(TAG, "Sending password reset email to: $email")
+
+            SupabaseClient.client.auth.resetPasswordForEmail(email)
+
+            Log.i(TAG, "Password reset email sent successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send password reset email: ${e.message}", e)
+            Result.failure(handleGeneralException(e))
+        }
+    }
+
+    @OptIn(SupabaseInternal::class)
+    override suspend fun updatePassword(newPassword: String): Result<Unit> {
+        return try {
+            Log.d(TAG, "Updating password...")
+
+            val recoverySession = recoverySessionManager?.getRecoverySession()
+                ?: run {
+                    Log.e(TAG, "No recovery session found")
+                    return Result.failure(Exception(resourceProvider.getString(R.string.error_session_expired)))
+                }
+
+            val fragmentUrl = "planzy://auth-callback#" +
+                    "access_token=${recoverySession.accessToken}&" +
+                    "refresh_token=${recoverySession.refreshToken}&" +
+                    "expires_in=3600&" +
+                    "token_type=bearer&" +
+                    "type=recovery"
+
+            SupabaseClient.client.auth.parseFragmentAndImportSession(fragmentUrl)
+
+            SupabaseClient.client.auth.updateUser {
+                password = newPassword
+            }
+
+            Log.i(TAG, "Password updated successfully")
+
+            recoverySessionManager.clearRecoverySession()
+
+            Result.success(Unit)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating password: ${e.message}", e)
+            recoverySessionManager?.clearRecoverySession()
+            Result.failure(Exception(resourceProvider.getString(R.string.error_update_password)))
+        }
+    }
+
     override suspend fun getCurrentUser(): UserInfo? {
         return SupabaseClient.client.auth.currentUserOrNull()
+    }
+
+    private fun handleAuthException(e: AuthRestException): Exception {
+        Log.e(TAG, "Handling auth exception: ${e.error}", e)
+
+        val errorMessage = when {
+            e.error.contains(resourceProvider.getString(R.string.auth_error_keyword_invalid_credentials), ignoreCase = true) -> {
+                resourceProvider.getString(R.string.error_invalid_credentials)
+            }
+            e.error.contains(resourceProvider.getString(R.string.auth_error_keyword_email_not_confirmed), ignoreCase = true) ||
+                    e.error.contains(resourceProvider.getString(R.string.auth_error_keyword_not_confirmed), ignoreCase = true) -> {
+                resourceProvider.getString(R.string.error_email_not_verified)
+            }
+            else -> {
+                e.message ?: resourceProvider.getString(R.string.error_auth_failed)
+            }
+        }
+
+        return Exception(errorMessage)
     }
 
     private fun handleGeneralException(e: Exception): Exception {
         Log.e(TAG, "Error caught in repository: ${e.message}", e)
 
         return when {
-            e is java.io.IOException || e.toString().contains("UnknownException", ignoreCase = true) -> {
+            e is java.io.IOException || e.toString().contains(
+                resourceProvider.getString(R.string.auth_error_keyword_unknown_exception),
+                ignoreCase = true) -> {
                 Exception(resourceProvider.getString(R.string.error_no_internet))
             }
             e.message.isNullOrBlank() -> {

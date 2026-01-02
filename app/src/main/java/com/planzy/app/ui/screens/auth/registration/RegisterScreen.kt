@@ -1,4 +1,4 @@
-package com.planzy.app.ui.screens.registration
+package com.planzy.app.ui.screens.auth.registration
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.R
+import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.screens.components.AuthButton
@@ -32,17 +33,22 @@ import com.planzy.app.ui.screens.components.MessageCard
 import com.planzy.app.ui.screens.components.MessageType
 
 @Composable
-fun RegisterScreen(navController: NavController) {
+fun RegisterScreen(
+    navController: NavController,
+    deepLinkViewModel: DeepLinkViewModel
+) {
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context = context) }
     val authRepo = remember { AuthRepositoryImpl(resourceProvider = ResourceProviderImpl(context)) }
     val userRepo = remember { UserRepositoryImpl() }
+    val cooldownManager = remember { CooldownManager(context) }
 
     val viewModel: RegisterViewModel = viewModel(
         factory = RegisterViewModel.Factory(
             resourceProvider = resourceProvider,
             authRepository = authRepo,
-            userRepository = userRepo
+            userRepository = userRepo,
+            cooldownManager = cooldownManager
         )
     )
 
@@ -57,6 +63,12 @@ fun RegisterScreen(navController: NavController) {
     val fieldErrors by viewModel.fieldErrors.collectAsState()
     val canResendEmail by viewModel.canResendEmail.collectAsState()
     val resendCooldownSeconds by viewModel.resendCooldownSeconds.collectAsState()
+
+    LaunchedEffect(success) {
+        if (success) {
+            deepLinkViewModel.savePendingCredentials(email, password)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -108,7 +120,7 @@ fun RegisterScreen(navController: NavController) {
                     fontSize = 12.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 4.dp, top = 4.dp)
+                        .padding(start = 24.dp, top = 4.dp, end = 24.dp)
                 )
             }
 
@@ -134,7 +146,7 @@ fun RegisterScreen(navController: NavController) {
                     fontSize = 12.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 4.dp, top = 4.dp)
+                        .padding(start = 24.dp, top = 4.dp, end = 24.dp)
                 )
             }
 
@@ -150,7 +162,7 @@ fun RegisterScreen(navController: NavController) {
                 isError = fieldErrors.passwordError != null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp)
+                    .padding(horizontal = 20.dp)
                     .height(70.dp)
             )
             fieldErrors.passwordError?.let { errorMsg ->
@@ -160,7 +172,7 @@ fun RegisterScreen(navController: NavController) {
                     fontSize = 12.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 4.dp, top = 4.dp)
+                        .padding(start = 24.dp, top = 4.dp, end = 24.dp)
                 )
             }
 

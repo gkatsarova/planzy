@@ -16,6 +16,9 @@
     <string name="resend_verification_email">Resend verification email</string>
     <string name="loading">Loading…</string>
     <string name="verification_email">Verification email</string>
+    <string name="logging_in">Logging in</string>
+    <string name="dont_have_account">Don\'t have an account? Register</string>
+    <string name="email_verified_login">Your email is verified. You can log in now.</string>
 
     <string name="error_password_invalid">Password must be at least 8 characters including lowercase, uppercase, numbers and special symbols.</string>
     <string name="error_username_exists">This username already exists</string>
@@ -31,8 +34,39 @@
     <string name="error_email_verification">Email verification error</string>
     <string name="error_creating_auth_user">Failed to create auth user</string>
     <string name="error_no_internet">No internet connection. Please check your connection and try again.</string>
+    <string name="error_login_failed">Login failed. Please check your credentials and try again.</string>
+    <string name="error_email_not_verified">Please verify your email before logging in.</string>
+    <string name="error_email_not_found">This email is not registered</string>
+    <string name="error_session_expired">Session expired. Please request a new reset link.</string>
+    <string name="error_update_password">"Failed to update password. Please try again.</string>
+    <string name="error_session">Session expired or invalid</string>
+    <string name="error_invalid_reset_link">Invalid reset link</string>
+    <string name="error_password_reset_email_failed">Failed to send password reset email</string>
 
     <string name="success_registration">Registration successful! Welcome to Planzy.</string>
     <string name="success_verification_email_sent">Verification email sent. Please check your inbox.</string>
     <string name="success_resend_verification_email">Verification email has been resent. Please check your inbox.</string>
+    <string name="success_login">Login successful!</string>
+    <string name="error_invalid_credentials">Invalid email or password</string>
+    <string name="error_auth_failed">Authentication failed. Please try again</string>
+    <string name="auth_error_keyword_unknown_exception">UnknownException</string>
+    <string name="auth_error_keyword_invalid_credentials">invalid_credentials</string>
+    <string name="auth_error_keyword_email_not_confirmed">email_not_confirmed</string>
+    <string name="auth_error_keyword_not_confirmed">not_confirmed</string>
+    <string name="duplicate">duplicate</string>
+    <string name="already_exists">already exists</string>
+    <string name="unique">unique</string>
+    <string name="password_reset_email_sent">Check your email for reset instructions.</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="reset_password_description">Enter your new password below</string>
+    <string name="new_password">new password</string>
+    <string name="confirm_password">confirm password</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="resetting">Resetting…</string>
+    <string name="password_reset_success">Password reset successfully!</string>
+    <string name="error_passwords_dont_match">Passwords don\'t match</string>
+    <string name="cancel">Cancel</string>
+    <string name="redirecting">Redirecting</string>
+    <string name="resend_reset_email">Resend reset email</string>
+    <string name="success_password_updated">Password updated successfully</string>
 </resources>

@@ -5,12 +5,16 @@ import android.net.Uri
 import android.util.Log
 import com.planzy.app.R
 import com.planzy.app.data.remote.SupabaseClient
+import com.planzy.app.data.util.RecoverySessionManager
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.parseFragmentAndImportSession
 import kotlinx.coroutines.delay
 import com.planzy.app.data.util.ResourceProviderImpl
+import io.github.jan.supabase.annotations.SupabaseInternal
 
 class DeepLinkHandler(
-    private val resourceProvider: ResourceProviderImpl
+    private val resourceProvider: ResourceProviderImpl,
+    private val recoverySessionManager: RecoverySessionManager
 ) {
     private val TAG = DeepLinkHandler::class.java.simpleName
     private val userRepo = UserRepositoryImpl()
@@ -31,18 +35,69 @@ class DeepLinkHandler(
         }
     }
 
+    @OptIn(SupabaseInternal::class)
     private suspend fun handleAuthCallback(uri: Uri): DeepLinkResult {
-        val type = uri.getQueryParameter("type")
-        val accessToken = uri.getQueryParameter("access_token")
+        val fragment = uri.fragment
+        Log.d(TAG, "URI fragment: $fragment")
+
+        if (fragment.isNullOrEmpty()) {
+            Log.w(TAG, "No fragment in URI")
+            return DeepLinkResult.Unknown
+        }
+
+        val params = fragment.split("&").associate { param ->
+            val parts = param.split("=", limit = 2)
+            if (parts.size == 2) {
+                parts[0] to parts[1]
+            } else {
+                parts[0] to ""
+            }
+        }
+
+        val type = params["type"]
+        val accessToken = params["access_token"]
+        val refreshToken = params["refresh_token"]
 
         return when (type) {
             "signup", "email_confirmation" -> {
                 Log.d(TAG, "Email verification deep link received")
-                delay(2000)
-                handleEmailVerification()
+
+                try {
+                    SupabaseClient.client.auth.parseFragmentAndImportSession(uri.toString())
+
+                    delay(500)
+
+                    handleEmailVerification()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to import session from fragment: ${e.message}", e)
+                    DeepLinkResult.Error("Failed to verify email: ${e.message}")
+                }
             }
             "recovery" -> {
-                DeepLinkResult.PasswordRecovery(accessToken)
+                Log.d(TAG, "Password recovery deep link received")
+                try {
+                    if (accessToken.isNullOrEmpty() || refreshToken.isNullOrEmpty()) {
+                        Log.e(TAG, "Missing tokens in recovery link")
+                        return DeepLinkResult.Error(resourceProvider.getString(R.string.error_invalid_reset_link))
+                    }
+                    recoverySessionManager.saveRecoverySession(accessToken, refreshToken)
+
+                    Log.d(TAG, "Parsing recovery fragment and importing session...")
+
+                    SupabaseClient.client.auth.parseFragmentAndImportSession(uri.toString())
+
+                    delay(500)
+
+                    DeepLinkResult.PasswordReset
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to import recovery session: ${e.message}", e)
+                    if (recoverySessionManager.getRecoverySession() != null) {
+                        Log.d(TAG, "Recovery tokens saved locally, proceeding with password reset")
+                        DeepLinkResult.PasswordReset
+                    } else {
+                        DeepLinkResult.Error(resourceProvider.getString(R.string.error_session))
+                    }
+                }
             }
             else -> DeepLinkResult.Unknown
         }
@@ -51,8 +106,6 @@ class DeepLinkHandler(
     private suspend fun handleEmailVerification(): DeepLinkResult {
         return try {
             Log.d(TAG, "Processing email verification...")
-
-            delay(1500)
 
             val user = SupabaseClient.client.auth.currentUserOrNull()
 
@@ -82,8 +135,16 @@ class DeepLinkHandler(
                 Log.i(TAG, "Email verified and user record created")
                 DeepLinkResult.EmailVerified(email)
             } else {
-                Log.w(TAG, "Failed to create user record")
-                DeepLinkResult.Error(resourceProvider.getString(R.string.error_record_db_failed))
+                val errorMsg = result.exceptionOrNull()?.message
+                Log.e(TAG, "Failed to create user record")
+
+                if (errorMsg?.contains(resourceProvider.getString(R.string.duplicate), ignoreCase = true) == true ||
+                    errorMsg?.contains(resourceProvider.getString(R.string.already_exists), ignoreCase = true) == true ||
+                    errorMsg?.contains(resourceProvider.getString(R.string.unique), ignoreCase = true) == true) {
+                    DeepLinkResult.EmailVerified(email)
+                } else {
+                    DeepLinkResult.Error(resourceProvider.getString(R.string.error_record_db_failed))
+                }
             }
 
         } catch (e: Exception) {
@@ -97,6 +158,6 @@ sealed class DeepLinkResult {
     object NoDeepLink : DeepLinkResult()
     object Unknown : DeepLinkResult()
     data class EmailVerified(val email: String) : DeepLinkResult()
-    data class PasswordRecovery(val token: String?) : DeepLinkResult()
+    object PasswordReset : DeepLinkResult()
     data class Error(val message: String) : DeepLinkResult()
 }

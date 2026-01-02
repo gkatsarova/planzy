@@ -76,8 +76,8 @@ fun WelcomeScreen(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 WelcomeButton(
-                    text = stringResource(id = R.string.login),
-                    onClick = { navController.navigate(route = Login.route) },
+                    text = stringResource(id = R.string.register),
+                    onClick = { navController.navigate(route = Register.route) },
                     modifier = Modifier
                         .weight(weight = 1f)
                         .padding(10.dp)
@@ -85,8 +85,8 @@ fun WelcomeScreen(navController: NavController) {
                 )
 
                 WelcomeButton(
-                    text = stringResource(id = R.string.register),
-                    onClick = { navController.navigate(route = Register.route) },
+                    text = stringResource(id = R.string.login),
+                    onClick = { navController.navigate(route = Login.route) },
                     modifier = Modifier
                         .weight(weight = 1f)
                         .padding(10.dp)
