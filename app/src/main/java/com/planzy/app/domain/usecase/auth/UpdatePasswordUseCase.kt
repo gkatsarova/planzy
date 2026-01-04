@@ -1,4 +1,4 @@
-package com.planzy.app.domain.usecase
+package com.planzy.app.domain.usecase.auth
 
 import android.util.Log
 import com.planzy.app.R

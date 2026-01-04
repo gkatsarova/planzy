@@ -1,4 +1,4 @@
-package com.planzy.app.domain.usecase
+package com.planzy.app.domain.usecase.auth
 
 import com.planzy.app.R
 import com.planzy.app.data.util.ResourceProvider

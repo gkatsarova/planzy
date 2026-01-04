@@ -3,7 +3,7 @@ package com.planzy.app.usecase
 import com.planzy.app.data.model.User
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.repository.UserRepository
-import com.planzy.app.domain.usecase.CheckUsernameAvailabilityUseCase
+import com.planzy.app.domain.usecase.auth.CheckUsernameAvailabilityUseCase
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.mockk
