@@ -1,5 +1,6 @@
 package com.planzy.app.data.remote
 
+import android.util.Log
 import com.planzy.app.data.model.LocationDetailsResponse
 import com.planzy.app.data.model.PhotosResponse
 import com.planzy.app.data.model.ReviewsResponse
@@ -11,15 +12,27 @@ class TripadvisorApi {
 
     private val client = TripadvisorClient.httpClient
     private val apiKey = TripadvisorClient.getApiKey()
+    private val baseUrl = TripadvisorClient.getBaseUrl()
 
     suspend fun searchLocations(
         query: String,
-        language: String = "en"
+        language: String = "en",
+        latLong: String? = null,
+        radius: Int? = null,
+        radiusUnit: String = "km"
     ): Result<SearchResponse> = runCatching {
-        client.get("/location/search") {
+        Log.d("TripadvisorApi", "Searching for: $query")
+        Log.d("TripadvisorApi", "Location: $latLong")
+        Log.d("TripadvisorApi", "Using API key: $apiKey")
+
+        client.get("$baseUrl/location/search") {
             parameter("key", apiKey)
             parameter("searchQuery", query)
             parameter("language", language)
+
+            latLong?.let { parameter("latLong", it) }
+            radius?.let { parameter("radius", it) }
+            parameter("radiusUnit", radiusUnit)
         }.body<SearchResponse>()
     }
 
@@ -27,7 +40,7 @@ class TripadvisorApi {
         locationId: String,
         language: String = "en"
     ): Result<LocationDetailsResponse> = runCatching {
-        client.get("/location/$locationId/details") {
+        client.get("$baseUrl/location/$locationId/details") {
             parameter("key", apiKey)
             parameter("language", language)
         }.body<LocationDetailsResponse>()
@@ -36,7 +49,7 @@ class TripadvisorApi {
     suspend fun getLocationPhotos(
         locationId: String
     ): Result<PhotosResponse> = runCatching {
-        client.get("/location/$locationId/photos") {
+        client.get("$baseUrl/location/$locationId/photos") {
             parameter("key", apiKey)
         }.body<PhotosResponse>()
     }
@@ -45,7 +58,7 @@ class TripadvisorApi {
         locationId: String,
         language: String = "en"
     ): Result<ReviewsResponse> = runCatching {
-        client.get("/location/$locationId/reviews") {
+        client.get("$baseUrl/location/$locationId/reviews") {
             parameter("key", apiKey)
             parameter("language", language)
         }.body<ReviewsResponse>()

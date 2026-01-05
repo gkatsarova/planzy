@@ -7,7 +7,9 @@ interface PlacesRepository {
 
     suspend fun searchPlaces(
         query: String,
-        minRating: Double = 4.0
+        minRating: Double = 4.0,
+        latLong: String? = null,
+        radius: Int? = null
     ): Result<List<Place>>
 
     suspend fun getPlaceDetails(

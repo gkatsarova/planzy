@@ -1,11 +1,25 @@
 package com.planzy.app.data.model
 
+import android.util.Log
 import com.planzy.app.domain.model.ContactInfo
 import com.planzy.app.domain.model.Location
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.PlaceReview
 
 fun LocationDetailsResponse.toDomainModel(): Place {
+    Log.d("PlaceMapper", " Mapping place: $name")
+    Log.d("PlaceMapper", "  - Photo object: ${photo}")
+    Log.d("PlaceMapper", "  - Photo images: ${photo?.images}")
+    Log.d("PlaceMapper", "  - Large URL: ${photo?.images?.large?.url}")
+    Log.d("PlaceMapper", "  - Medium URL: ${photo?.images?.medium?.url}")
+    Log.d("PlaceMapper", "  - Original URL: ${photo?.images?.original?.url}")
+
+    val photoUrl = photo?.images?.large?.url
+        ?: photo?.images?.medium?.url
+        ?: photo?.images?.original?.url
+
+    Log.d("PlaceMapper", "  - Selected photoUrl: $photoUrl")
+
     return Place(
         id = locationId,
         name = name,
@@ -17,7 +31,7 @@ fun LocationDetailsResponse.toDomainModel(): Place {
         rating = rating ?: 0.0,
         reviewsCount = numReviews ?: 0,
         description = description,
-        photoUrl = photo?.images?.large?.url,
+        photoUrl = photoUrl,
         category = category?.localizedName,
         contact = ContactInfo(
             phone = phone,

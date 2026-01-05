@@ -12,7 +12,6 @@ import kotlinx.serialization.json.Json
 object TripadvisorClient {
 
     private const val BASE_URL = "https://api.content.tripadvisor.com/api/v1"
-    private const val REFERER_DOMAIN = "https://planzy.app"
     private const val TIMEOUT_MILLIS = 30_000L
 
     val httpClient = HttpClient(Android) {
@@ -37,12 +36,12 @@ object TripadvisorClient {
         }
 
         defaultRequest {
-            url(BASE_URL)
             headers.append("accept", "application/json")
-            headers.append("Referer", REFERER_DOMAIN)
             headers.append("User-Agent", "Planzy-Android/${BuildConfig.VERSION_NAME}")
         }
     }
 
     fun getApiKey(): String = BuildConfig.TRIPADVISOR_API_KEY
+
+    fun getBaseUrl(): String = BASE_URL
 }

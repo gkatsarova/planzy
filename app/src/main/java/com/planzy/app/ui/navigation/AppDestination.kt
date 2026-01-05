@@ -19,3 +19,7 @@ data object Welcome : AppDestination {
 data object Home : AppDestination {
     override val route = "home_screen"
 }
+
+data object Profile : AppDestination {
+    override val route = "profile_screen"
+}

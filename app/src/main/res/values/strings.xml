@@ -69,4 +69,10 @@
     <string name="redirecting">Redirecting</string>
     <string name="resend_reset_email">Resend reset email</string>
     <string name="success_password_updated">Password updated successfully</string>
+
+    <string name="profile">Profile</string>
+    <string name="search">Search</string>
+    <string name="close_search">Close search</string>
+    <string name="no_image">No image</string>
+
 </resources>

@@ -74,7 +74,7 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
         }
 
         composable(route = Home.route) {
-            HomeScreen()
+            HomeScreen(navController = navController)
         }
     }
 }
