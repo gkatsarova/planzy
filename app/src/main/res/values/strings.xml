@@ -75,4 +75,8 @@
     <string name="close_search">Close search</string>
     <string name="no_image">No image</string>
 
+    <string name="location_permission_title">Use Location</string>
+    <string name="location_permission_message">Planzy wants to use your location to recommend nearby places and improve your experience.</string>
+    <string name="allow">Allow</string>
+    <string name="deny">Deny</string>
 </resources>

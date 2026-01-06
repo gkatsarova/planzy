@@ -32,6 +32,9 @@ fun SearchBar(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier.fillMaxWidth(),
+        textStyle = LocalTextStyle.current.copy(
+            fontFamily = Raleway,
+            color = Lavender),
         placeholder = { Text(
             text = placeholder,
             fontFamily = Raleway,
@@ -62,7 +65,9 @@ fun SearchBar(
             focusedBorderColor = Lavender,
             unfocusedBorderColor = Lavender,
             focusedContainerColor = AmaranthPurple,
-            cursorColor = Lavender
+            cursorColor = Lavender,
+            focusedTextColor = Lavender,
+            unfocusedTextColor = Lavender
         )
     )
 }

@@ -104,4 +104,6 @@ dependencies {
     implementation(libs.ktor.client.logging)
 
     implementation(libs.play.services.location)
+
+    implementation(libs.mlkit.entity.extraction)
 }

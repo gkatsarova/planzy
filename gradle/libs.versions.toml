@@ -4,6 +4,7 @@ coreTesting = "2.2.0"
 kotlinxCoroutinesTest = "1.10.2"
 mockk = "1.14.7"
 playServicesLocation = "21.3.0"
+mlkitEntityExtraction = "16.0.0-beta5"
 supabase = "3.2.6"
 kotlin = "2.3.0"
 coreKtx = "1.17.0"
@@ -30,6 +31,7 @@ androidx-navigation-compose = { module = "androidx.navigation:navigation-compose
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+mlkit-entity-extraction = { group = "com.google.mlkit", name = "entity-extraction", version.ref = "mlkitEntityExtraction" }
 supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
 supabase-auth-kt = { module = "io.github.jan-tennert.supabase:auth-kt" }
 supabase-postgrest-kt = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
