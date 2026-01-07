@@ -1,7 +1,6 @@
 package com.planzy.app.ui.screens.home
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -22,26 +21,23 @@ class HomeViewModel(
 ) : ViewModel() {
 
     private val prefs = context.getSharedPreferences("planzy_prefs", Context.MODE_PRIVATE)
+    private val searchCache = mutableMapOf<String, List<Place>>()
+    private var lastSearchTime = 0L
 
     var places by mutableStateOf<List<Place>>(emptyList())
     var isLoading by mutableStateOf(false)
     var userLocation by mutableStateOf<Pair<Double, Double>?>(null)
-
     var locationPermissionGranted by mutableStateOf(prefs.getBoolean("perm_granted", false))
     var showLocationDialog by mutableStateOf(false)
 
     init {
         viewModelScope.launch {
             entityExtractor.initialize()
-            if (!locationPermissionGranted) {
-                showLocationDialog = true
-            }
+            if (!locationPermissionGranted) showLocationDialog = true
         }
     }
 
-    fun dismissLocationDialog() {
-        showLocationDialog = false
-    }
+    fun dismissLocationDialog() { showLocationDialog = false }
 
     fun setLocationPermission(granted: Boolean) {
         locationPermissionGranted = granted
@@ -50,86 +46,65 @@ class HomeViewModel(
     }
 
     fun searchForPlaces(query: String) {
-        if (query.isBlank()) return
+        val cleanQuery = query.trim()
+        if (cleanQuery.isBlank()) return
+
+        val now = System.currentTimeMillis()
+        if (now - lastSearchTime < 1000) return
+        lastSearchTime = now
+
+        searchCache[cleanQuery]?.let {
+            places = it
+            return
+        }
 
         viewModelScope.launch {
             isLoading = true
 
-            val hasCityPattern = containsCityPattern(query)
+            val extracted = entityExtractor.extractLocation(cleanQuery)
+            val words = cleanQuery.lowercase().split(" ")
+            val potentialCities = words.filter { it.length > 3 }.take(2)
+            val detectedCity = extracted?.locationText ?: potentialCities.firstOrNull()
 
-            val isGeneric = isGenericQuery(query)
+            val locationPosition = if (detectedCity != null) {
+                getLocationPosition(cleanQuery, detectedCity)
+            } else LocationPosition.NONE
 
-            val extracted = entityExtractor.extractLocation(query)
-            val mlKitDetectedCity = extracted != null
+            val hasExplicitLocation = detectedCity != null &&
+                    (locationPosition == LocationPosition.START || locationPosition == LocationPosition.MIDDLE)
 
-            val shouldUseGPS = locationPermissionGranted &&
-                    userLocation != null &&
-                    isGeneric &&
-                    !hasCityPattern &&
-                    !mlKitDetectedCity
+            val hasPermission = locationPermissionGranted
+            val hasUserLocation = userLocation != null
+            val noCityDetected = !hasExplicitLocation
 
-            Log.d("SearchFlow", """
-                Query: '$query'
-                Generic: $isGeneric
-                City pattern: $hasCityPattern
-                ML Kit city: ${extracted?.locationText}
-                Use GPS: $shouldUseGPS
-                GPS coords: $userLocation
-            """.trimIndent())
+            val shouldUseGPS = hasPermission && hasUserLocation && noCityDetected
 
-            val result = searchPlacesUseCase(
-                destination = query,
-                latLong = if (shouldUseGPS) "${userLocation!!.first},${userLocation!!.second}" else null,
-                radius = if (shouldUseGPS) 25 else null
-            )
+            val latLong = if (shouldUseGPS) "${userLocation!!.first},${userLocation!!.second}" else null
+            val radius = if (shouldUseGPS) 25 else null
 
+            val result = searchPlacesUseCase(cleanQuery, latLong = latLong, radius = radius)
             result.onSuccess {
                 places = it
-                Log.d("SearchFlow", "Found ${it.size} places")
+                searchCache[cleanQuery] = it
             }
-            result.onFailure {
-                Log.e("SearchFlow", "Search failed", it)
-            }
-
             isLoading = false
         }
     }
 
-    private fun containsCityPattern(query: String): Boolean {
-        val words = query.trim().split(Regex("\\s+"))
 
-        if (words.size >= 2) {
-            val genericTerms = listOf(
-                "restaurant", "hotel", "cafe", "park", "museum",
-                "bar", "pizza", "food", "coffee", "club", "pub",
-                "gym", "shop", "store", "mall", "cinema", "theatre", "sushi"
-            )
-
-            val hasGenericTerm = words.drop(1).any { word ->
-                genericTerms.any { it.equals(word, ignoreCase = true) }
-            }
-
-            if (hasGenericTerm) {
-                return true
-            }
+    private fun getLocationPosition(query: String, locationText: String): LocationPosition {
+        val normalizedQuery = query.lowercase()
+        val normalizedLocation = locationText.lowercase()
+        return when {
+            normalizedQuery.startsWith(normalizedLocation) || normalizedQuery.endsWith(normalizedLocation) -> LocationPosition.START
+            normalizedQuery.contains(normalizedLocation) -> LocationPosition.MIDDLE
+            else -> LocationPosition.NONE
         }
-
-        return false
     }
 
-    private fun isGenericQuery(query: String): Boolean {
-        val genericTerms = listOf(
-            "restaurant", "hotel", "cafe", "park", "museum",
-            "bar", "pizza", "food", "coffee", "club", "pub",
-            "gym", "shop", "store", "mall", "cinema", "theatre", "sushi"
-        )
-        val lowerQuery = query.lowercase()
-        return genericTerms.any { lowerQuery.contains(it) }
-    }
+    fun setUserLocation(lat: Double, lng: Double) { userLocation = lat to lng }
 
-    fun setUserLocation(lat: Double, lng: Double) {
-        userLocation = lat to lng
-    }
+    enum class LocationPosition { NONE, START, MIDDLE }
 
     class Factory(
         private val context: Context,

@@ -17,20 +17,41 @@ class PlacesRepositoryImpl(
         radius: Int?
     ): Result<List<Place>> {
         return try {
-            val response = tripadvisorApi.searchLocations(query, latLong = latLong, radius = radius).getOrThrow()
-            val results = response.data ?: emptyList()
+            val response = tripadvisorApi.searchLocations(
+                query = query,
+                latLong = latLong,
+                radius = radius
+            ).getOrThrow()
+
+            val results = response.data ?: listOf()
 
             val places = results.mapNotNull { item ->
-                val details = tripadvisorApi.getLocationDetails(item.locationId).getOrNull()
-                if (details != null) {
-                    var domainPlace = details.toDomainModel()
+                val locationId = item.locationId
+                if (locationId.isBlank()) return@mapNotNull null
 
-                    if (domainPlace.photoUrl == null) {
-                        val photos = tripadvisorApi.getLocationPhotos(item.locationId).getOrNull()
-                        domainPlace = domainPlace.copy(photoUrl = photos?.data?.firstOrNull()?.images?.large?.url)
-                    }
-                    domainPlace
-                } else null
+                val detailsResult = tripadvisorApi.getLocationDetails(locationId).getOrNull()
+                if (detailsResult == null) return@mapNotNull null
+
+                var domainPlace = detailsResult.toDomainModel()
+
+                if (domainPlace.photoUrl == null || domainPlace.photoUrl.isEmpty()) {
+                    val photosResult = tripadvisorApi.getLocationPhotos(locationId).getOrNull()
+                    val photoUrl = photosResult?.data?.firstOrNull()?.images?.large?.url
+
+                    domainPlace = Place(
+                        id = domainPlace.id,
+                        name = domainPlace.name,
+                        location = domainPlace.location,
+                        rating = domainPlace.rating,
+                        reviewsCount = domainPlace.reviewsCount,
+                        description = domainPlace.description,
+                        photoUrl = photoUrl ?: domainPlace.photoUrl,
+                        category = domainPlace.category,
+                        contact = domainPlace.contact
+                    )
+                }
+
+                domainPlace
             }
             Result.success(places)
         } catch (e: Exception) {
@@ -38,9 +59,12 @@ class PlacesRepositoryImpl(
         }
     }
 
-    override suspend fun getPlaceDetails(locationId: String) =
+    override suspend fun getPlaceDetails(locationId: String): Result<Place> =
         tripadvisorApi.getLocationDetails(locationId).map { it.toDomainModel() }
 
-    override suspend fun getPlacePhotos(locationId: String) = Result.success(emptyList<String>())
-    override suspend fun getPlaceReviews(locationId: String, limit: Int) = Result.success(emptyList<PlaceReview>())
+    override suspend fun getPlacePhotos(locationId: String): Result<List<String>> =
+        Result.success(listOf())
+
+    override suspend fun getPlaceReviews(locationId: String, limit: Int): Result<List<PlaceReview>> =
+        Result.success(listOf())
 }

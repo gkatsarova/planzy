@@ -12,14 +12,12 @@ class SearchPlacesUseCase(
         maxResults: Int = 10,
         latLong: String? = null,
         radius: Int? = null
-    ): Result<List<Place>> {
-        return placesRepository.searchPlaces(
-            query = destination,
-            minRating = minRating,
-            latLong = latLong,
-            radius = radius
-        ).mapCatching { places ->
-            places.sortedByDescending { it.rating }.take(maxResults)
-        }
+    ): Result<List<Place>> = placesRepository.searchPlaces(
+        query = destination,
+        minRating = minRating,
+        latLong = latLong,
+        radius = radius
+    ).mapCatching { places ->
+        places.sortedByDescending { it.rating }.take(maxResults)
     }
 }

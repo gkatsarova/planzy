@@ -25,22 +25,25 @@ class LocationEntityExtractor {
         extractor?.annotate(params)
             ?.addOnSuccessListener { result ->
                 var foundInfo: LocationInfo? = null
-                for (entityAnnotation in result) {
-                    for (entity in entityAnnotation.entities) {
+
+                result.forEach { entityAnnotation ->
+                    entityAnnotation.entities.forEach { entity ->
                         if (entity.type == Entity.TYPE_ADDRESS) {
                             foundInfo = LocationInfo(
                                 hasLocation = true,
                                 locationText = entityAnnotation.annotatedText,
                                 type = LocationType.ADDRESS
                             )
-                            break
+                            return@forEach
                         }
                     }
-                    if (foundInfo != null) break
+                    if (foundInfo != null) return@forEach
                 }
                 continuation.resume(foundInfo)
             }
-            ?.addOnFailureListener { continuation.resume(null) }
+            ?.addOnFailureListener {
+                continuation.resume(null)
+            }
     }
 }
 
