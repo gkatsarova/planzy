@@ -17,9 +17,11 @@ import com.google.android.gms.location.Priority
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.PlacesRepositoryImpl
 import com.planzy.app.data.util.LocationEntityExtractor
+import com.planzy.app.ui.navigation.Home
 import com.planzy.app.ui.screens.components.LocationPermissionDialog
 import com.planzy.app.ui.screens.components.PlaceCard
 import com.planzy.app.ui.screens.components.PlanzyTopAppBar
+import com.planzy.app.ui.screens.SearchViewModel
 
 @SuppressLint("MissingPermission")
 @Composable
@@ -29,44 +31,47 @@ fun HomeScreen(navController: NavController) {
     val repository = remember { PlacesRepositoryImpl(api) }
     val entityExtractor = remember { LocationEntityExtractor() }
 
-    val viewModel: HomeViewModel = viewModel(
-        factory = HomeViewModel.Factory(context, repository, entityExtractor)
+    val searchViewModel: SearchViewModel = viewModel(
+        factory = SearchViewModel.Factory(context, repository, entityExtractor)
     )
 
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    LaunchedEffect(viewModel.locationPermissionGranted) {
-        if (viewModel.locationPermissionGranted) {
+    LaunchedEffect(searchViewModel.locationPermissionGranted) {
+        if (searchViewModel.locationPermissionGranted) {
             fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                 .addOnSuccessListener { loc ->
-                    loc?.let { viewModel.setUserLocation(it.latitude, it.longitude) }
+                    loc?.let { searchViewModel.setUserLocation(it.latitude, it.longitude) }
                 }
         }
     }
 
     LocationPermissionDialog(
-        showDialog = viewModel.showLocationDialog,
-        onDismiss = { viewModel.dismissLocationDialog() },
+        showDialog = searchViewModel.showLocationDialog,
+        onDismiss = { searchViewModel.dismissLocationDialog() },
         onPermissionResult = { granted ->
-            viewModel.setLocationPermission(granted)
+            searchViewModel.setLocationPermission(granted)
         }
     )
 
     Scaffold(
         topBar = {
-            PlanzyTopAppBar(title = "Home", navController)
-            { viewModel.searchForPlaces(it) }
+            PlanzyTopAppBar(
+                title = Home.title,
+                navController = navController,
+                onSearch = { searchViewModel.searchForPlaces(it) }
+            )
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
-            if (viewModel.isLoading) {
+            if (searchViewModel.isLoading) {
                 CircularProgressIndicator(Modifier.align(Alignment.Center))
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(viewModel.places) { place ->
+                    items(searchViewModel.places) { place ->
                         PlaceCard(place = place, onCardClick = { })
                     }
                 }

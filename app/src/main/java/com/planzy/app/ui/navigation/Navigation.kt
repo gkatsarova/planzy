@@ -10,6 +10,7 @@ import com.planzy.app.ui.screens.auth.registration.DeepLinkViewModel
 import com.planzy.app.ui.screens.auth.registration.RegisterScreen
 import com.planzy.app.ui.screens.auth.login.LoginScreen
 import com.planzy.app.ui.screens.home.HomeScreen
+import com.planzy.app.ui.screens.profile.ProfileScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 
 @Composable
@@ -75,6 +76,10 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
 
         composable(route = Home.route) {
             HomeScreen(navController = navController)
+        }
+
+        composable(route = Profile.route) {
+            ProfileScreen()
         }
     }
 }
