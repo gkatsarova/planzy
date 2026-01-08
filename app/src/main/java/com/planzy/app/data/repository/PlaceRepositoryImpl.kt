@@ -25,34 +25,23 @@ class PlacesRepositoryImpl(
 
             val results = response.data ?: listOf()
 
-            val places = results.mapNotNull { item ->
+            val places = results.map { item ->
                 val locationId = item.locationId
-                if (locationId.isBlank()) return@mapNotNull null
+                if (locationId.isBlank()) return@map null
 
-                val detailsResult = tripadvisorApi.getLocationDetails(locationId).getOrNull()
-                if (detailsResult == null) return@mapNotNull null
-
+                val detailsResult = tripadvisorApi.getLocationDetails(locationId).getOrThrow()
                 var domainPlace = detailsResult.toDomainModel()
 
-                if (domainPlace.photoUrl == null || domainPlace.photoUrl.isEmpty()) {
+                if (domainPlace.photoUrl.isNullOrEmpty()) {
                     val photosResult = tripadvisorApi.getLocationPhotos(locationId).getOrNull()
                     val photoUrl = photosResult?.data?.firstOrNull()?.images?.large?.url
-
-                    domainPlace = Place(
-                        id = domainPlace.id,
-                        name = domainPlace.name,
-                        location = domainPlace.location,
-                        rating = domainPlace.rating,
-                        reviewsCount = domainPlace.reviewsCount,
-                        description = domainPlace.description,
-                        photoUrl = photoUrl ?: domainPlace.photoUrl,
-                        category = domainPlace.category,
-                        contact = domainPlace.contact
-                    )
+                    if (photoUrl != null) {
+                        domainPlace = domainPlace.copy(photoUrl = photoUrl)
+                    }
                 }
-
                 domainPlace
-            }
+            }.filterNotNull()
+
             Result.success(places)
         } catch (e: Exception) {
             Result.failure(e)
@@ -63,7 +52,9 @@ class PlacesRepositoryImpl(
         tripadvisorApi.getLocationDetails(locationId).map { it.toDomainModel() }
 
     override suspend fun getPlacePhotos(locationId: String): Result<List<String>> =
-        Result.success(listOf())
+        tripadvisorApi.getLocationPhotos(locationId).map { response ->
+            response.data?.mapNotNull { it.images?.large?.url } ?: emptyList()
+        }
 
     override suspend fun getPlaceReviews(locationId: String, limit: Int): Result<List<PlaceReview>> =
         Result.success(listOf())

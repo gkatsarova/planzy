@@ -79,4 +79,11 @@
     <string name="location_permission_message">Planzy wants to use your location to recommend nearby places and improve your experience.</string>
     <string name="allow">Allow</string>
     <string name="deny">Deny</string>
+    <string name="api_error_429">API_ERROR_429</string>
+    <string name="api_error_401">API_ERROR_401</string>
+    <string name="unable_to_resolve_host">Unable to resolve host</string>
+    <string name="error_no_places_found">Didn\'t find any places matching your search</string>
+    <string name="error_api_limit">Too many requests. Please try again in a moment.</string>
+    <string name="error_unauthorized">Server authorization failed.</string>
+    <string name="error_unknown">Something went wrong. Please try again.</string>
 </resources>

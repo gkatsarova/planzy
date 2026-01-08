@@ -1,5 +1,6 @@
 package com.planzy.app.data.util
 
+import android.util.Log
 import com.google.mlkit.nl.entityextraction.*
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -7,45 +8,28 @@ import kotlin.coroutines.resume
 class LocationEntityExtractor {
     private var extractor: EntityExtractor? = null
 
-    suspend fun initialize(): Boolean = suspendCancellableCoroutine { continuation ->
+    suspend fun initialize() = suspendCancellableCoroutine { continuation ->
         val options = EntityExtractorOptions.Builder(EntityExtractorOptions.ENGLISH).build()
         extractor = EntityExtraction.getClient(options)
+
         extractor?.downloadModelIfNeeded()
-            ?.addOnSuccessListener { continuation.resume(true) }
-            ?.addOnFailureListener { continuation.resume(false) }
+            ?.addOnSuccessListener { continuation.resume(Unit) }
+            ?.addOnFailureListener {
+                Log.e("MLKit", "Model download failed: ${it.message}")
+                continuation.resume(Unit)
+            }
     }
 
-    suspend fun extractLocation(query: String): LocationInfo? = suspendCancellableCoroutine { continuation ->
-        if (extractor == null) {
-            continuation.resume(null)
-            return@suspendCancellableCoroutine
-        }
+    suspend fun extractLocation(text: String): EntityAnnotation? = suspendCancellableCoroutine { continuation ->
+        val params = EntityExtractionParams.Builder(text).build()
 
-        val params = EntityExtractionParams.Builder(query).build()
         extractor?.annotate(params)
-            ?.addOnSuccessListener { result ->
-                var foundInfo: LocationInfo? = null
-
-                result.forEach { entityAnnotation ->
-                    entityAnnotation.entities.forEach { entity ->
-                        if (entity.type == Entity.TYPE_ADDRESS) {
-                            foundInfo = LocationInfo(
-                                hasLocation = true,
-                                locationText = entityAnnotation.annotatedText,
-                                type = LocationType.ADDRESS
-                            )
-                            return@forEach
-                        }
-                    }
-                    if (foundInfo != null) return@forEach
-                }
-                continuation.resume(foundInfo)
+            ?.addOnSuccessListener { annotations ->
+                continuation.resume(annotations.firstOrNull())
             }
-            ?.addOnFailureListener {
+            ?.addOnFailureListener { e ->
+                Log.e("MLKit", "Extraction failed: ${e.message}")
                 continuation.resume(null)
             }
     }
 }
-
-enum class LocationType {ADDRESS}
-data class LocationInfo(val hasLocation: Boolean, val locationText: String, val type: LocationType)
