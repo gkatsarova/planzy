@@ -11,14 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.planzy.app.data.remote.TripadvisorApi
-import com.planzy.app.data.repository.PlacesRepositoryImpl
-import com.planzy.app.data.util.LocationEntityExtractor
-import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.ui.navigation.Home
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.LocationPermissionDialog
@@ -28,16 +23,11 @@ import com.planzy.app.ui.theme.ErrorColor
 
 @SuppressLint("MissingPermission")
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(
+    navController: NavController,
+    searchViewModel: SearchViewModel
+) {
     val context = LocalContext.current
-    val api = remember { TripadvisorApi() }
-    val repository = remember { PlacesRepositoryImpl(api) }
-    val entityExtractor = remember { LocationEntityExtractor() }
-    val resourceProvider = remember { ResourceProviderImpl(context) }
-    val searchViewModel: SearchViewModel = viewModel(
-        factory = SearchViewModel.Factory(context, repository, entityExtractor, resourceProvider)
-    )
-
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
     LaunchedEffect(searchViewModel.locationPermissionGranted) {

@@ -22,9 +22,8 @@ fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
-    placeholder: String = stringResource(id = R.string.search),
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    placeholder: String = stringResource(id = R.string.search)
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -34,11 +33,13 @@ fun SearchBar(
         modifier = modifier.fillMaxWidth(),
         textStyle = LocalTextStyle.current.copy(
             fontFamily = Raleway,
-            color = Lavender),
+            color = Lavender,
+            fontSize = MaterialTheme.typography.bodyLarge.fontSize),
         placeholder = { Text(
             text = placeholder,
             fontFamily = Raleway,
-            color = Lavender
+            color = Lavender,
+            fontSize = MaterialTheme.typography.bodyLarge.fontSize
         ) },
         leadingIcon = {
             Icon(
@@ -60,7 +61,6 @@ fun SearchBar(
                 focusManager.clearFocus()
             }
         ),
-        enabled = enabled,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Lavender,
             unfocusedBorderColor = Lavender,

@@ -23,11 +23,11 @@ class PlacesRepositoryImpl(
                 radius = radius
             ).getOrThrow()
 
-            val results = response.data ?: listOf()
+            val results = response.data ?: emptyList()
 
-            val places = results.map { item ->
+            val places = results.mapNotNull { item ->
                 val locationId = item.locationId
-                if (locationId.isBlank()) return@map null
+                if (locationId.isBlank()) return@mapNotNull null
 
                 val detailsResult = tripadvisorApi.getLocationDetails(locationId).getOrThrow()
                 var domainPlace = detailsResult.toDomainModel()
@@ -40,7 +40,7 @@ class PlacesRepositoryImpl(
                     }
                 }
                 domainPlace
-            }.filterNotNull()
+            }
 
             Result.success(places)
         } catch (e: Exception) {

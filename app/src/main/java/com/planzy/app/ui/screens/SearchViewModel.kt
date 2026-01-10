@@ -15,6 +15,8 @@ import com.planzy.app.domain.usecase.api.SearchPlacesUseCase
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import com.google.mlkit.nl.entityextraction.Entity
+import com.planzy.app.data.util.HttpStatusCodes.TOO_MANY_REQUESTS
+import com.planzy.app.data.util.HttpStatusCodes.UNAUTHORIZED
 
 class SearchViewModel(
     private val searchPlacesUseCase: SearchPlacesUseCase,
@@ -22,6 +24,13 @@ class SearchViewModel(
     private val resourceProvider: ResourceProvider,
     context: Context
 ) : ViewModel() {
+
+    companion object {
+        private val TAG = SearchViewModel::class.java.simpleName
+        private const val MIN_WORD_LENGTH = 4
+        private const val DEFAULT_SEARCH_RADIUS = 25
+        private const val NETWORK_ERROR_HOST = "Unable to resolve host"
+    }
 
     private val prefs = context.getSharedPreferences("planzy_prefs", Context.MODE_PRIVATE)
     private val searchCache = mutableMapOf<String, List<Place>>()
@@ -63,6 +72,40 @@ class SearchViewModel(
         showLocationDialog = false
     }
 
+    private suspend fun detectLocationInQuery(query: String): Boolean {
+        val words = query.split(" ").filter { it.isNotBlank() }
+
+        for (word in words) {
+            val testWord = word.lowercase().replaceFirstChar { it.uppercase() }
+            val annotation = entityExtractor.extractLocation(testWord)
+            val isMlAddress = annotation?.entities?.any { it.type == Entity.TYPE_ADDRESS } ?: false
+
+            if (isMlAddress || (word.length >= MIN_WORD_LENGTH && words.size > 1)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun buildSearchParameters(foundLocationInText: Boolean): Pair<String?, Int?> {
+        val shouldUseGPS = locationPermissionGranted && userLocation != null && !foundLocationInText
+
+        val latLong = if (shouldUseGPS) "${userLocation!!.first},${userLocation!!.second}" else null
+        val radius = if (shouldUseGPS) DEFAULT_SEARCH_RADIUS else null
+
+        return Pair(latLong, radius)
+    }
+
+    private fun mapExceptionToErrorResource(exception: Throwable): Int {
+        val msg = exception.message ?: ""
+        return when {
+            msg.contains(TOO_MANY_REQUESTS.toString()) -> R.string.error_api_limit
+            msg.contains(UNAUTHORIZED.toString()) -> R.string.error_unauthorized
+            msg.contains(NETWORK_ERROR_HOST) -> R.string.error_no_internet
+            else -> R.string.error_unknown
+        }
+    }
+
     fun searchForPlaces(query: String) {
         val cleanQuery = query.trim()
         if (cleanQuery.isBlank()) {
@@ -81,27 +124,11 @@ class SearchViewModel(
             isLoading = true
             errorMessage = null
 
-            val words = cleanQuery.split(" ").filter { it.isNotBlank() }
-            var foundLocationInText = false
+            val foundLocationInText = detectLocationInQuery(cleanQuery)
 
-            for (word in words) {
-                val testWord = word.lowercase().replaceFirstChar { it.uppercase() }
-                val annotation = entityExtractor.extractLocation(testWord)
+            val (latLong, radius) = buildSearchParameters(foundLocationInText)
 
-                val isMlAddress = annotation?.entities?.any { it.type == Entity.TYPE_ADDRESS } ?: false
-
-                if (isMlAddress || (word.length >= 4 && words.size > 1)) {
-                    foundLocationInText = true
-                    break
-                }
-            }
-
-            val shouldUseGPS = locationPermissionGranted && userLocation != null && !foundLocationInText
-
-            Log.d("PlanzySearch", "Query: $cleanQuery  Location Detected: $foundLocationInText GPS Active: $shouldUseGPS")
-
-            val latLong = if (shouldUseGPS) "${userLocation!!.first},${userLocation!!.second}" else null
-            val radius = if (shouldUseGPS) 25 else null
+            Log.d(TAG, "Query: $cleanQuery  Location Detected: $foundLocationInText GPS Active: ${latLong != null}")
 
             val result = searchPlacesUseCase(cleanQuery, latLong = latLong, radius = radius)
 
@@ -112,14 +139,7 @@ class SearchViewModel(
                     errorMessage = resourceProvider.getString(R.string.error_no_places_found)
                 }
             }.onFailure { exception ->
-                val msg = exception.message ?: ""
-                val resId = when {
-                    msg.contains(resourceProvider.getString(R.string.api_error_429)) -> R.string.error_api_limit
-                    msg.contains(resourceProvider.getString(R.string.api_error_401)) -> R.string.error_unauthorized
-                    msg.contains(resourceProvider.getString(R.string.unable_to_resolve_host)) -> R.string.error_no_internet
-                    else -> R.string.error_unknown
-                }
-                errorMessage = resourceProvider.getString(resId)
+                errorMessage = resourceProvider.getString(mapExceptionToErrorResource(exception))
             }
 
             isLoading = false

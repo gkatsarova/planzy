@@ -1,6 +1,7 @@
 package com.planzy.app.data.remote
 
 import com.planzy.app.data.model.*
+import com.planzy.app.data.util.HttpStatusCodes
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -22,7 +23,7 @@ class TripadvisorApi {
             radius?.let { parameter("radius", it) }
         }
 
-        if (response.status.value != 200) {
+        if (response.status.value != HttpStatusCodes.OK) {
             throw Exception("API_ERROR_${response.status.value}")
         }
         response.body<SearchResponse>()

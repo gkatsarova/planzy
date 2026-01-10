@@ -26,7 +26,7 @@ object TripadvisorClient {
 
         install(Logging) {
             logger = Logger.ANDROID
-            level = if (BuildConfig.DEBUG) LogLevel.ALL else LogLevel.NONE
+            level = LogLevel.ALL
         }
 
         install(HttpTimeout) {
