@@ -1,15 +1,23 @@
 package com.planzy.app.ui.navigation
 
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.DeepLinkResult
+import com.planzy.app.data.repository.PlacesRepositoryImpl
+import com.planzy.app.data.util.LocationEntityExtractor
+import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.auth.registration.DeepLinkViewModel
 import com.planzy.app.ui.screens.auth.registration.RegisterScreen
 import com.planzy.app.ui.screens.auth.login.LoginScreen
 import com.planzy.app.ui.screens.home.HomeScreen
+import com.planzy.app.ui.screens.profile.ProfileScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 
 @Composable
@@ -17,6 +25,7 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
     val navController = rememberNavController()
     val deepLinkResult by deepLinkViewModel.deepLinkResult.collectAsState()
     var hasHandledDeepLink by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     LaunchedEffect(deepLinkResult) {
         when (deepLinkResult) {
@@ -54,6 +63,17 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
         }
     }
 
+    val searchViewModel: SearchViewModel = viewModel(
+        factory = remember {
+            SearchViewModel.Factory(
+                context = context,
+                repository = PlacesRepositoryImpl(TripadvisorApi()),
+                entityExtractor = LocationEntityExtractor(),
+                resourceProvider = ResourceProviderImpl(context)
+            )
+        }
+    )
+
     NavHost(navController = navController, startDestination = Welcome.route) {
         composable(route = Welcome.route) {
             WelcomeScreen(navController = navController)
@@ -74,7 +94,13 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
         }
 
         composable(route = Home.route) {
-            HomeScreen()
+            HomeScreen(
+                navController = navController,
+                searchViewModel = searchViewModel)
+        }
+
+        composable(route = Profile.route) {
+            ProfileScreen()
         }
     }
 }

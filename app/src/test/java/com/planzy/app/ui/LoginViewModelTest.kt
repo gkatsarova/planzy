@@ -4,10 +4,10 @@ import com.planzy.app.R
 import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.repository.AuthRepository
-import com.planzy.app.domain.usecase.LoginUseCase
-import com.planzy.app.domain.usecase.ResendVerificationEmailUseCase
-import com.planzy.app.domain.usecase.SendPasswordResetEmailUseCase
-import com.planzy.app.domain.usecase.UpdatePasswordUseCase
+import com.planzy.app.domain.usecase.auth.LoginUseCase
+import com.planzy.app.domain.usecase.auth.ResendVerificationEmailUseCase
+import com.planzy.app.domain.usecase.auth.SendPasswordResetEmailUseCase
+import com.planzy.app.domain.usecase.auth.UpdatePasswordUseCase
 import com.planzy.app.ui.screens.auth.login.LoginViewModel
 import io.mockk.coEvery
 import io.mockk.every

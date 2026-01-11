@@ -69,4 +69,18 @@
     <string name="redirecting">Redirecting</string>
     <string name="resend_reset_email">Resend reset email</string>
     <string name="success_password_updated">Password updated successfully</string>
+
+    <string name="profile">Profile</string>
+    <string name="search">Search</string>
+    <string name="close_search">Close search</string>
+    <string name="no_image">No image</string>
+
+    <string name="location_permission_title">Use Location</string>
+    <string name="location_permission_message">Planzy wants to use your location to recommend nearby places and improve your experience.</string>
+    <string name="allow">Allow</string>
+    <string name="deny">Deny</string>
+    <string name="error_no_places_found">Didn\'t find any places matching your search</string>
+    <string name="error_api_limit">Too many requests. Please try again in a moment.</string>
+    <string name="error_unauthorized">Server authorization failed.</string>
+    <string name="error_unknown">Something went wrong. Please try again.</string>
 </resources>
