@@ -8,11 +8,14 @@ import com.planzy.app.R
 import com.planzy.app.data.repository.PlacesRepositoryImpl
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
+import com.planzy.app.domain.model.PlaceReview
 import com.planzy.app.domain.usecase.api.GetPlaceDetailsUseCase
+import com.planzy.app.domain.usecase.api.GetPlaceReviewsUseCase
 import kotlinx.coroutines.launch
 
 class PlaceDetailsViewModel(
     private val getPlaceDetailsUseCase: GetPlaceDetailsUseCase,
+    private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase,
     private val resourceProvider: ResourceProvider,
     private val locationId: String
 ) : ViewModel() {
@@ -21,13 +24,18 @@ class PlaceDetailsViewModel(
         private set
     var photos by mutableStateOf<List<String>>(emptyList())
         private set
+    var reviews by mutableStateOf<List<PlaceReview>>(emptyList())
+        private set
     var isLoading by mutableStateOf(false)
+        private set
+    var isLoadingReviews by mutableStateOf(false)
         private set
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
     init {
         loadPlaceDetails()
+        loadReviews()
     }
 
     fun loadPlaceDetails() {
@@ -53,8 +61,24 @@ class PlaceDetailsViewModel(
         }
     }
 
+    private fun loadReviews() {
+        viewModelScope.launch {
+            isLoadingReviews = true
+
+            getPlaceReviewsUseCase(locationId, limit = 5)
+                .onSuccess { reviewsList ->
+                    reviews = reviewsList
+                }
+                .onFailure { exception ->
+                }
+
+            isLoadingReviews = false
+        }
+    }
+
     fun onRetry() {
         loadPlaceDetails()
+        loadReviews()
     }
 
     class Factory(
@@ -67,6 +91,7 @@ class PlaceDetailsViewModel(
                 @Suppress("UNCHECKED_CAST")
                 return PlaceDetailsViewModel(
                     GetPlaceDetailsUseCase(repository),
+                    GetPlaceReviewsUseCase(repository),
                     resourceProvider,
                     locationId
                 ) as T

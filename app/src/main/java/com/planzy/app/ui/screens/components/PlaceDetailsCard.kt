@@ -42,7 +42,7 @@ fun PlaceDetailsCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(100.dp)
+                            .size(120.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(MediumBluePurple),
                         contentAlignment = Alignment.Center

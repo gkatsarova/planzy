@@ -48,4 +48,16 @@ class TripadvisorApi {
         if (!response.status.isSuccess()) throw Exception("API_ERROR_${response.status.value}")
         response.body<PhotosResponse>()
     }
+
+    suspend fun getLocationReviews(
+        locationId: String,
+        limit: Int = 5
+    ): Result<ReviewsResponse> = runCatching {
+        val response = client.get("$baseUrl/location/$locationId/reviews") {
+            parameter("key", apiKey)
+            parameter("limit", limit)
+        }
+        if (!response.status.isSuccess()) throw Exception("API_ERROR_${response.status.value}")
+        response.body<ReviewsResponse>()
+    }
 }

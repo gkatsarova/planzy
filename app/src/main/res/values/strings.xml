@@ -87,4 +87,7 @@
     <string name="error_loading_details">Error loading place details</string>
     <string name="visit_website">Visit Website</string>
     <string name="retry">Try Again</string>
+    <string name="reviews_title">Reviews</string>
+    <string name="no_reviews">No reviews yet</string>
+    <string name="error_loading_reviews">Error loading reviews</string>
 </resources>

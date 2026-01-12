@@ -74,6 +74,13 @@ class PlacesRepositoryImpl(
             response.data?.mapNotNull { it.images?.large?.url } ?: emptyList()
         }
 
-    override suspend fun getPlaceReviews(locationId: String, limit: Int): Result<List<PlaceReview>> =
-        Result.success(listOf())
+    override suspend fun getPlaceReviews(locationId: String, limit: Int): Result<List<PlaceReview>> {
+        return try {
+            val reviewsResponse = tripadvisorApi.getLocationReviews(locationId, limit).getOrThrow()
+            val reviews = reviewsResponse.data?.map { it.toDomainModel() } ?: emptyList()
+            Result.success(reviews)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

@@ -26,6 +26,7 @@ import com.planzy.app.ui.screens.components.PlaceCard
 import com.planzy.app.ui.screens.components.PlaceDetailsCard
 import com.planzy.app.ui.screens.components.PlanzyTopAppBar
 import com.planzy.app.ui.screens.components.RetrySection
+import com.planzy.app.ui.screens.components.ReviewsSection
 import com.planzy.app.ui.theme.*
 
 @Composable
@@ -132,8 +133,6 @@ fun PlaceDetailsScreen(
                                 .verticalScroll(scrollState),
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
-                            Spacer(modifier = Modifier.height(16.dp))
-
                             Text(
                                 text = place.name,
                                 fontFamily = Raleway,
@@ -142,6 +141,11 @@ fun PlaceDetailsScreen(
                             )
 
                             PlaceDetailsCard(place = place)
+
+                            ReviewsSection(
+                                reviews = viewModel.reviews,
+                                isLoading = viewModel.isLoadingReviews
+                            )
                         }
                     }
                 }
