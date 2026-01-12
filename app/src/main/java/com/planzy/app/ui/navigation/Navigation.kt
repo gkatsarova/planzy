@@ -4,9 +4,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.DeepLinkResult
 import com.planzy.app.data.repository.PlacesRepositoryImpl
@@ -17,6 +19,7 @@ import com.planzy.app.ui.screens.auth.registration.DeepLinkViewModel
 import com.planzy.app.ui.screens.auth.registration.RegisterScreen
 import com.planzy.app.ui.screens.auth.login.LoginScreen
 import com.planzy.app.ui.screens.home.HomeScreen
+import com.planzy.app.ui.screens.place.PlaceDetailsScreen
 import com.planzy.app.ui.screens.profile.ProfileScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 
@@ -101,6 +104,22 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
 
         composable(route = Profile.route) {
             ProfileScreen()
+        }
+
+        composable(
+            route = PlaceDetails.routeWithArgs,
+            arguments = listOf(
+                navArgument(PlaceDetails.ARG_PLACE_ID) {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val placeId = backStackEntry.arguments?.getString(PlaceDetails.ARG_PLACE_ID) ?: ""
+
+            PlaceDetailsScreen(
+                navController = navController,
+                placeId = placeId
+            )
         }
     }
 }

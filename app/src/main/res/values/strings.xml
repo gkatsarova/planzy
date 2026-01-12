@@ -83,4 +83,9 @@
     <string name="error_api_limit">Too many requests. Please try again in a moment.</string>
     <string name="error_unauthorized">Server authorization failed.</string>
     <string name="error_unknown">Something went wrong. Please try again.</string>
+
+    <string name="error_loading_details">Error loading place details</string>
+    <string name="back">Back</string>
+    <string name="visit_website">Visit Website</string>
+    <string name="retry">Try Again</string>
 </resources>

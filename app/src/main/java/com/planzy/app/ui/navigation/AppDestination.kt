@@ -30,3 +30,12 @@ data object Profile : AppDestination {
     override val route = "profile_screen"
     override val title = "Profile"
 }
+
+data object PlaceDetails : AppDestination {
+    override val route = "place_details_screen"
+    override val title = null
+
+    fun createRoute(placeId: String) = "$route/$placeId"
+    const val ARG_PLACE_ID = "placeId"
+    val routeWithArgs = "$route/{$ARG_PLACE_ID}"
+}

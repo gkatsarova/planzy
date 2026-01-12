@@ -15,6 +15,7 @@ import androidx.navigation.NavController
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.planzy.app.ui.navigation.Home
+import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.LocationPermissionDialog
 import com.planzy.app.ui.screens.components.PlaceCard
@@ -102,7 +103,9 @@ fun HomeScreen(
                         items(searchViewModel.places) { place ->
                             PlaceCard(
                                 place = place,
-                                onCardClick = {}
+                                onCardClick = {
+                                    navController.navigate(PlaceDetails.createRoute(place.id))
+                                }
                             )
                         }
                     }
