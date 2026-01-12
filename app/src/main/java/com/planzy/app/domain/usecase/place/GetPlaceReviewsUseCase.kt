@@ -1,4 +1,4 @@
-package com.planzy.app.domain.usecase.api
+package com.planzy.app.domain.usecase.place
 
 import com.planzy.app.domain.model.PlaceReview
 import com.planzy.app.domain.repository.PlacesRepository

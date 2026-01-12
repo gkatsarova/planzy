@@ -70,7 +70,9 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
         factory = remember {
             SearchViewModel.Factory(
                 context = context,
-                repository = PlacesRepositoryImpl(TripadvisorApi()),
+                repository = PlacesRepositoryImpl(TripadvisorApi(),
+                    com.planzy.app.data.remote.SupabaseClient,
+                    ResourceProviderImpl(context)),
                 entityExtractor = LocationEntityExtractor(),
                 resourceProvider = ResourceProviderImpl(context)
             )

@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import com.planzy.app.R
 import com.planzy.app.data.util.LocationEntityExtractor
 import com.planzy.app.data.util.ResourceProvider
-import com.planzy.app.domain.usecase.api.SearchPlacesUseCase
+import com.planzy.app.domain.usecase.place.SearchPlacesUseCase
 import com.planzy.app.ui.screens.SearchViewModel
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers

@@ -11,7 +11,7 @@ import com.planzy.app.data.repository.PlacesRepositoryImpl
 import com.planzy.app.data.util.LocationEntityExtractor
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
-import com.planzy.app.domain.usecase.api.SearchPlacesUseCase
+import com.planzy.app.domain.usecase.place.SearchPlacesUseCase
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import com.google.mlkit.nl.entityextraction.Entity

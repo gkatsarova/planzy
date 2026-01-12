@@ -4,7 +4,7 @@ import com.planzy.app.domain.model.ContactInfo
 import com.planzy.app.domain.model.Location
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.repository.PlacesRepository
-import com.planzy.app.domain.usecase.api.SearchPlacesUseCase
+import com.planzy.app.domain.usecase.place.SearchPlacesUseCase
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.mockk

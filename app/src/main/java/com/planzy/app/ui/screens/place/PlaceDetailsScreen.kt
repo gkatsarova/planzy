@@ -12,21 +12,31 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.planzy.app.R
+import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.PlacesRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.usecase.place.AddUserCommentUseCase
+import com.planzy.app.domain.usecase.place.GetPlaceDetailsUseCase
+import com.planzy.app.domain.usecase.place.GetPlaceReviewsUseCase
+import com.planzy.app.domain.usecase.place.GetUserCommentsUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.screens.SearchViewModel
+import com.planzy.app.ui.screens.components.AddCommentSection
 import com.planzy.app.ui.screens.components.PlaceCard
 import com.planzy.app.ui.screens.components.PlaceDetailsCard
 import com.planzy.app.ui.screens.components.PlanzyTopAppBar
 import com.planzy.app.ui.screens.components.RetrySection
 import com.planzy.app.ui.screens.components.ReviewsSection
+import com.planzy.app.ui.screens.components.UserCommentsSection
 import com.planzy.app.ui.theme.*
 
 @Composable
@@ -39,12 +49,22 @@ fun PlaceDetailsScreen(
     val scrollState = rememberScrollState()
 
     val tripadvisorApi = remember { TripadvisorApi() }
-    val repository = remember { PlacesRepositoryImpl(tripadvisorApi) }
     val resourceProvider = remember { ResourceProviderImpl(context) }
+    val repository = remember {
+        PlacesRepositoryImpl(tripadvisorApi, SupabaseClient, resourceProvider)
+    }
+
+    val getPlaceDetailsUseCase = remember { GetPlaceDetailsUseCase(repository) }
+    val getPlaceReviewsUseCase = remember { GetPlaceReviewsUseCase(repository) }
+    val getUserCommentsUseCase = remember { GetUserCommentsUseCase(repository) }
+    val addUserCommentUseCase = remember { AddUserCommentUseCase(repository, resourceProvider) }
 
     val viewModel: PlaceDetailsViewModel = viewModel(
         factory = PlaceDetailsViewModel.Factory(
-            repository = repository,
+            getPlaceDetailsUseCase = getPlaceDetailsUseCase,
+            getPlaceReviewsUseCase = getPlaceReviewsUseCase,
+            getUserCommentsUseCase = getUserCommentsUseCase,
+            addUserCommentUseCase = addUserCommentUseCase,
             resourceProvider = resourceProvider,
             locationId = placeId
         )
@@ -137,7 +157,8 @@ fun PlaceDetailsScreen(
                                 text = place.name,
                                 fontFamily = Raleway,
                                 fontSize = 32.sp,
-                                color = AmericanBlue
+                                color = AmericanBlue,
+                                modifier = Modifier.padding(top = 16.dp)
                             )
 
                             PlaceDetailsCard(place = place)
@@ -146,6 +167,33 @@ fun PlaceDetailsScreen(
                                 reviews = viewModel.reviews,
                                 isLoading = viewModel.isLoadingReviews
                             )
+
+                            HorizontalDivider(color = AmericanBlue.copy(alpha = 0.1f), modifier = Modifier.padding(top = 8.dp))
+
+                            Text(
+                                text = stringResource(id = R.string.community_reviews),
+                                fontFamily = Raleway,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AmericanBlue
+                            )
+
+                            UserCommentsSection(
+                                comments = viewModel.userComments,
+                                isLoading = viewModel.isLoadingUserComments,
+                                errorMessage = viewModel.userCommentsErrorMessage,
+                                onRetry = { viewModel.loadUserComments() }
+                            )
+
+                            AddCommentSection(
+                                isSubmitting = viewModel.isSubmittingComment,
+                                errorMessage = viewModel.commentErrorMessage,
+                                onSubmit = { text, rating ->
+                                    viewModel.addUserComment(text, rating)
+                                }
+                            )
+
+                            Spacer(modifier = Modifier.height(32.dp))
                         }
                     }
                 }
