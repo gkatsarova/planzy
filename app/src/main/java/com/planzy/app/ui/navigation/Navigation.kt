@@ -118,7 +118,8 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
 
             PlaceDetailsScreen(
                 navController = navController,
-                placeId = placeId
+                placeId = placeId,
+                searchViewModel = searchViewModel
             )
         }
     }

@@ -34,6 +34,8 @@ class SearchViewModel(
 
     private val prefs = context.getSharedPreferences("planzy_prefs", Context.MODE_PRIVATE)
     private val searchCache = mutableMapOf<String, List<Place>>()
+    var searchQuery by mutableStateOf("")
+        private set
 
     var places by mutableStateOf<List<Place>>(emptyList())
         private set
@@ -56,6 +58,12 @@ class SearchViewModel(
                 showLocationDialog = true
             }
         }
+    }
+
+    fun clearSearch() {
+        searchQuery = ""
+        places = emptyList()
+        errorMessage = null
     }
 
     fun setUserLocation(lat: Double, lon: Double) {
@@ -107,6 +115,8 @@ class SearchViewModel(
     }
 
     fun searchForPlaces(query: String) {
+        searchQuery = query
+
         val cleanQuery = query.trim()
         if (cleanQuery.isBlank()) {
             places = emptyList()
