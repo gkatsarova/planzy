@@ -52,7 +52,7 @@ fun ReviewCard(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
-                            tint = if (index < review.rating) AmaranthPurple else Lavender
+                            tint = if (index < review.rating)  Lavender else AmaranthPurple
                         )
                     }
                 }

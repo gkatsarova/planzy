@@ -25,9 +25,11 @@ import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.PlacesRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.place.AddUserCommentUseCase
+import com.planzy.app.domain.usecase.place.DeleteUserCommentUseCase
 import com.planzy.app.domain.usecase.place.GetPlaceDetailsUseCase
 import com.planzy.app.domain.usecase.place.GetPlaceReviewsUseCase
 import com.planzy.app.domain.usecase.place.GetUserCommentsUseCase
+import com.planzy.app.domain.usecase.place.UpdateUserCommentUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.AddCommentSection
@@ -58,6 +60,8 @@ fun PlaceDetailsScreen(
     val getPlaceReviewsUseCase = remember { GetPlaceReviewsUseCase(repository) }
     val getUserCommentsUseCase = remember { GetUserCommentsUseCase(repository) }
     val addUserCommentUseCase = remember { AddUserCommentUseCase(repository, resourceProvider) }
+    val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(repository, resourceProvider) }
+    val deleteUserCommentUseCase = remember { DeleteUserCommentUseCase(repository) }
 
     val viewModel: PlaceDetailsViewModel = viewModel(
         factory = PlaceDetailsViewModel.Factory(
@@ -65,6 +69,8 @@ fun PlaceDetailsScreen(
             getPlaceReviewsUseCase = getPlaceReviewsUseCase,
             getUserCommentsUseCase = getUserCommentsUseCase,
             addUserCommentUseCase = addUserCommentUseCase,
+            updateUserCommentUseCase = updateUserCommentUseCase,
+            deleteUserCommentUseCase = deleteUserCommentUseCase,
             resourceProvider = resourceProvider,
             locationId = placeId
         )
@@ -88,16 +94,14 @@ fun PlaceDetailsScreen(
                 .padding(padding)
         ) {
             if (searchViewModel.places.isNotEmpty() || searchViewModel.isLoading) {
-
                 Box(modifier = Modifier.fillMaxSize().background(Lavender)) {
                     when {
                         searchViewModel.isLoading -> {
                             CircularProgressIndicator(
                                 modifier = Modifier.align(Alignment.Center),
-                                color = MediumBluePurple
+                                color = AmaranthPurple
                             )
                         }
-
                         searchViewModel.errorMessage != null -> {
                             Text(
                                 text = searchViewModel.errorMessage!!,
@@ -106,7 +110,6 @@ fun PlaceDetailsScreen(
                                 modifier = Modifier.align(Alignment.Center).padding(24.dp)
                             )
                         }
-
                         else -> {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
@@ -168,7 +171,7 @@ fun PlaceDetailsScreen(
                                 isLoading = viewModel.isLoadingReviews
                             )
 
-                            HorizontalDivider(color = AmericanBlue.copy(alpha = 0.1f), modifier = Modifier.padding(top = 8.dp))
+                            HorizontalDivider(color = AmericanBlue, modifier = Modifier.padding(top = 8.dp))
 
                             Text(
                                 text = stringResource(id = R.string.community_reviews),
@@ -182,7 +185,13 @@ fun PlaceDetailsScreen(
                                 comments = viewModel.userComments,
                                 isLoading = viewModel.isLoadingUserComments,
                                 errorMessage = viewModel.userCommentsErrorMessage,
-                                onRetry = { viewModel.loadUserComments() }
+                                onRetry = { viewModel.loadUserComments() },
+                                onEditComment = { commentId, text, rating ->
+                                    viewModel.updateUserComment(commentId, text, rating)
+                                },
+                                onDeleteComment = { commentId ->
+                                    viewModel.deleteUserComment(commentId)
+                                }
                             )
 
                             AddCommentSection(

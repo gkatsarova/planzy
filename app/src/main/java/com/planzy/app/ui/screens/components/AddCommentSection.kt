@@ -9,7 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,12 +25,16 @@ import com.planzy.app.R
 fun AddCommentSection(
     modifier: Modifier = Modifier,
     onSubmit: (text: String, rating: Int) -> Unit,
-    isSubmitting: Boolean,
-    errorMessage: String? = null
+    isSubmitting: Boolean = false,
+    errorMessage: String? = null,
+    initialText: String = "",
+    initialRating: Int = 5,
+    onCancel: (() -> Unit)? = null,
+    buttonText: String = stringResource(id = R.string.post_comment)
 ) {
-    var commentText by remember { mutableStateOf("") }
-    var selectedRating by remember { mutableIntStateOf(5) }
-    var isExpanded by remember { mutableStateOf(false) }
+    var commentText by remember { mutableStateOf(initialText) }
+    var selectedRating by remember { mutableIntStateOf(initialRating) }
+    var isExpanded by remember { mutableStateOf(initialText.isNotEmpty()) }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Surface(
@@ -55,7 +58,7 @@ fun AddCommentSection(
                     placeholder = {
                         Text(
                             text = stringResource(id = R.string.write_comment),
-                            color = Lavender.copy(alpha = 0.7f),
+                            color = Lavender,
                             fontFamily = Raleway,
                             fontSize = 16.sp
                         )
@@ -85,64 +88,97 @@ fun AddCommentSection(
                 ) {
                     Column {
                         HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp)
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = Lavender
                         )
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
                                 repeat(5) { index ->
                                     IconButton(
                                         onClick = { selectedRating = index + 1 },
-                                        modifier = Modifier.size(36.dp)
+                                        modifier = Modifier.size(32.dp)
                                     ) {
                                         Icon(
                                             imageVector = if (index < selectedRating)
                                                 Icons.Filled.Star else Icons.Outlined.Star,
                                             contentDescription = null,
-                                            tint = if (index < selectedRating) AmaranthPurple else Lavender,
-                                            modifier = Modifier.size(20.dp)
+                                            tint = if (index < selectedRating) Lavender else AmaranthPurple,
+                                            modifier = Modifier.size(18.dp)
                                         )
                                     }
                                 }
                             }
 
-                            Button(
-                                onClick = {
-                                    if (commentText.isNotBlank()) {
-                                        onSubmit(commentText, selectedRating)
-                                        commentText = ""
-                                        selectedRating = 5
-                                        isExpanded = false
-                                    }
-                                },
-                                enabled = !isSubmitting && commentText.isNotBlank(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = AmaranthPurple,
-                                    disabledContainerColor = AmaranthPurple
-                                ),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                                modifier = Modifier.height(36.dp)
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if (isSubmitting) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        color = Lavender,
-                                        strokeWidth = 2.dp
-                                    )
-                                } else {
-                                    Text(
-                                        text = stringResource(id = R.string.post_comment),
-                                        fontFamily = Raleway,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
-                                        color = Color.White
-                                    )
+                                if (onCancel != null) {
+                                    TextButton(
+                                        onClick = onCancel,
+                                        enabled = !isSubmitting,
+                                        colors = ButtonDefaults.textButtonColors(
+                                            contentColor = Lavender
+                                        ),
+                                        modifier = Modifier.height(36.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp)
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.cancel),
+                                            fontFamily = Raleway,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+
+                                Button(
+                                    onClick = {
+                                        if (commentText.isNotBlank()) {
+                                            onSubmit(commentText, selectedRating)
+                                            if (onCancel == null) {
+                                                commentText = ""
+                                                selectedRating = 5
+                                                isExpanded = false
+                                            }
+                                        }
+                                    },
+                                    enabled = !isSubmitting && commentText.isNotBlank(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = AmaranthPurple,
+                                        disabledContainerColor = AmaranthPurple
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(36.dp)
+                                ) {
+                                    if (isSubmitting) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(14.dp),
+                                            color = Lavender,
+                                            strokeWidth = 2.dp
+                                        )
+                                    } else {
+                                        Text(
+                                            text = buttonText,
+                                            fontFamily = Raleway,
+                                            fontSize = 11.sp,
+                                            color = Color.White,
+                                            maxLines = 1
+                                        )
+                                    }
                                 }
                             }
                         }

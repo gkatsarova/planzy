@@ -12,9 +12,11 @@ import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.PlaceReview
 import com.planzy.app.domain.model.UserComment
 import com.planzy.app.domain.usecase.place.AddUserCommentUseCase
+import com.planzy.app.domain.usecase.place.DeleteUserCommentUseCase
 import com.planzy.app.domain.usecase.place.GetPlaceDetailsUseCase
 import com.planzy.app.domain.usecase.place.GetPlaceReviewsUseCase
 import com.planzy.app.domain.usecase.place.GetUserCommentsUseCase
+import com.planzy.app.domain.usecase.place.UpdateUserCommentUseCase
 import kotlinx.coroutines.launch
 
 class PlaceDetailsViewModel(
@@ -22,6 +24,8 @@ class PlaceDetailsViewModel(
     private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase,
     private val getUserCommentsUseCase: GetUserCommentsUseCase,
     private val addUserCommentUseCase: AddUserCommentUseCase,
+    private val updateUserCommentUseCase: UpdateUserCommentUseCase,
+    private val deleteUserCommentUseCase: DeleteUserCommentUseCase,
     private val resourceProvider: ResourceProvider,
     private val locationId: String
 ) : ViewModel() {
@@ -54,6 +58,12 @@ class PlaceDetailsViewModel(
         private set
 
     var commentErrorMessage by mutableStateOf<String?>(null)
+        private set
+
+    var isDeletingComment by mutableStateOf(false)
+        private set
+
+    var isUpdatingComment by mutableStateOf(false)
         private set
 
     init {
@@ -123,11 +133,45 @@ class PlaceDetailsViewModel(
         }
     }
 
+    fun updateUserComment(commentId: String, text: String, rating: Int) {
+        viewModelScope.launch {
+            isUpdatingComment = true
+            commentErrorMessage = null
+
+            updateUserCommentUseCase(commentId, text, rating)
+                .onSuccess {
+                    loadUserComments()
+                    isUpdatingComment = false
+                }
+                .onFailure { error ->
+                    commentErrorMessage = error.message
+                    isUpdatingComment = false
+                }
+        }
+    }
+
+    fun deleteUserComment(commentId: String) {
+        viewModelScope.launch {
+            isDeletingComment = true
+
+            deleteUserCommentUseCase(commentId)
+                .onSuccess {
+                    userComments = userComments.filter { it.id != commentId }
+                    isDeletingComment = false
+                }
+                .onFailure {
+                    isDeletingComment = false
+                }
+        }
+    }
+
     class Factory(
         private val getPlaceDetailsUseCase: GetPlaceDetailsUseCase,
         private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase,
         private val getUserCommentsUseCase: GetUserCommentsUseCase,
         private val addUserCommentUseCase: AddUserCommentUseCase,
+        private val updateUserCommentUseCase: UpdateUserCommentUseCase,
+        private val deleteUserCommentUseCase: DeleteUserCommentUseCase,
         private val resourceProvider: ResourceProvider,
         private val locationId: String
     ) : ViewModelProvider.Factory {
@@ -138,6 +182,8 @@ class PlaceDetailsViewModel(
                 getPlaceReviewsUseCase,
                 getUserCommentsUseCase,
                 addUserCommentUseCase,
+                updateUserCommentUseCase,
+                deleteUserCommentUseCase,
                 resourceProvider,
                 locationId
             ) as T
