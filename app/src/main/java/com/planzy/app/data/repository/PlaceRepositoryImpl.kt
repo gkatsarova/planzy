@@ -4,6 +4,7 @@ import android.util.Log
 import com.planzy.app.R
 import com.planzy.app.data.model.UserCommentDTO
 import com.planzy.app.data.model.UserCommentInsertDTO
+import com.planzy.app.data.model.UserCommentStatsDTO
 import com.planzy.app.data.model.toDomainModel
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
@@ -209,6 +210,34 @@ class PlacesRepositoryImpl(
         } catch (e: Exception) {
             Log.e(TAG, "Error deleting comment: ${e.message}", e)
             Result.failure(Exception(resourceProvider.getString(R.string.error_deleting_comment)))
+        }
+    }
+
+    override suspend fun getUserCommentsStats(placeId: String): Result<Pair<Double?, Int>> {
+        return try {
+            if (placeId.isBlank()) {
+                return Result.success(Pair(null, 0))
+            }
+
+            val response = supabaseClient.client.postgrest
+                .from("user_comments")
+                .select(Columns.raw("rating")) {
+                    filter {
+                        eq("place_id", placeId)
+                    }
+                }
+
+            val ratings = response.decodeList<UserCommentStatsDTO>()
+
+            if (ratings.isEmpty()) {
+                Result.success(Pair(null, 0))
+            } else {
+                val averageRating = ratings.map { it.rating.toDouble() }.average()
+                Result.success(Pair(averageRating, ratings.size))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting comments stats: ${e.message}", e)
+            Result.success(Pair(null, 0))
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.planzy.app.ui.screens.components
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,9 +17,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.planzy.app.R
+import com.planzy.app.data.util.DateFormatter
 import com.planzy.app.domain.model.UserComment
 import com.planzy.app.ui.theme.*
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun UserCommentCard(
     comment: UserComment,
@@ -114,7 +118,7 @@ fun UserCommentCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = comment.createdAt,
+                        text = DateFormatter.formatToShort(comment.createdAt),
                         fontFamily = Raleway,
                         fontSize = 12.sp,
                         color = Lavender

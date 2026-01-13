@@ -45,4 +45,8 @@ interface PlacesRepository {
     suspend fun deleteUserComment(
         commentId: String
     ): Result<Unit>
+
+    suspend fun getUserCommentsStats(
+        placeId: String
+    ): Result<Pair<Double?, Int>>
 }

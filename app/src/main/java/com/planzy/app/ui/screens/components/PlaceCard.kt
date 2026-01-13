@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,12 +24,15 @@ import com.planzy.app.ui.theme.MediumBluePurple
 import com.planzy.app.R
 import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.Raleway
+import java.util.Locale
 
 @Composable
 fun PlaceCard(
     place: Place,
     onCardClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    userRating: Double? = null,
+    userReviewsCount: Int? = null
 ) {
     Card(
         modifier = modifier
@@ -120,6 +124,12 @@ fun PlaceCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_tripadvisor),
+                        contentDescription = stringResource(id = R.string.tripadvisor),
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -144,6 +154,38 @@ fun PlaceCard(
                         fontSize = 16.sp,
                         color = Lavender
                     )
+                }
+
+                if (userRating != null && userReviewsCount != null && userReviewsCount > 0) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = String.format(Locale.getDefault(), "%.1f", userRating),
+                                fontFamily = Raleway,
+                                fontSize = 16.sp,
+                                color = Lavender
+                            )
+                        }
+
+                        Text(
+                            text = "($userReviewsCount ${stringResource(id = R.string.user_reviews)})",
+                            fontFamily = Raleway,
+                            fontSize = 16.sp,
+                            color = Lavender
+                        )
+                    }
                 }
             }
         }

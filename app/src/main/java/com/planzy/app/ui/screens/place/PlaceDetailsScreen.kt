@@ -1,16 +1,17 @@
 package com.planzy.app.ui.screens.place
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -24,23 +25,13 @@ import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.PlacesRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
-import com.planzy.app.domain.usecase.place.AddUserCommentUseCase
-import com.planzy.app.domain.usecase.place.DeleteUserCommentUseCase
-import com.planzy.app.domain.usecase.place.GetPlaceDetailsUseCase
-import com.planzy.app.domain.usecase.place.GetPlaceReviewsUseCase
-import com.planzy.app.domain.usecase.place.GetUserCommentsUseCase
-import com.planzy.app.domain.usecase.place.UpdateUserCommentUseCase
+import com.planzy.app.domain.usecase.place.*
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.screens.SearchViewModel
-import com.planzy.app.ui.screens.components.AddCommentSection
-import com.planzy.app.ui.screens.components.PlaceCard
-import com.planzy.app.ui.screens.components.PlaceDetailsCard
-import com.planzy.app.ui.screens.components.PlanzyTopAppBar
-import com.planzy.app.ui.screens.components.RetrySection
-import com.planzy.app.ui.screens.components.ReviewsSection
-import com.planzy.app.ui.screens.components.UserCommentsSection
+import com.planzy.app.ui.screens.components.*
 import com.planzy.app.ui.theme.*
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PlaceDetailsScreen(
     navController: NavController,
@@ -48,7 +39,8 @@ fun PlaceDetailsScreen(
     searchViewModel: SearchViewModel
 ) {
     val context = LocalContext.current
-    val scrollState = rememberScrollState()
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
 
     val tripadvisorApi = remember { TripadvisorApi() }
     val resourceProvider = remember { ResourceProviderImpl(context) }
@@ -88,7 +80,7 @@ fun PlaceDetailsScreen(
         },
         containerColor = Lavender
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
@@ -116,13 +108,15 @@ fun PlaceDetailsScreen(
                                 contentPadding = PaddingValues(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                items(searchViewModel.places) { place ->
+                                items(searchViewModel.placesWithStats) { placeWithStats ->
                                     PlaceCard(
-                                        place = place,
+                                        place = placeWithStats.place,
                                         onCardClick = {
                                             searchViewModel.clearSearch()
-                                            navController.navigate(PlaceDetails.createRoute(place.id))
-                                        }
+                                            navController.navigate(PlaceDetails.createRoute(placeWithStats.place.id))
+                                        },
+                                        userRating = placeWithStats.userRating,
+                                        userReviewsCount = placeWithStats.userReviewsCount
                                     )
                                 }
                             }
@@ -132,77 +126,107 @@ fun PlaceDetailsScreen(
             } else {
                 when {
                     viewModel.isLoading -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center),
-                            color = MediumBluePurple
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = MediumBluePurple)
+                        }
                     }
 
                     viewModel.errorMessage != null -> {
-                        RetrySection(
-                            errorMessage = viewModel.errorMessage!!,
-                            onRetry = { viewModel.onRetry() },
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+                        Box(modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            RetrySection(
+                                errorMessage = viewModel.errorMessage!!,
+                                onRetry = { viewModel.onRetry() }
+                            )
+                        }
                     }
 
                     viewModel.place != null -> {
                         val place = viewModel.place!!
 
-                        Column(
+                        LazyColumn(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 20.dp)
-                                .verticalScroll(scrollState),
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp),
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
-                            Text(
-                                text = place.name,
-                                fontFamily = Raleway,
-                                fontSize = 32.sp,
-                                color = AmericanBlue,
-                                modifier = Modifier.padding(top = 16.dp)
-                            )
+                            item {
+                                Text(
+                                    text = place.name,
+                                    fontFamily = Raleway,
+                                    fontSize = 32.sp,
+                                    color = AmericanBlue,
+                                    modifier = Modifier.padding(top = 16.dp)
+                                )
+                            }
 
-                            PlaceDetailsCard(place = place)
+                            item {
+                                PlaceDetailsCard(place = place)
+                            }
 
-                            ReviewsSection(
-                                reviews = viewModel.reviews,
-                                isLoading = viewModel.isLoadingReviews
-                            )
+                            item {
+                                ReviewsSection(
+                                    reviews = viewModel.reviews,
+                                    isLoading = viewModel.isLoadingReviews,
+                                    modifier = Modifier.heightIn(max = screenHeight * 0.35f)
+                                )
+                            }
 
-                            HorizontalDivider(color = AmericanBlue, modifier = Modifier.padding(top = 8.dp))
+                            item {
+                                HorizontalDivider(
+                                    color = AmericanBlue,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
 
-                            Text(
-                                text = stringResource(id = R.string.community_reviews),
-                                fontFamily = Raleway,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = AmericanBlue
-                            )
+                            item {
+                                Text(
+                                    text = stringResource(id = R.string.community_reviews),
+                                    fontFamily = Raleway,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AmericanBlue
+                                )
+                            }
 
-                            UserCommentsSection(
-                                comments = viewModel.userComments,
-                                isLoading = viewModel.isLoadingUserComments,
-                                errorMessage = viewModel.userCommentsErrorMessage,
-                                onRetry = { viewModel.loadUserComments() },
-                                onEditComment = { commentId, text, rating ->
-                                    viewModel.updateUserComment(commentId, text, rating)
-                                },
-                                onDeleteComment = { commentId ->
-                                    viewModel.deleteUserComment(commentId)
-                                }
-                            )
+                            item {
+                                UserCommentsSection(
+                                    comments = viewModel.userComments,
+                                    isLoading = viewModel.isLoadingUserComments,
+                                    errorMessage = viewModel.userCommentsErrorMessage,
+                                    onRetry = { viewModel.loadUserComments() },
+                                    onEditComment = { commentId, text, rating ->
+                                        viewModel.updateUserComment(commentId, text, rating)
+                                    },
+                                    onDeleteComment = { commentId ->
+                                        viewModel.deleteUserComment(commentId)
+                                    },
+                                    modifier = Modifier.heightIn(max = screenHeight * 0.35f)
+                                )
+                            }
 
+                            item {
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Lavender
+                        ) {
                             AddCommentSection(
                                 isSubmitting = viewModel.isSubmittingComment,
                                 errorMessage = viewModel.commentErrorMessage,
                                 onSubmit = { text, rating ->
                                     viewModel.addUserComment(text, rating)
-                                }
+                                },
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
                             )
-
-                            Spacer(modifier = Modifier.height(32.dp))
                         }
                     }
                 }

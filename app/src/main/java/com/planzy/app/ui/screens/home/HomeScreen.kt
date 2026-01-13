@@ -100,12 +100,15 @@ fun HomeScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(searchViewModel.places) { place ->
+                        items(searchViewModel.placesWithStats) { placeWithStats ->
                             PlaceCard(
-                                place = place,
+                                place = placeWithStats.place,
                                 onCardClick = {
-                                    navController.navigate(PlaceDetails.createRoute(place.id))
-                                }
+                                    searchViewModel.clearSearch()
+                                    navController.navigate(PlaceDetails.createRoute(placeWithStats.place.id))
+                                },
+                                userRating = placeWithStats.userRating,
+                                userReviewsCount = placeWithStats.userReviewsCount
                             )
                         }
                     }

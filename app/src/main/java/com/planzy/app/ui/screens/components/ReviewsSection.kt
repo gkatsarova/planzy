@@ -1,6 +1,10 @@
 package com.planzy.app.ui.screens.components
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,6 +17,7 @@ import com.planzy.app.R
 import com.planzy.app.domain.model.PlaceReview
 import com.planzy.app.ui.theme.*
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ReviewsSection(
     reviews: List<PlaceReview>,
@@ -53,8 +58,15 @@ fun ReviewsSection(
             }
 
             else -> {
-                reviews.forEach { review ->
-                    ReviewCard(review = review)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(reviews) { review ->
+                        ReviewCard(review = review)
+                    }
                 }
             }
         }

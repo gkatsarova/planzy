@@ -11,6 +11,7 @@ import com.planzy.app.data.repository.PlacesRepositoryImpl
 import com.planzy.app.data.util.LocationEntityExtractor
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
+import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
 import com.planzy.app.domain.usecase.place.SearchPlacesUseCase
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
@@ -18,8 +19,15 @@ import com.google.mlkit.nl.entityextraction.Entity
 import com.planzy.app.data.util.HttpStatusCodes.TOO_MANY_REQUESTS
 import com.planzy.app.data.util.HttpStatusCodes.UNAUTHORIZED
 
+data class PlaceWithStats(
+    val place: Place,
+    val userRating: Double?,
+    val userReviewsCount: Int
+)
+
 class SearchViewModel(
     private val searchPlacesUseCase: SearchPlacesUseCase,
+    private val getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase,
     private val entityExtractor: LocationEntityExtractor,
     private val resourceProvider: ResourceProvider,
     context: Context
@@ -33,11 +41,14 @@ class SearchViewModel(
     }
 
     private val prefs = context.getSharedPreferences("planzy_prefs", Context.MODE_PRIVATE)
-    private val searchCache = mutableMapOf<String, List<Place>>()
+    private val searchCache = mutableMapOf<String, List<PlaceWithStats>>()
+
     var searchQuery by mutableStateOf("")
         private set
 
     var places by mutableStateOf<List<Place>>(emptyList())
+        private set
+    var placesWithStats by mutableStateOf<List<PlaceWithStats>>(emptyList())
         private set
     var isLoading by mutableStateOf(false)
         private set
@@ -63,6 +74,7 @@ class SearchViewModel(
     fun clearSearch() {
         searchQuery = ""
         places = emptyList()
+        placesWithStats = emptyList()
         errorMessage = null
     }
 
@@ -120,12 +132,14 @@ class SearchViewModel(
         val cleanQuery = query.trim()
         if (cleanQuery.isBlank()) {
             places = emptyList()
+            placesWithStats = emptyList()
             errorMessage = null
             return
         }
 
         if (searchCache.containsKey(cleanQuery)) {
-            places = searchCache[cleanQuery]!!
+            placesWithStats = searchCache[cleanQuery]!!
+            places = placesWithStats.map { it.place }
             errorMessage = null
             return
         }
@@ -144,7 +158,16 @@ class SearchViewModel(
 
             result.onSuccess { list ->
                 places = list
-                searchCache[cleanQuery] = list
+
+                val stats = list.map { place ->
+                    val (rating, count) = getUserCommentsStatsUseCase(place.id).getOrNull()
+                        ?: Pair(null, 0)
+                    PlaceWithStats(place, rating, count)
+                }
+
+                placesWithStats = stats
+                searchCache[cleanQuery] = stats
+
                 if (list.isEmpty()) {
                     errorMessage = resourceProvider.getString(R.string.error_no_places_found)
                 }
@@ -167,6 +190,7 @@ class SearchViewModel(
                 @Suppress("UNCHECKED_CAST")
                 return SearchViewModel(
                     SearchPlacesUseCase(repository),
+                    GetUserCommentsStatsUseCase(repository),
                     entityExtractor,
                     resourceProvider,
                     context.applicationContext
