@@ -6,6 +6,7 @@ import com.planzy.app.R
 import com.planzy.app.data.util.LocationEntityExtractor
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.usecase.place.SearchPlacesUseCase
+import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
 import com.planzy.app.ui.screens.SearchViewModel
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +27,7 @@ class SearchViewModelTest {
     private lateinit var context: Context
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var editor: SharedPreferences.Editor
+    private lateinit var getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -39,6 +41,7 @@ class SearchViewModelTest {
         context = mockk()
         sharedPreferences = mockk()
         editor = mockk()
+        getUserCommentsStatsUseCase = mockk()
 
         every { context.getSharedPreferences("planzy_prefs", Context.MODE_PRIVATE) } returns sharedPreferences
         every { sharedPreferences.getBoolean("perm_granted", false) } returns false
@@ -51,6 +54,7 @@ class SearchViewModelTest {
 
         viewModel = SearchViewModel(
             searchPlacesUseCase,
+            getUserCommentsStatsUseCase,
             entityExtractor,
             resourceProvider,
             context
