@@ -26,8 +26,10 @@ import com.planzy.app.ui.theme.*
 fun UserCommentCard(
     comment: UserComment,
     modifier: Modifier = Modifier,
-    onEdit: ((commentId: String, text: String, rating: Int) -> Unit)? = null,
-    onDelete: ((commentId: String) -> Unit)? = null
+    onEdit: ((commentId: String, text: String, rating: Int) -> Unit),
+    onDelete: ((commentId: String) -> Unit),
+    onEditStart: () -> Unit = {},
+    onEditCancel: () -> Unit = {}
 ) {
     var isEditing by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -56,10 +58,14 @@ fun UserCommentCard(
                     initialRating = comment.rating,
                     isSubmitting = false,
                     onSubmit = { text, rating ->
-                        onEdit?.invoke(comment.id, text, rating)
+                        onEdit.invoke(comment.id, text, rating)
                         isEditing = false
+                        onEditCancel()
                     },
-                    onCancel = { isEditing = false },
+                    onCancel = {
+                        isEditing = false
+                        onEditCancel()
+                    },
                     buttonText = stringResource(R.string.save)
                 )
             }
@@ -124,12 +130,15 @@ fun UserCommentCard(
                         color = Lavender
                     )
 
-                    if (comment.isOwner && onEdit != null && onDelete != null) {
+                    if (comment.isOwner) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             IconButton(
-                                onClick = { isEditing = true },
+                                onClick = {
+                                    isEditing = true
+                                    onEditStart()
+                                },
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Icon(
@@ -162,7 +171,7 @@ fun UserCommentCard(
         DeleteCommentDialog(
             onDismiss = { showDeleteDialog = false },
             onConfirm = {
-                onDelete?.invoke(comment.id)
+                onDelete.invoke(comment.id)
                 showDeleteDialog = false
             }
         )

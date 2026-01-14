@@ -25,6 +25,8 @@ fun UserCommentsSection(
     onRetry: () -> Unit,
     onEditComment: (commentId: String, text: String, rating: Int) -> Unit,
     onDeleteComment: (commentId: String) -> Unit,
+    onEditStart: () -> Unit,
+    onEditCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -73,7 +75,9 @@ fun UserCommentsSection(
                         UserCommentCard(
                             comment = comment,
                             onEdit = onEditComment,
-                            onDelete = onDeleteComment
+                            onDelete = onDeleteComment,
+                            onEditStart = onEditStart,
+                            onEditCancel = onEditCancel
                         )
                     }
                 }

@@ -8,7 +8,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -55,6 +58,8 @@ fun PlaceDetailsScreen(
     val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(repository, resourceProvider) }
     val deleteUserCommentUseCase = remember { DeleteUserCommentUseCase(repository) }
 
+    var isEditingAnyComment by remember { mutableStateOf(false) }
+
     val viewModel: PlaceDetailsViewModel = viewModel(
         factory = PlaceDetailsViewModel.Factory(
             getPlaceDetailsUseCase = getPlaceDetailsUseCase,
@@ -80,10 +85,11 @@ fun PlaceDetailsScreen(
         },
         containerColor = Lavender
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
         ) {
             if (searchViewModel.places.isNotEmpty() || searchViewModel.isLoading) {
                 Box(modifier = Modifier.fillMaxSize().background(Lavender)) {
@@ -150,7 +156,6 @@ fun PlaceDetailsScreen(
 
                         LazyColumn(
                             modifier = Modifier
-                                .weight(1f)
                                 .fillMaxWidth()
                                 .padding(horizontal = 20.dp),
                             verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -206,6 +211,8 @@ fun PlaceDetailsScreen(
                                     onDeleteComment = { commentId ->
                                         viewModel.deleteUserComment(commentId)
                                     },
+                                    onEditStart = { isEditingAnyComment = true },
+                                    onEditCancel = { isEditingAnyComment = false },
                                     modifier = Modifier.heightIn(max = screenHeight * 0.35f)
                                 )
                             }
@@ -215,18 +222,25 @@ fun PlaceDetailsScreen(
                             }
                         }
 
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Lavender
-                        ) {
-                            AddCommentSection(
-                                isSubmitting = viewModel.isSubmittingComment,
-                                errorMessage = viewModel.commentErrorMessage,
-                                onSubmit = { text, rating ->
-                                    viewModel.addUserComment(text, rating)
-                                },
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-                            )
+                        if(!isEditingAnyComment) {
+                            Surface(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .fillMaxWidth(),
+                                color = Lavender
+                            ) {
+                                AddCommentSection(
+                                    isSubmitting = viewModel.isSubmittingComment,
+                                    errorMessage = viewModel.commentErrorMessage,
+                                    onSubmit = { text, rating ->
+                                        viewModel.addUserComment(text, rating)
+                                    },
+                                    modifier = Modifier.padding(
+                                        horizontal = 20.dp,
+                                        vertical = 16.dp
+                                    )
+                                )
+                            }
                         }
                     }
                 }
