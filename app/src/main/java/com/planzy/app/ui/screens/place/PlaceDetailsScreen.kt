@@ -83,13 +83,29 @@ fun PlaceDetailsScreen(
                 }
             )
         },
+        bottomBar = {
+            Surface(
+                color = Lavender,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .imePadding()
+            ) {
+                if (!isEditingAnyComment) {
+                    AddCommentSection(
+                        isSubmitting = viewModel.isSubmittingComment,
+                        errorMessage = viewModel.commentErrorMessage,
+                        onSubmit = { text, rating -> viewModel.addUserComment(text, rating) },
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                    )
+                }
+            }
+        },
         containerColor = Lavender
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .imePadding()
         ) {
             if (searchViewModel.places.isNotEmpty() || searchViewModel.isLoading) {
                 Box(modifier = Modifier.fillMaxSize().background(Lavender)) {
@@ -156,7 +172,7 @@ fun PlaceDetailsScreen(
 
                         LazyColumn(
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .fillMaxSize()
                                 .padding(horizontal = 20.dp),
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
@@ -219,27 +235,6 @@ fun PlaceDetailsScreen(
 
                             item {
                                 Spacer(modifier = Modifier.height(16.dp))
-                            }
-                        }
-
-                        if(!isEditingAnyComment) {
-                            Surface(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .fillMaxWidth(),
-                                color = Lavender
-                            ) {
-                                AddCommentSection(
-                                    isSubmitting = viewModel.isSubmittingComment,
-                                    errorMessage = viewModel.commentErrorMessage,
-                                    onSubmit = { text, rating ->
-                                        viewModel.addUserComment(text, rating)
-                                    },
-                                    modifier = Modifier.padding(
-                                        horizontal = 20.dp,
-                                        vertical = 16.dp
-                                    )
-                                )
                             }
                         }
                     }
