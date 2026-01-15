@@ -27,13 +27,18 @@ import com.planzy.app.R
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.PlacesRepositoryImpl
+import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.place.*
+import com.planzy.app.domain.usecase.vacation.*
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.*
 import com.planzy.app.ui.theme.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.launch
 
+@OptIn(DelicateCoroutinesApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PlaceDetailsScreen(
@@ -47,18 +52,28 @@ fun PlaceDetailsScreen(
 
     val tripadvisorApi = remember { TripadvisorApi() }
     val resourceProvider = remember { ResourceProviderImpl(context) }
-    val repository = remember {
+
+    val placesRepository = remember {
         PlacesRepositoryImpl(tripadvisorApi, SupabaseClient, resourceProvider)
     }
 
-    val getPlaceDetailsUseCase = remember { GetPlaceDetailsUseCase(repository) }
-    val getPlaceReviewsUseCase = remember { GetPlaceReviewsUseCase(repository) }
-    val getUserCommentsUseCase = remember { GetUserCommentsUseCase(repository) }
-    val addUserCommentUseCase = remember { AddUserCommentUseCase(repository, resourceProvider) }
-    val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(repository, resourceProvider) }
-    val deleteUserCommentUseCase = remember { DeleteUserCommentUseCase(repository) }
+    val vacationsRepository = remember {
+        VacationsRepositoryImpl(SupabaseClient, resourceProvider)
+    }
+
+    val getPlaceDetailsUseCase = remember { GetPlaceDetailsUseCase(placesRepository) }
+    val getPlaceReviewsUseCase = remember { GetPlaceReviewsUseCase(placesRepository) }
+    val getUserCommentsUseCase = remember { GetUserCommentsUseCase(placesRepository) }
+    val addUserCommentUseCase = remember { AddUserCommentUseCase(placesRepository, resourceProvider) }
+    val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(placesRepository, resourceProvider) }
+    val deleteUserCommentUseCase = remember { DeleteUserCommentUseCase(placesRepository) }
+
+    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository) }
+    val createVacationUseCase = remember { CreateVacationUseCase(vacationsRepository) }
+    val addPlaceToVacationUseCase = remember { AddPlaceToVacationUseCase(vacationsRepository) }
 
     var isEditingAnyComment by remember { mutableStateOf(false) }
+    var showAddToVacationDialog by remember { mutableStateOf(false) }
 
     val viewModel: PlaceDetailsViewModel = viewModel(
         factory = PlaceDetailsViewModel.Factory(
@@ -70,6 +85,15 @@ fun PlaceDetailsScreen(
             deleteUserCommentUseCase = deleteUserCommentUseCase,
             resourceProvider = resourceProvider,
             locationId = placeId
+        )
+    )
+
+    val addToVacationViewModel: AddToVacationViewModel = viewModel(
+        factory = AddToVacationViewModel.Factory(
+            getUserVacationsUseCase = getUserVacationsUseCase,
+            createVacationUseCase = createVacationUseCase,
+            addPlaceToVacationUseCase = addPlaceToVacationUseCase,
+            resourceProvider = resourceProvider
         )
     )
 
@@ -187,7 +211,10 @@ fun PlaceDetailsScreen(
                             }
 
                             item {
-                                PlaceDetailsCard(place = place)
+                                PlaceDetailsCard(
+                                    place = place,
+                                    onAddToVacation = { showAddToVacationDialog = true }
+                                )
                             }
 
                             item {
@@ -240,6 +267,39 @@ fun PlaceDetailsScreen(
                     }
                 }
             }
+        }
+
+        if (showAddToVacationDialog) {
+            AddToVacationDialog(
+                vacations = addToVacationViewModel.vacations,
+                isLoading = addToVacationViewModel.isLoading,
+                isCreating = addToVacationViewModel.isCreatingVacation,
+                isAdding = addToVacationViewModel.isAddingPlace,
+                errorMessage = addToVacationViewModel.errorMessage,
+                successMessage = addToVacationViewModel.successMessage,
+                onDismiss = {
+                    showAddToVacationDialog = false
+                    addToVacationViewModel.clearMessages()
+                },
+                onCreateVacation = { title ->
+                    addToVacationViewModel.createVacation(title) { newVacation ->
+                        addToVacationViewModel.addPlaceToVacation(newVacation.id, placeId) {
+                            kotlinx.coroutines.GlobalScope.launch {
+                                kotlinx.coroutines.delay(1500)
+                                showAddToVacationDialog = false
+                            }
+                        }
+                    }
+                },
+                onSelectVacation = { vacationId ->
+                    addToVacationViewModel.addPlaceToVacation(vacationId, placeId) {
+                        kotlinx.coroutines.GlobalScope.launch {
+                            kotlinx.coroutines.delay(1500)
+                            showAddToVacationDialog = false
+                        }
+                    }
+                }
+            )
         }
     }
 }

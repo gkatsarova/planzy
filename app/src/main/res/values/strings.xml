@@ -112,4 +112,22 @@
     <string name="delete">Delete</string>
     <string name="user_reviews">community</string>
     <string name="tripadvisor">TripAdvisor</string>
+
+    <string name="error_loading_vacations">Error loading vacations.</string>
+    <string name="error_creating_vacation">Error creating vacation.</string>
+    <string name="error_empty_vacation_title">Vacation title cannot be empty.</string>
+    <string name="error_vacation_not_found">Vacation not found.</string>
+    <string name="error_adding_place_to_vacation">Error adding place to vacation.</string>
+    <string name="error_removing_place_from_vacation">Error removing place from vacation.</string>
+    <string name="error_loading_vacation_places">Error loading vacation places.</string>
+    <string name="place_added_to_vacation">Place added to vacation successfully.</string>
+    <string name="error_place_already_in_vacation">This place is already in this vacation.</string>
+    <string name="add_to_vacation">Add to Vacation</string>
+    <string name="vacations">Vacations</string>
+    <string name="close">Close</string>
+    <string name="create_new_vacation">Create new Vacation</string>
+    <string name="no_vacations_yet">No vacations yet. Create your first one!</string>
+    <string name="new_vacation">New Vacation</string>
+    <string name="vacation_title">Vacation title</string>
+    <string name="create">Create</string>
 </resources>

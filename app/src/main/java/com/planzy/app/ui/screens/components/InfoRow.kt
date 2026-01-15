@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -18,7 +19,7 @@ import com.planzy.app.ui.theme.Raleway
 
 @Composable
 fun InfoRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    painter: Painter,
     text: String,
     onClick: () -> Unit
 ) {
@@ -30,7 +31,7 @@ fun InfoRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Icon(
-            imageVector = icon,
+            painter = painter,
             contentDescription = null,
             tint = Lavender,
             modifier = Modifier.size(18.dp))
