@@ -1,5 +1,7 @@
 package com.planzy.app.ui.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -9,9 +11,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.DeepLinkResult
 import com.planzy.app.data.repository.PlacesRepositoryImpl
+import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.LocationEntityExtractor
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.ui.screens.SearchViewModel
@@ -23,6 +27,7 @@ import com.planzy.app.ui.screens.place.PlaceDetailsScreen
 import com.planzy.app.ui.screens.profile.ProfileScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
     val navController = rememberNavController()
@@ -70,11 +75,17 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
         factory = remember {
             SearchViewModel.Factory(
                 context = context,
-                repository = PlacesRepositoryImpl(TripadvisorApi(),
-                    com.planzy.app.data.remote.SupabaseClient,
-                    ResourceProviderImpl(context)),
+                repository = PlacesRepositoryImpl(
+                    TripadvisorApi(),
+                    SupabaseClient,
+                    ResourceProviderImpl(context)
+                ),
                 entityExtractor = LocationEntityExtractor(),
-                resourceProvider = ResourceProviderImpl(context)
+                resourceProvider = ResourceProviderImpl(context),
+                vacationsRepository = VacationsRepositoryImpl(
+                    supabaseClient =SupabaseClient,
+                    resourceProvider = ResourceProviderImpl(context)
+                )
             )
         }
     )

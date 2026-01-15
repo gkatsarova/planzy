@@ -2,8 +2,6 @@ package com.planzy.app.data.util
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import java.time.Instant
-import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -18,16 +16,21 @@ object DateFormatter {
     @RequiresApi(Build.VERSION_CODES.O)
     fun formatToShort(dateString: String): String {
         return try {
-            val instant = Instant.parse(
-                if (dateString.endsWith("Z")) dateString
-                else "${dateString}Z"
+            val zonedDateTime = ZonedDateTime.parse(
+                dateString,
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME
             )
-
-            val zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneId.systemDefault())
-
             zonedDateTime.format(shortFormatter)
         } catch (e: Exception) {
-            dateString
+            try {
+                val localDateTime = java.time.LocalDateTime.parse(
+                    dateString,
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                )
+                localDateTime.format(shortFormatter)
+            } catch (e2: Exception) {
+                dateString
+            }
         }
     }
 }

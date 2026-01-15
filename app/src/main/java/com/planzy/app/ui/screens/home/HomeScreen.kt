@@ -1,6 +1,8 @@
 package com.planzy.app.ui.screens.home
 
 import android.annotation.SuppressLint
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,19 +11,27 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.planzy.app.R
 import com.planzy.app.ui.navigation.Home
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.LocationPermissionDialog
 import com.planzy.app.ui.screens.components.PlaceCard
 import com.planzy.app.ui.screens.components.PlanzyTopAppBar
+import com.planzy.app.ui.screens.components.VacationCard
+import com.planzy.app.ui.theme.AmericanBlue
 import com.planzy.app.ui.theme.ErrorColor
+import com.planzy.app.ui.theme.Raleway
 
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("MissingPermission")
 @Composable
 fun HomeScreen(
@@ -100,16 +110,52 @@ fun HomeScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(searchViewModel.placesWithStats) { placeWithStats ->
-                            PlaceCard(
-                                place = placeWithStats.place,
-                                onCardClick = {
-                                    searchViewModel.clearSearch()
-                                    navController.navigate(PlaceDetails.createRoute(placeWithStats.place.id))
-                                },
-                                userRating = placeWithStats.userRating,
-                                userReviewsCount = placeWithStats.userReviewsCount
-                            )
+                        if (searchViewModel.vacations.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = stringResource(id = R.string.vacations),
+                                    fontFamily = Raleway,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AmericanBlue,
+                                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                )
+                            }
+
+                            items(searchViewModel.vacations) { vacation ->
+                                VacationCard(
+                                    vacation = vacation,
+                                    onCardClick = {  }
+                                )
+                            }
+                        }
+
+                        if (searchViewModel.placesWithStats.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = stringResource(id = R.string.places),
+                                    fontFamily = Raleway,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AmericanBlue,
+                                    modifier = Modifier.padding(
+                                        top = if (searchViewModel.vacations.isNotEmpty()) 16.dp else 8.dp,
+                                        bottom = 4.dp
+                                    )
+                                )
+                            }
+
+                            items(searchViewModel.placesWithStats) { placeWithStats ->
+                                PlaceCard(
+                                    place = placeWithStats.place,
+                                    onCardClick = {
+                                        searchViewModel.clearSearch()
+                                        navController.navigate(PlaceDetails.createRoute(placeWithStats.place.id))
+                                    },
+                                    userRating = placeWithStats.userRating,
+                                    userReviewsCount = placeWithStats.userReviewsCount
+                                )
+                            }
                         }
                     }
                 }

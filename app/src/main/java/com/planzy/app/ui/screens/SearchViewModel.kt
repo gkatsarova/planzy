@@ -16,8 +16,11 @@ import com.planzy.app.domain.usecase.place.SearchPlacesUseCase
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import com.google.mlkit.nl.entityextraction.Entity
+import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.HttpStatusCodes.TOO_MANY_REQUESTS
 import com.planzy.app.data.util.HttpStatusCodes.UNAUTHORIZED
+import com.planzy.app.domain.model.Vacation
+import com.planzy.app.domain.usecase.vacation.SearchVacationsUseCase
 
 data class PlaceWithStats(
     val place: Place,
@@ -28,6 +31,7 @@ data class PlaceWithStats(
 class SearchViewModel(
     private val searchPlacesUseCase: SearchPlacesUseCase,
     private val getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase,
+    private val searchVacationsUseCase: SearchVacationsUseCase,
     private val entityExtractor: LocationEntityExtractor,
     private val resourceProvider: ResourceProvider,
     context: Context
@@ -61,6 +65,8 @@ class SearchViewModel(
         private set
     var showLocationDialog by mutableStateOf(false)
         private set
+    var vacations by mutableStateOf<List<Vacation>>(emptyList())
+        private set
 
     init {
         viewModelScope.launch {
@@ -75,6 +81,7 @@ class SearchViewModel(
         searchQuery = ""
         places = emptyList()
         placesWithStats = emptyList()
+        vacations = emptyList()
         errorMessage = null
     }
 
@@ -133,6 +140,7 @@ class SearchViewModel(
         if (cleanQuery.isBlank()) {
             places = emptyList()
             placesWithStats = emptyList()
+            vacations = emptyList()
             errorMessage = null
             return
         }
@@ -148,16 +156,22 @@ class SearchViewModel(
             isLoading = true
             errorMessage = null
 
+            Log.d(TAG, "Starting search for: $cleanQuery")
+
             val foundLocationInText = detectLocationInQuery(cleanQuery)
 
             val (latLong, radius) = buildSearchParameters(foundLocationInText)
 
             Log.d(TAG, "Query: $cleanQuery  Location Detected: $foundLocationInText GPS Active: ${latLong != null}")
 
-            val result = searchPlacesUseCase(cleanQuery, latLong = latLong, radius = radius)
+            val placesResult = searchPlacesUseCase(cleanQuery, latLong = latLong, radius = radius)
 
-            result.onSuccess { list ->
+            Log.d(TAG, "Searching vacations...")
+            val vacationsResult = searchVacationsUseCase(cleanQuery)
+
+            placesResult.onSuccess { list ->
                 places = list
+                Log.d(TAG, "Found ${list.size} places")
 
                 val stats = list.map { place ->
                     val (rating, count) = getUserCommentsStatsUseCase(place.id).getOrNull()
@@ -167,12 +181,20 @@ class SearchViewModel(
 
                 placesWithStats = stats
                 searchCache[cleanQuery] = stats
-
-                if (list.isEmpty()) {
-                    errorMessage = resourceProvider.getString(R.string.error_no_places_found)
-                }
             }.onFailure { exception ->
+                Log.e(TAG, "Error searching places: ${exception.message}", exception)
                 errorMessage = resourceProvider.getString(mapExceptionToErrorResource(exception))
+            }
+
+            vacationsResult.onSuccess { list ->
+                vacations = list
+                Log.d(TAG, "Found ${list.size} vacations: ${list.map { it.title }}")
+            }.onFailure { exception ->
+                Log.e(TAG, "Error searching vacations: ${exception.message}", exception)
+            }
+
+            if (places.isEmpty() && vacations.isEmpty()) {
+                errorMessage = resourceProvider.getString(R.string.error_no_results_found)
             }
 
             isLoading = false
@@ -182,6 +204,7 @@ class SearchViewModel(
     class Factory(
         private val context: Context,
         private val repository: PlacesRepositoryImpl,
+        private val vacationsRepository: VacationsRepositoryImpl,
         private val entityExtractor: LocationEntityExtractor,
         private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
@@ -191,6 +214,7 @@ class SearchViewModel(
                 return SearchViewModel(
                     SearchPlacesUseCase(repository),
                     GetUserCommentsStatsUseCase(repository),
+                    SearchVacationsUseCase(vacationsRepository),
                     entityExtractor,
                     resourceProvider,
                     context.applicationContext

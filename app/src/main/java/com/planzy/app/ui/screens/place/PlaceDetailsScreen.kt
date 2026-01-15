@@ -131,7 +131,10 @@ fun PlaceDetailsScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (searchViewModel.places.isNotEmpty() || searchViewModel.isLoading) {
+            if (searchViewModel.places.isNotEmpty() ||
+                searchViewModel.vacations.isNotEmpty() ||
+                searchViewModel.isLoading
+            ) {
                 Box(modifier = Modifier.fillMaxSize().background(Lavender)) {
                     when {
                         searchViewModel.isLoading -> {
@@ -154,16 +157,51 @@ fun PlaceDetailsScreen(
                                 contentPadding = PaddingValues(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                items(searchViewModel.placesWithStats) { placeWithStats ->
-                                    PlaceCard(
-                                        place = placeWithStats.place,
-                                        onCardClick = {
-                                            searchViewModel.clearSearch()
-                                            navController.navigate(PlaceDetails.createRoute(placeWithStats.place.id))
-                                        },
-                                        userRating = placeWithStats.userRating,
-                                        userReviewsCount = placeWithStats.userReviewsCount
-                                    )
+                                if (searchViewModel.vacations.isNotEmpty()) {
+                                    item {
+                                        Text(
+                                            text = stringResource(id = R.string.vacations),
+                                            fontFamily = Raleway,
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AmericanBlue,
+                                            modifier = Modifier.padding(top = 16.dp)
+                                        )
+                                    }
+
+                                    items(searchViewModel.vacations) { vacation ->
+                                        VacationCard(
+                                            vacation = vacation,
+                                            onCardClick = { }
+                                        )
+                                    }
+                                }
+
+                                if (searchViewModel.places.isNotEmpty()) {
+                                    item {
+                                        Text(
+                                            text = stringResource(id = R.string.places),
+                                            fontFamily = Raleway,
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AmericanBlue,
+                                            modifier = Modifier.padding(top = 16.dp)
+                                        )
+                                    }
+
+                                    items(searchViewModel.places) { place ->
+                                        PlaceCard(
+                                            place = place,
+                                            onCardClick = {
+                                                searchViewModel.clearSearch()
+                                                navController.navigate(
+                                                    PlaceDetails.createRoute(
+                                                        place.id
+                                                    )
+                                                )
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -176,7 +214,7 @@ fun PlaceDetailsScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(color = MediumBluePurple)
+                            CircularProgressIndicator(color = AmaranthPurple)
                         }
                     }
 

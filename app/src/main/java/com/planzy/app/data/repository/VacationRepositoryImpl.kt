@@ -181,4 +181,55 @@ class VacationsRepositoryImpl(
             }
         }
     }
+
+    override suspend fun searchVacations(query: String): Result<List<Vacation>> {
+        return try {
+            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
+                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+
+            Log.d(TAG, "Searching vacations with query: $query for user: $currentUserId")
+
+            val vacationsResponse = supabaseClient.client.postgrest
+                .from("vacations")
+                .select {
+                    filter {
+                        eq("user_id", currentUserId)
+                        ilike("title", "%${query.trim()}%")
+                    }
+                    order("created_at", order = Order.DESCENDING)
+                }
+
+            val vacationDTOs = vacationsResponse.decodeList<VacationDTO>()
+            Log.d(TAG, "Found ${vacationDTOs.size} vacations")
+
+            val vacationsWithCount = vacationDTOs.map { vacationDTO ->
+                val placesCount = try {
+                    val placesResponse = supabaseClient.client.postgrest
+                        .from("vacation_places")
+                        .select(Columns.raw("id")) {
+                            filter {
+                                eq("vacation_id", vacationDTO.id)
+                            }
+                        }
+                    placesResponse.decodeList<VacationIdDTO>().size
+                } catch (e: Exception) {
+                    0
+                }
+
+                Vacation(
+                    id = vacationDTO.id,
+                    userId = vacationDTO.userId,
+                    title = vacationDTO.title,
+                    createdAt = vacationDTO.createdAt,
+                    placesCount = placesCount
+                )
+            }
+
+            Log.d(TAG, "Returning vacations: ${vacationsWithCount.map { it.title }}")
+            Result.success(vacationsWithCount)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error searching vacations: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_loading_vacations)))
+        }
+    }
 }

@@ -130,4 +130,6 @@
     <string name="new_vacation">New Vacation</string>
     <string name="vacation_title">Vacation title</string>
     <string name="create">Create</string>
+    <string name="error_no_results_found">No results found.</string>
+    <string name="places">Places</string>
 </resources>

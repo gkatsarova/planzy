@@ -14,4 +14,8 @@ interface VacationsRepository {
         vacationId: String,
         placeId: String
     ): Result<VacationPlace>
+
+    suspend fun searchVacations(
+        query: String
+    ): Result<List<Vacation>>
 }
