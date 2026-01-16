@@ -12,6 +12,12 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class UserInfo(
+    val username: String
+)
 
 class VacationsRepositoryImpl(
     private val supabaseClient: SupabaseClient,
@@ -230,6 +236,92 @@ class VacationsRepositoryImpl(
         } catch (e: Exception) {
             Log.e(TAG, "Error searching vacations: ${e.message}", e)
             Result.failure(Exception(resourceProvider.getString(R.string.error_loading_vacations)))
+        }
+    }
+
+    override suspend fun getVacationWithUser(vacationId: String): Result<Pair<Vacation, String>> {
+        return try {
+            val currentUser = supabaseClient.client.auth.currentUserOrNull()
+                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+
+            val vacationResponse = supabaseClient.client.postgrest
+                .from("vacations")
+                .select {
+                    filter {
+                        eq("id", vacationId)
+                    }
+                    limit(1)
+                }
+
+            val vacationDTO = vacationResponse.decodeSingle<VacationDTO>()
+
+            val username = if (vacationDTO.userId == currentUser.id) {
+                currentUser.userMetadata?.get("username") as? String ?: "You"
+            } else {
+                try {
+                    val userResponse = supabaseClient.client.postgrest
+                        .from("users")
+                        .select(Columns.raw("username")) {
+                            filter {
+                                eq("auth_id", vacationDTO.userId)
+                            }
+                            limit(1)
+                        }
+
+                    val user = userResponse.decodeSingle<UserInfo>()
+                    user.username
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error getting user info: ${e.message}", e)
+                    "Unknown User"
+                }
+            }
+
+            val placesCount = try {
+                val placesResponse = supabaseClient.client.postgrest
+                    .from("vacation_places")
+                    .select(Columns.raw("id")) {
+                        filter {
+                            eq("vacation_id", vacationId)
+                        }
+                    }
+                placesResponse.decodeList<VacationIdDTO>().size
+            } catch (e: Exception) {
+                0
+            }
+
+            val vacation = Vacation(
+                id = vacationDTO.id,
+                userId = vacationDTO.userId,
+                title = vacationDTO.title,
+                createdAt = vacationDTO.createdAt,
+                placesCount = placesCount
+            )
+
+            Result.success(Pair(vacation, username))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting vacation with user: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_loading_vacation)))
+        }
+    }
+
+    override suspend fun getVacationPlaceIds(vacationId: String): Result<List<String>> {
+        return try {
+            val placesResponse = supabaseClient.client.postgrest
+                .from("vacation_places")
+                .select(Columns.raw("place_id, order_index")) {
+                    filter {
+                        eq("vacation_id", vacationId)
+                    }
+                    order("order_index", order = Order.ASCENDING)
+                }
+
+            val placeIds = placesResponse.decodeList<VacationPlaceSimpleDTO>()
+                .map { it.placeId }
+
+            Result.success(placeIds)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting vacation place IDs: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_loading_places)))
         }
     }
 }

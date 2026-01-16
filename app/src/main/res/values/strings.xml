@@ -132,4 +132,10 @@
     <string name="create">Create</string>
     <string name="error_no_results_found">No results found.</string>
     <string name="places">Places</string>
+    <string name="created_by">created by</string>
+    <string name="no_places_in_vacation">No places added yet</string>
+    <string name="places_in_vacation">Places in vacation</string>
+    <string name="error_loading_vacation">Error loading vacation</string>
+    <string name="error_loading_places">Error loading places</string>
+    <string name="vacation_details">Vacation Details</string>
 </resources>

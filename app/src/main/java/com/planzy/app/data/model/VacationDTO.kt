@@ -56,6 +56,14 @@ data class VacationIdDTO(
     val id: String
 )
 
+@Serializable
+data class VacationPlaceSimpleDTO(
+    @SerialName("place_id")
+    val placeId: String,
+    @SerialName("order_index")
+    val orderIndex: Int
+)
+
 fun VacationDTO.toDomainModel() = Vacation(
     id = id,
     userId = userId,

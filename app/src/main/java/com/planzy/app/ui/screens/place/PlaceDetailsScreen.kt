@@ -37,6 +37,7 @@ import com.planzy.app.ui.screens.components.*
 import com.planzy.app.ui.theme.*
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
+import com.planzy.app.ui.navigation.VacationDetails
 
 @OptIn(DelicateCoroutinesApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -172,7 +173,10 @@ fun PlaceDetailsScreen(
                                     items(searchViewModel.vacations) { vacation ->
                                         VacationCard(
                                             vacation = vacation,
-                                            onCardClick = { }
+                                            onCardClick = {
+                                                searchViewModel.clearSearch()
+                                                navController.navigate(VacationDetails.createRoute(vacation.id))
+                                            }
                                         )
                                     }
                                 }

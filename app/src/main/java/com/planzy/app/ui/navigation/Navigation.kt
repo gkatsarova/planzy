@@ -25,6 +25,7 @@ import com.planzy.app.ui.screens.auth.login.LoginScreen
 import com.planzy.app.ui.screens.home.HomeScreen
 import com.planzy.app.ui.screens.place.PlaceDetailsScreen
 import com.planzy.app.ui.screens.profile.ProfileScreen
+import com.planzy.app.ui.screens.vacation.VacationDetailsScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -133,6 +134,22 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
                 navController = navController,
                 placeId = placeId,
                 searchViewModel = searchViewModel
+            )
+        }
+
+        composable(
+            route = VacationDetails.routeWithArgs,
+            arguments = listOf(
+                navArgument(VacationDetails.ARG_VACATION_ID) {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val vacationId = backStackEntry.arguments?.getString(VacationDetails.ARG_VACATION_ID) ?: ""
+
+            VacationDetailsScreen(
+                navController = navController,
+                vacationId = vacationId
             )
         }
     }

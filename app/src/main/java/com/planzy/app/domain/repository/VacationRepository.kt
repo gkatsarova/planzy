@@ -18,4 +18,11 @@ interface VacationsRepository {
     suspend fun searchVacations(
         query: String
     ): Result<List<Vacation>>
+
+    suspend fun getVacationWithUser(
+        vacationId: String
+    ): Result<Pair<Vacation, String>>
+    suspend fun getVacationPlaceIds(
+        vacationId: String
+    ): Result<List<String>>
 }
