@@ -149,7 +149,8 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
 
             VacationDetailsScreen(
                 navController = navController,
-                vacationId = vacationId
+                vacationId = vacationId,
+                searchViewModel = searchViewModel
             )
         }
     }

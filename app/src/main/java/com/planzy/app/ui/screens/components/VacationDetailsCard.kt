@@ -32,7 +32,7 @@ fun VacationDetailsCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(
             containerColor = AmaranthPurple
         )
@@ -47,21 +47,21 @@ fun VacationDetailsCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "Created by: $creatorUsername",
+                    text = "Created by $creatorUsername",
                     fontFamily = Raleway,
                     fontSize = 14.sp,
-                    color = Lavender.copy(alpha = 0.8f)
+                    color = Lavender
                 )
                 Text(
                     text = DateFormatter.formatToShort(createdAt),
                     fontFamily = Raleway,
                     fontSize = 14.sp,
-                    color = Lavender.copy(alpha = 0.7f)
+                    color = Lavender
                 )
             }
 
             HorizontalDivider(
-                color = Lavender.copy(alpha = 0.3f),
+                color = Lavender,
                 thickness = 1.dp
             )
 

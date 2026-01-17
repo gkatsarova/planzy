@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.planzy.app.domain.model.Vacation
@@ -32,7 +31,7 @@ fun VacationItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled) { onClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
         color = MediumBluePurple
     ) {
         Row(
@@ -46,7 +45,6 @@ fun VacationItem(
                     text = vacation.title,
                     fontFamily = Raleway,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
                     color = Lavender
                 )
                 Spacer(modifier = Modifier.height(4.dp))

@@ -15,6 +15,8 @@ import com.planzy.app.domain.repository.PlacesRepository
 import com.planzy.app.domain.usecase.vacation.GetVacationDetailsUseCase
 import com.planzy.app.domain.usecase.vacation.RemovePlaceFromVacationUseCase
 import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 
 class VacationDetailsViewModel(
@@ -74,9 +76,9 @@ class VacationDetailsViewModel(
         }
     }
 
-    private fun loadUserRatingsForPlaces(places: List<Place>) {
-        viewModelScope.launch {
-            places.forEach { place ->
+    private suspend fun loadUserRatingsForPlaces(places: List<Place>) {
+        places.map { place ->
+            viewModelScope.async {
                 placesRepository.getUserCommentsStats(place.id)
                     .onSuccess { (rating, count) ->
                         userRatingsCache[place.id] = Pair(rating, count)
@@ -85,7 +87,7 @@ class VacationDetailsViewModel(
                         userRatingsCache[place.id] = Pair(null, 0)
                     }
             }
-        }
+        }.awaitAll()
     }
 
     fun getUserRating(placeId: String): Pair<Double?, Int> {

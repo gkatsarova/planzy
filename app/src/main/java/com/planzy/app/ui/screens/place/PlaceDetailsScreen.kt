@@ -132,7 +132,7 @@ fun PlaceDetailsScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (searchViewModel.places.isNotEmpty() ||
+            if (searchViewModel.placesWithStats.isNotEmpty() ||
                 searchViewModel.vacations.isNotEmpty() ||
                 searchViewModel.isLoading
             ) {
@@ -145,12 +145,19 @@ fun PlaceDetailsScreen(
                             )
                         }
                         searchViewModel.errorMessage != null -> {
-                            Text(
-                                text = searchViewModel.errorMessage!!,
-                                color = ErrorColor,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.align(Alignment.Center).padding(24.dp)
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = searchViewModel.errorMessage!!,
+                                    color = ErrorColor,
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
                         }
                         else -> {
                             LazyColumn(
@@ -181,7 +188,7 @@ fun PlaceDetailsScreen(
                                     }
                                 }
 
-                                if (searchViewModel.places.isNotEmpty()) {
+                                if (searchViewModel.placesWithStats.isNotEmpty()) {
                                     item {
                                         Text(
                                             text = stringResource(id = R.string.places),
@@ -189,21 +196,26 @@ fun PlaceDetailsScreen(
                                             fontSize = 20.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = AmericanBlue,
-                                            modifier = Modifier.padding(top = 16.dp)
+                                            modifier = Modifier.padding(
+                                                top = if (searchViewModel.vacations.isNotEmpty()) 16.dp else 8.dp,
+                                                bottom = 4.dp
+                                            )
                                         )
                                     }
 
-                                    items(searchViewModel.places) { place ->
+                                    items(searchViewModel.placesWithStats) { placeWithStats ->
                                         PlaceCard(
-                                            place = place,
+                                            place = placeWithStats.place,
                                             onCardClick = {
                                                 searchViewModel.clearSearch()
                                                 navController.navigate(
                                                     PlaceDetails.createRoute(
-                                                        place.id
+                                                        placeWithStats.place.id
                                                     )
                                                 )
-                                            }
+                                            },
+                                            userRating = placeWithStats.userRating,
+                                            userReviewsCount = placeWithStats.userReviewsCount
                                         )
                                     }
                                 }
