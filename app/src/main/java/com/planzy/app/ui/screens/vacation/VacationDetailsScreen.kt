@@ -10,7 +10,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,6 +20,7 @@ import com.planzy.app.data.repository.PlacesRepositoryImpl
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.vacation.GetVacationDetailsUseCase
+import com.planzy.app.domain.usecase.vacation.RemovePlaceFromVacationUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.navigation.VacationDetails
 import com.planzy.app.ui.screens.components.PlanzyTopAppBar
@@ -51,11 +51,17 @@ fun VacationDetailsScreen(
         GetVacationDetailsUseCase(vacationsRepository, placesRepository)
     }
 
+    val removePlaceFromVacationUseCase = remember {
+        RemovePlaceFromVacationUseCase(vacationsRepository)
+    }
+
     val viewModel: VacationDetailsViewModel = viewModel(
         factory = VacationDetailsViewModel.Factory(
             getVacationDetailsUseCase = getVacationDetailsUseCase,
-            vacationId = vacationId,
-            stringResource = resourceProvider
+            removePlaceFromVacationUseCase = removePlaceFromVacationUseCase,
+            placesRepository = placesRepository,
+            recourceProvider = resourceProvider,
+            vacationId = vacationId
         )
     )
 
@@ -115,7 +121,6 @@ fun VacationDetailsScreen(
                                 text = vacation.title,
                                 fontFamily = Raleway,
                                 fontSize = 32.sp,
-                                fontWeight = FontWeight.Bold,
                                 color = AmericanBlue
                             )
                         }
@@ -127,6 +132,13 @@ fun VacationDetailsScreen(
                                 createdAt = vacation.createdAt,
                                 onPlaceClick = { place ->
                                     navController.navigate(PlaceDetails.createRoute(place.id))
+                                },
+                                onRemovePlace = { place ->
+                                    viewModel.removePlaceFromVacation(place.id)
+                                },
+                                isOwner = viewModel.isOwner,
+                                getUserRating = { placeId ->
+                                    viewModel.getUserRating(placeId)
                                 }
                             )
                         }

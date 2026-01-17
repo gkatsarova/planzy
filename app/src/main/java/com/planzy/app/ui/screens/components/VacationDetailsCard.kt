@@ -5,7 +5,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -25,6 +25,9 @@ fun VacationDetailsCard(
     creatorUsername: String,
     createdAt: String,
     onPlaceClick: (Place) -> Unit,
+    onRemovePlace: (Place) -> Unit,
+    isOwner: Boolean,
+    getUserRating: (String) -> Pair<Double?, Int>,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -78,9 +81,15 @@ fun VacationDetailsCard(
                 }
             } else {
                 places.forEach { place ->
+                    val (userRating, userReviewsCount) = getUserRating(place.id)
+
                     PlaceCard(
                         place = place,
-                        onCardClick = { onPlaceClick(place) }
+                        onCardClick = { onPlaceClick(place) },
+                        showRemoveButton = isOwner,
+                        onRemoveClick = { onRemovePlace(place) },
+                        userRating = userRating,
+                        userReviewsCount = userReviewsCount
                     )
                 }
             }

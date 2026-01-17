@@ -324,4 +324,45 @@ class VacationsRepositoryImpl(
             Result.failure(Exception(resourceProvider.getString(R.string.error_loading_places)))
         }
     }
+
+    override suspend fun removePlaceFromVacation(vacationId: String, placeId: String): Result<Unit> {
+        return try {
+            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
+                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+
+            val vacationCheck = supabaseClient.client.postgrest
+                .from("vacations")
+                .select(Columns.raw("id")) {
+                    filter {
+                        eq("id", vacationId)
+                        eq("user_id", currentUserId)
+                    }
+                    limit(1)
+                }
+
+            val vacationExists = try {
+                vacationCheck.decodeList<VacationIdDTO>().isNotEmpty()
+            } catch (e: Exception) {
+                false
+            }
+
+            if (!vacationExists) {
+                return Result.failure(Exception(resourceProvider.getString(R.string.error_vacation_not_found)))
+            }
+
+            supabaseClient.client.postgrest
+                .from("vacation_places")
+                .delete {
+                    filter {
+                        eq("vacation_id", vacationId)
+                        eq("place_id", placeId)
+                    }
+                }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error removing place from vacation: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_removing_place)))
+        }
+    }
 }

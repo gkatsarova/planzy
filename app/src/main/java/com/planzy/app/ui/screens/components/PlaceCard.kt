@@ -32,7 +32,9 @@ fun PlaceCard(
     onCardClick: () -> Unit,
     modifier: Modifier = Modifier,
     userRating: Double? = null,
-    userReviewsCount: Int? = null
+    userReviewsCount: Int? = null,
+    showRemoveButton: Boolean = false,
+    onRemoveClick: () -> Unit = {}
 ) {
     Card(
         modifier = modifier
@@ -43,149 +45,171 @@ fun PlaceCard(
             containerColor = MediumBluePurple
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Row(
                 modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MediumBluePurple),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (place.photoUrl != null) {
-                    AsyncImage(
-                        model = place.photoUrl,
-                        contentDescription = place.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        onError = {
-                            android.util.Log.e("PlaceCard", "Failed to load image for ${place.name}: ${place.photoUrl}")
-                        },
-                        onSuccess = {
-                            android.util.Log.d("PlaceCard", "Image loaded for ${place.name}")
-                        }
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Image,
-                        contentDescription = stringResource(id = R.string.no_image),
-                        modifier = Modifier.size(50.dp),
-                        tint = Lavender
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = place.name,
-                    fontFamily = Raleway,
-                    fontSize = 24.sp,
-                    maxLines = 2,
-                    color = Lavender
-                )
-
-                place.category?.let { category ->
-                    Text(
-                        text = category,
-                        fontFamily = Raleway,
-                        fontSize = 16.sp,
-                        color = Lavender
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MediumBluePurple),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = place.location.address,
-                        fontFamily = Raleway,
-                        fontSize = 16.sp,
-                        maxLines = 1,
-                        color = Lavender
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_tripadvisor),
-                        contentDescription = stringResource(id = R.string.tripadvisor),
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                    if (place.photoUrl != null) {
+                        AsyncImage(
+                            model = place.photoUrl,
+                            contentDescription = place.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            onError = {
+                                android.util.Log.e("PlaceCard", "Failed to load image for ${place.name}: ${place.photoUrl}")
+                            },
+                            onSuccess = {
+                                android.util.Log.d("PlaceCard", "Image loaded for ${place.name}")
+                            }
                         )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = stringResource(id = R.string.no_image),
+                            modifier = Modifier.size(50.dp),
+                            tint = Lavender
+                        )
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = if (showRemoveButton) 36.dp else 0.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    Text(
+                        text = place.name,
+                        fontFamily = Raleway,
+                        fontSize = 18.sp,
+                        maxLines = 2,
+                        color = Lavender
+                    )
+
+                    place.category?.let { category ->
                         Text(
-                            text = place.rating.toString(),
+                            text = category,
                             fontFamily = Raleway,
-                            fontSize = 16.sp,
-                            color = Lavender
+                            fontSize = 13.sp,
+                            color = Lavender.copy(alpha = 0.8f)
                         )
                     }
 
-                    Text(
-                        text = "(${place.reviewsCount} reviews)",
-                        fontFamily = Raleway,
-                        fontSize = 16.sp,
-                        color = Lavender
-                    )
-                }
-
-                if (userRating != null && userReviewsCount != null && userReviewsCount > 0) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = place.location.address,
+                            fontFamily = Raleway,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            color = Lavender.copy(alpha = 0.9f)
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_tripadvisor),
+                            contentDescription = stringResource(id = R.string.tripadvisor),
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(14.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = String.format(Locale.getDefault(), "%.1f", userRating),
+                                text = place.rating.toString(),
                                 fontFamily = Raleway,
-                                fontSize = 16.sp,
+                                fontSize = 13.sp,
                                 color = Lavender
                             )
                         }
 
                         Text(
-                            text = "($userReviewsCount ${stringResource(id = R.string.user_reviews)})",
+                            text = "(${place.reviewsCount})",
                             fontFamily = Raleway,
-                            fontSize = 16.sp,
-                            color = Lavender
+                            fontSize = 12.sp,
+                            color = Lavender.copy(alpha = 0.8f)
                         )
                     }
+
+                    if (userRating != null && userReviewsCount != null && userReviewsCount > 0) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%.1f", userRating),
+                                    fontFamily = Raleway,
+                                    fontSize = 13.sp,
+                                    color = Lavender
+                                )
+                            }
+
+                            Text(
+                                text = "($userReviewsCount ${stringResource(id = R.string.user_reviews)})",
+                                fontFamily = Raleway,
+                                fontSize = 12.sp,
+                                color = Lavender.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (showRemoveButton) {
+                IconButton(
+                    onClick = { onRemoveClick() },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(32.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_remove),
+                        contentDescription = stringResource(id = R.string.remove_from_vacation),
+                        tint = Lavender,
+                        modifier = Modifier
+                            .padding(6.dp)
+                            .size(20.dp)
+                    )
                 }
             }
         }

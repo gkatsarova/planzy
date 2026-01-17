@@ -25,4 +25,8 @@ interface VacationsRepository {
     suspend fun getVacationPlaceIds(
         vacationId: String
     ): Result<List<String>>
+    suspend fun removePlaceFromVacation(
+        vacationId: String,
+        placeId: String
+    ): Result<Unit>
 }
