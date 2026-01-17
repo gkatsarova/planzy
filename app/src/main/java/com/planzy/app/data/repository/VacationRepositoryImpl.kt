@@ -52,7 +52,7 @@ class VacationsRepositoryImpl(
                             }
                         }
                     placesResponse.decodeList<VacationIdDTO>().size
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     0
                 }
 
@@ -117,7 +117,7 @@ class VacationsRepositoryImpl(
 
             val vacationExists = try {
                 vacationCheck.decodeList<VacationIdDTO>().isNotEmpty()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 false
             }
 
@@ -137,7 +137,7 @@ class VacationsRepositoryImpl(
 
             val placeAlreadyExists = try {
                 existingPlaceCheck.decodeList<VacationIdDTO>().isNotEmpty()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 false
             }
 
@@ -158,7 +158,7 @@ class VacationsRepositoryImpl(
             val maxOrderIndex = try {
                 existingPlaces.decodeList<OrderIndexDTO>()
                     .firstOrNull()?.orderIndex ?: 0
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 0
             }
 
@@ -190,23 +190,19 @@ class VacationsRepositoryImpl(
 
     override suspend fun searchVacations(query: String): Result<List<Vacation>> {
         return try {
-            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
-
-            Log.d(TAG, "Searching vacations with query: $query for user: $currentUserId")
+            Log.d(TAG, "Searching ALL public vacations with query: $query")
 
             val vacationsResponse = supabaseClient.client.postgrest
                 .from("vacations")
                 .select {
                     filter {
-                        eq("user_id", currentUserId)
                         ilike("title", "%${query.trim()}%")
                     }
                     order("created_at", order = Order.DESCENDING)
                 }
 
             val vacationDTOs = vacationsResponse.decodeList<VacationDTO>()
-            Log.d(TAG, "Found ${vacationDTOs.size} vacations")
+            Log.d(TAG, "Found ${vacationDTOs.size} vacations from all users")
 
             val vacationsWithCount = vacationDTOs.map { vacationDTO ->
                 val placesCount = try {
@@ -218,7 +214,7 @@ class VacationsRepositoryImpl(
                             }
                         }
                     placesResponse.decodeList<VacationIdDTO>().size
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     0
                 }
 
@@ -231,7 +227,7 @@ class VacationsRepositoryImpl(
                 )
             }
 
-            Log.d(TAG, "Returning vacations: ${vacationsWithCount.map { it.title }}")
+            Log.d(TAG, "Returning ${vacationsWithCount.size} vacations")
             Result.success(vacationsWithCount)
         } catch (e: Exception) {
             Log.e(TAG, "Error searching vacations: ${e.message}", e)
@@ -256,7 +252,7 @@ class VacationsRepositoryImpl(
             val vacationDTO = vacationResponse.decodeSingle<VacationDTO>()
 
             val username = if (vacationDTO.userId == currentUser.id) {
-                currentUser.userMetadata?.get("username") as? String ?: "You"
+                resourceProvider.getString(R.string.you)
             } else {
                 try {
                     val userResponse = supabaseClient.client.postgrest
@@ -285,7 +281,7 @@ class VacationsRepositoryImpl(
                         }
                     }
                 placesResponse.decodeList<VacationIdDTO>().size
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 0
             }
 
@@ -342,7 +338,7 @@ class VacationsRepositoryImpl(
 
             val vacationExists = try {
                 vacationCheck.decodeList<VacationIdDTO>().isNotEmpty()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 false
             }
 
