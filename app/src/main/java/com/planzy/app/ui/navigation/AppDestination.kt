@@ -39,3 +39,12 @@ data object PlaceDetails : AppDestination {
     const val ARG_PLACE_ID = "placeId"
     val routeWithArgs = "$route/{$ARG_PLACE_ID}"
 }
+
+data object VacationDetails : AppDestination {
+    override val route = "vacation_details_screen"
+    override val title = "Vacation Details"
+
+    fun createRoute(vacationId: String) = "$route/$vacationId"
+    const val ARG_VACATION_ID = "vacationId"
+    val routeWithArgs = "$route/{$ARG_VACATION_ID}"
+}

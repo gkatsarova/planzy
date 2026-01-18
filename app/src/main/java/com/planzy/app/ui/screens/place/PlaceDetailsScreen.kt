@@ -27,13 +27,19 @@ import com.planzy.app.R
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.PlacesRepositoryImpl
+import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.place.*
+import com.planzy.app.domain.usecase.vacation.*
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.*
 import com.planzy.app.ui.theme.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.launch
+import com.planzy.app.ui.navigation.VacationDetails
 
+@OptIn(DelicateCoroutinesApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PlaceDetailsScreen(
@@ -47,18 +53,28 @@ fun PlaceDetailsScreen(
 
     val tripadvisorApi = remember { TripadvisorApi() }
     val resourceProvider = remember { ResourceProviderImpl(context) }
-    val repository = remember {
+
+    val placesRepository = remember {
         PlacesRepositoryImpl(tripadvisorApi, SupabaseClient, resourceProvider)
     }
 
-    val getPlaceDetailsUseCase = remember { GetPlaceDetailsUseCase(repository) }
-    val getPlaceReviewsUseCase = remember { GetPlaceReviewsUseCase(repository) }
-    val getUserCommentsUseCase = remember { GetUserCommentsUseCase(repository) }
-    val addUserCommentUseCase = remember { AddUserCommentUseCase(repository, resourceProvider) }
-    val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(repository, resourceProvider) }
-    val deleteUserCommentUseCase = remember { DeleteUserCommentUseCase(repository) }
+    val vacationsRepository = remember {
+        VacationsRepositoryImpl(SupabaseClient, resourceProvider)
+    }
+
+    val getPlaceDetailsUseCase = remember { GetPlaceDetailsUseCase(placesRepository) }
+    val getPlaceReviewsUseCase = remember { GetPlaceReviewsUseCase(placesRepository) }
+    val getUserCommentsUseCase = remember { GetUserCommentsUseCase(placesRepository) }
+    val addUserCommentUseCase = remember { AddUserCommentUseCase(placesRepository, resourceProvider) }
+    val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(placesRepository, resourceProvider) }
+    val deleteUserCommentUseCase = remember { DeleteUserCommentUseCase(placesRepository) }
+
+    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository) }
+    val createVacationUseCase = remember { CreateVacationUseCase(vacationsRepository) }
+    val addPlaceToVacationUseCase = remember { AddPlaceToVacationUseCase(vacationsRepository) }
 
     var isEditingAnyComment by remember { mutableStateOf(false) }
+    var showAddToVacationDialog by remember { mutableStateOf(false) }
 
     val viewModel: PlaceDetailsViewModel = viewModel(
         factory = PlaceDetailsViewModel.Factory(
@@ -73,6 +89,20 @@ fun PlaceDetailsScreen(
         )
     )
 
+    val addToVacationViewModel: AddToVacationViewModel = viewModel(
+        factory = AddToVacationViewModel.Factory(
+            getUserVacationsUseCase = getUserVacationsUseCase,
+            createVacationUseCase = createVacationUseCase,
+            addPlaceToVacationUseCase = addPlaceToVacationUseCase,
+            resourceProvider = resourceProvider
+        )
+    )
+
+    val isSearchActive = searchViewModel.placesWithStats.isNotEmpty() ||
+            searchViewModel.vacations.isNotEmpty() ||
+            searchViewModel.isLoading ||
+            searchViewModel.isSearchBarFocused
+
     Scaffold(
         topBar = {
             PlanzyTopAppBar(
@@ -84,19 +114,21 @@ fun PlaceDetailsScreen(
             )
         },
         bottomBar = {
-            Surface(
-                color = Lavender,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .imePadding()
-            ) {
-                if (!isEditingAnyComment) {
-                    AddCommentSection(
-                        isSubmitting = viewModel.isSubmittingComment,
-                        errorMessage = viewModel.commentErrorMessage,
-                        onSubmit = { text, rating -> viewModel.addUserComment(text, rating) },
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-                    )
+            if (!isSearchActive) {
+                Surface(
+                    color = Lavender,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .imePadding()
+                ) {
+                    if (!isEditingAnyComment) {
+                        AddCommentSection(
+                            isSubmitting = viewModel.isSubmittingComment,
+                            errorMessage = viewModel.commentErrorMessage,
+                            onSubmit = { text, rating -> viewModel.addUserComment(text, rating) },
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                        )
+                    }
                 }
             }
         },
@@ -107,7 +139,10 @@ fun PlaceDetailsScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (searchViewModel.places.isNotEmpty() || searchViewModel.isLoading) {
+            if (searchViewModel.placesWithStats.isNotEmpty() ||
+                searchViewModel.vacations.isNotEmpty() ||
+                searchViewModel.isLoading
+            ) {
                 Box(modifier = Modifier.fillMaxSize().background(Lavender)) {
                     when {
                         searchViewModel.isLoading -> {
@@ -117,12 +152,19 @@ fun PlaceDetailsScreen(
                             )
                         }
                         searchViewModel.errorMessage != null -> {
-                            Text(
-                                text = searchViewModel.errorMessage!!,
-                                color = ErrorColor,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.align(Alignment.Center).padding(24.dp)
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = searchViewModel.errorMessage!!,
+                                    color = ErrorColor,
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
                         }
                         else -> {
                             LazyColumn(
@@ -130,16 +172,59 @@ fun PlaceDetailsScreen(
                                 contentPadding = PaddingValues(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                items(searchViewModel.placesWithStats) { placeWithStats ->
-                                    PlaceCard(
-                                        place = placeWithStats.place,
-                                        onCardClick = {
-                                            searchViewModel.clearSearch()
-                                            navController.navigate(PlaceDetails.createRoute(placeWithStats.place.id))
-                                        },
-                                        userRating = placeWithStats.userRating,
-                                        userReviewsCount = placeWithStats.userReviewsCount
-                                    )
+                                if (searchViewModel.vacations.isNotEmpty()) {
+                                    item {
+                                        Text(
+                                            text = stringResource(id = R.string.vacations),
+                                            fontFamily = Raleway,
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AmericanBlue,
+                                            modifier = Modifier.padding(top = 16.dp)
+                                        )
+                                    }
+
+                                    items(searchViewModel.vacations) { vacation ->
+                                        VacationCard(
+                                            vacation = vacation,
+                                            onCardClick = {
+                                                searchViewModel.clearSearch()
+                                                navController.navigate(VacationDetails.createRoute(vacation.id))
+                                            }
+                                        )
+                                    }
+                                }
+
+                                if (searchViewModel.placesWithStats.isNotEmpty()) {
+                                    item {
+                                        Text(
+                                            text = stringResource(id = R.string.places),
+                                            fontFamily = Raleway,
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AmericanBlue,
+                                            modifier = Modifier.padding(
+                                                top = if (searchViewModel.vacations.isNotEmpty()) 16.dp else 8.dp,
+                                                bottom = 4.dp
+                                            )
+                                        )
+                                    }
+
+                                    items(searchViewModel.placesWithStats) { placeWithStats ->
+                                        PlaceCard(
+                                            place = placeWithStats.place,
+                                            onCardClick = {
+                                                searchViewModel.clearSearch()
+                                                navController.navigate(
+                                                    PlaceDetails.createRoute(
+                                                        placeWithStats.place.id
+                                                    )
+                                                )
+                                            },
+                                            userRating = placeWithStats.userRating,
+                                            userReviewsCount = placeWithStats.userReviewsCount
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -152,7 +237,7 @@ fun PlaceDetailsScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(color = MediumBluePurple)
+                            CircularProgressIndicator(color = AmaranthPurple)
                         }
                     }
 
@@ -187,7 +272,10 @@ fun PlaceDetailsScreen(
                             }
 
                             item {
-                                PlaceDetailsCard(place = place)
+                                PlaceDetailsCard(
+                                    place = place,
+                                    onAddToVacation = { showAddToVacationDialog = true }
+                                )
                             }
 
                             item {
@@ -240,6 +328,39 @@ fun PlaceDetailsScreen(
                     }
                 }
             }
+        }
+
+        if (showAddToVacationDialog) {
+            AddToVacationDialog(
+                vacations = addToVacationViewModel.vacations,
+                isLoading = addToVacationViewModel.isLoading,
+                isCreating = addToVacationViewModel.isCreatingVacation,
+                isAdding = addToVacationViewModel.isAddingPlace,
+                errorMessage = addToVacationViewModel.errorMessage,
+                successMessage = addToVacationViewModel.successMessage,
+                onDismiss = {
+                    showAddToVacationDialog = false
+                    addToVacationViewModel.clearMessages()
+                },
+                onCreateVacation = { title ->
+                    addToVacationViewModel.createVacation(title) { newVacation ->
+                        addToVacationViewModel.addPlaceToVacation(newVacation.id, placeId) {
+                            kotlinx.coroutines.GlobalScope.launch {
+                                kotlinx.coroutines.delay(1500)
+                                showAddToVacationDialog = false
+                            }
+                        }
+                    }
+                },
+                onSelectVacation = { vacationId ->
+                    addToVacationViewModel.addPlaceToVacation(vacationId, placeId) {
+                        kotlinx.coroutines.GlobalScope.launch {
+                            kotlinx.coroutines.delay(1500)
+                            showAddToVacationDialog = false
+                        }
+                    }
+                }
+            )
         }
     }
 }

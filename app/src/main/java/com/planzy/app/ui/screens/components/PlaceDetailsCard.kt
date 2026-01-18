@@ -11,8 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +27,7 @@ import com.planzy.app.R
 @Composable
 fun PlaceDetailsCard(
     place: Place,
+    onAddToVacation: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -65,10 +68,9 @@ fun PlaceDetailsCard(
                     }
 
                     Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        modifier = Modifier.weight(1f)
                     ) {
-                        InfoRow(Icons.Default.LocationOn,
+                        InfoRow(rememberVectorPainter(Icons.Default.LocationOn),
                             place.location.address
                         ) {
                             val uri = "geo:0,0?q=${android.net.Uri.encode(place.location.address)}".toUri()
@@ -77,7 +79,7 @@ fun PlaceDetailsCard(
 
                         place.contact?.phone?.let { phone ->
                             if (phone.isNotBlank()) {
-                                InfoRow(Icons.Default.Phone,
+                                InfoRow(rememberVectorPainter(Icons.Default.Phone),
                                     phone
                                 ) {
                                     context.startActivity(Intent(Intent.ACTION_DIAL, "tel:$phone".toUri()))
@@ -88,12 +90,19 @@ fun PlaceDetailsCard(
                         place.contact?.website?.let { website ->
                             if (website.isNotBlank()) {
                                 InfoRow(
-                                    Icons.Default.Language,
+                                    rememberVectorPainter(Icons.Default.Language),
                                     stringResource(id = R.string.visit_website)
                                 ) {
                                     context.startActivity(Intent(Intent.ACTION_VIEW, website.toUri()))
                                 }
                             }
+                        }
+
+                        InfoRow(
+                            painter = painterResource(id = R.drawable.ic_add),
+                            text = stringResource(id = R.string.add_to_vacation),
+                        ) {
+                            onAddToVacation()
                         }
                     }
                 }
