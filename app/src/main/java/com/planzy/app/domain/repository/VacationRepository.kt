@@ -44,4 +44,7 @@ interface VacationsRepository {
     suspend fun deleteVacationComment(
         commentId: String
     ): Result<Unit>
+    suspend fun getVacationCommentsCount(
+        vacationId: String
+    ): Result<Int>
 }

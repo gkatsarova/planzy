@@ -519,4 +519,22 @@ class VacationsRepositoryImpl(
             Result.failure(Exception(resourceProvider.getString(R.string.error_deleting_comment)))
         }
     }
+
+    override suspend fun getVacationCommentsCount(vacationId: String): Result<Int> {
+        return try {
+            val response = supabaseClient.client.postgrest
+                .from("vacation_comments")
+                .select(Columns.raw("id")) {
+                    filter {
+                        eq("vacation_id", vacationId)
+                    }
+                }
+
+            val count = response.decodeList<VacationIdDTO>().size
+            Result.success(count)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting vacation comments count: ${e.message}", e)
+            Result.success(0)
+        }
+    }
 }

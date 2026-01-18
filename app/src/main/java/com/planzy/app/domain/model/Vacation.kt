@@ -5,7 +5,8 @@ data class Vacation(
     val userId: String,
     val title: String,
     val createdAt: String,
-    val placesCount: Int = 0
+    val placesCount: Int = 0,
+    val commentsCount: Int = 0
 )
 
 data class VacationPlace(

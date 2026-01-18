@@ -20,6 +20,7 @@ import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.HttpStatusCodes.TOO_MANY_REQUESTS
 import com.planzy.app.data.util.HttpStatusCodes.UNAUTHORIZED
 import com.planzy.app.domain.model.Vacation
+import com.planzy.app.domain.usecase.vacation.GetVacationCommentsCountUseCase
 import com.planzy.app.domain.usecase.vacation.SearchVacationsUseCase
 
 data class PlaceWithStats(
@@ -32,6 +33,7 @@ class SearchViewModel(
     private val searchPlacesUseCase: SearchPlacesUseCase,
     private val getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase,
     private val searchVacationsUseCase: SearchVacationsUseCase,
+    private val getVacationCommentsCountUseCase: GetVacationCommentsCountUseCase,
     private val entityExtractor: LocationEntityExtractor,
     private val resourceProvider: ResourceProvider,
     context: Context
@@ -194,8 +196,17 @@ class SearchViewModel(
             }
 
             vacationsResult.onSuccess { list ->
-                vacations = list
-                Log.d(TAG, "Found ${list.size} vacations: ${list.map { it.title }}")
+                Log.d(TAG, "Found ${list.size} vacations")
+
+                val vacationsWithComments = list.map { vacation ->
+                    val commentsCount = getVacationCommentsCountUseCase(vacation.id)
+                        .getOrDefault(0)
+
+                    vacation.copy(commentsCount = commentsCount)
+                }
+
+                vacations = vacationsWithComments
+                Log.d(TAG, "Updated vacations with comments: ${vacationsWithComments.map { "${it.title} (${it.commentsCount} comments)" }}")
             }.onFailure { exception ->
                 Log.e(TAG, "Error searching vacations: ${exception.message}", exception)
             }
@@ -222,6 +233,7 @@ class SearchViewModel(
                     SearchPlacesUseCase(repository),
                     GetUserCommentsStatsUseCase(repository),
                     SearchVacationsUseCase(vacationsRepository),
+                    GetVacationCommentsCountUseCase(vacationsRepository),
                     entityExtractor,
                     resourceProvider,
                     context.applicationContext
