@@ -163,7 +163,7 @@ fun AddVacationCommentSection(
                                         text = buttonText,
                                         fontFamily = Raleway,
                                         fontSize = 11.sp,
-                                        color = Color.White,
+                                        color = Lavender,
                                         maxLines = 1
                                     )
                                 }

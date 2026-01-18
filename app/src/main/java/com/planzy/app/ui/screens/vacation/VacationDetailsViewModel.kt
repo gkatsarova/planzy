@@ -7,14 +7,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
-import com.planzy.app.data.remote.SupabaseClient
+import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.model.VacationComment
 import com.planzy.app.domain.repository.PlacesRepository
+import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.vacation.*
-import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
@@ -26,10 +27,10 @@ class VacationDetailsViewModel(
     private val addVacationCommentUseCase: AddVacationCommentUseCase,
     private val updateVacationCommentUseCase: UpdateVacationCommentUseCase,
     private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val placesRepository: PlacesRepository,
     private val resourceProvider: ResourceProvider,
-    private val vacationId: String,
-    private val getCurrentUserId: () -> String? = { SupabaseClient.client.auth.currentUserOrNull()?.id }
+    private val vacationId: String
 ) : ViewModel() {
 
     var isLoading by mutableStateOf(true)
@@ -70,12 +71,20 @@ class VacationDetailsViewModel(
 
     var isUpdatingComment by mutableStateOf(false)
         private set
+    private var currentUserId: String? = null
 
     private var userRatingsCache = mutableMapOf<String, Pair<Double?, Int>>()
 
     init {
+        loadCurrentUserId()
         loadVacationDetails()
         loadVacationComments()
+    }
+
+    private fun loadCurrentUserId() {
+        viewModelScope.launch {
+            currentUserId = getCurrentUserUseCase()?.id
+        }
     }
 
     fun loadVacationDetails() {
@@ -89,8 +98,7 @@ class VacationDetailsViewModel(
                     creatorUsername = details.creatorUsername
                     places = details.places
 
-                    val currentUserId = getCurrentUserId()
-                    isOwner = currentUserId == details.vacation.userId
+                    isOwner = currentUserId != null && currentUserId == details.vacation.userId
 
                     loadUserRatingsForPlaces(details.places)
 
@@ -220,6 +228,8 @@ class VacationDetailsViewModel(
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            val authRepository = AuthRepositoryImpl(resourceProvider as ResourceProviderImpl)
+            val getCurrentUserUseCase = GetCurrentUserUseCase(authRepository)
             return VacationDetailsViewModel(
                 getVacationDetailsUseCase,
                 removePlaceFromVacationUseCase,
@@ -227,6 +237,7 @@ class VacationDetailsViewModel(
                 addVacationCommentUseCase,
                 updateVacationCommentUseCase,
                 deleteVacationCommentUseCase,
+                getCurrentUserUseCase,
                 placesRepository,
                 resourceProvider,
                 vacationId

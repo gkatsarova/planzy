@@ -5,6 +5,7 @@ import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.model.VacationComment
 import com.planzy.app.domain.repository.PlacesRepository
+import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.ui.screens.vacation.VacationDetailsViewModel
 import com.planzy.app.domain.usecase.vacation.*
 import io.mockk.*
@@ -26,6 +27,7 @@ class VacationDetailsViewModelTest {
     private val addVacationCommentUseCase: AddVacationCommentUseCase = mockk()
     private val updateVacationCommentUseCase: UpdateVacationCommentUseCase = mockk()
     private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase = mockk()
+    private val getCurrentUserUseCase: GetCurrentUserUseCase = mockk()
     private val placesRepository: PlacesRepository = mockk()
     private val resourceProvider: ResourceProvider = mockk()
 
@@ -36,6 +38,7 @@ class VacationDetailsViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
 
+        coEvery { getCurrentUserUseCase() } returns null
         coEvery { getVacationDetailsUseCase(any()) } returns Result.success(
             VacationDetails(
                 vacation = mockk(relaxed = true),
@@ -60,10 +63,10 @@ class VacationDetailsViewModelTest {
             addVacationCommentUseCase,
             updateVacationCommentUseCase,
             deleteVacationCommentUseCase,
+            getCurrentUserUseCase,
             placesRepository,
             resourceProvider,
-            vacationId,
-            getCurrentUserId = { null }
+            vacationId
         )
     }
 

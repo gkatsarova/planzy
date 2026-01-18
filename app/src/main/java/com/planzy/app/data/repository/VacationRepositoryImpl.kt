@@ -534,7 +534,7 @@ class VacationsRepositoryImpl(
             Result.success(count)
         } catch (e: Exception) {
             Log.e(TAG, "Error getting vacation comments count: ${e.message}", e)
-            Result.success(0)
+            Result.failure(e)
         }
     }
 }
