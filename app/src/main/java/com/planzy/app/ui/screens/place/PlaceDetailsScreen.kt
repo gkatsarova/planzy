@@ -98,6 +98,11 @@ fun PlaceDetailsScreen(
         )
     )
 
+    val isSearchActive = searchViewModel.placesWithStats.isNotEmpty() ||
+            searchViewModel.vacations.isNotEmpty() ||
+            searchViewModel.isLoading ||
+            searchViewModel.isSearchBarFocused
+
     Scaffold(
         topBar = {
             PlanzyTopAppBar(
@@ -109,19 +114,21 @@ fun PlaceDetailsScreen(
             )
         },
         bottomBar = {
-            Surface(
-                color = Lavender,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .imePadding()
-            ) {
-                if (!isEditingAnyComment) {
-                    AddCommentSection(
-                        isSubmitting = viewModel.isSubmittingComment,
-                        errorMessage = viewModel.commentErrorMessage,
-                        onSubmit = { text, rating -> viewModel.addUserComment(text, rating) },
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-                    )
+            if (!isSearchActive) {
+                Surface(
+                    color = Lavender,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .imePadding()
+                ) {
+                    if (!isEditingAnyComment) {
+                        AddCommentSection(
+                            isSubmitting = viewModel.isSubmittingComment,
+                            errorMessage = viewModel.commentErrorMessage,
+                            onSubmit = { text, rating -> viewModel.addUserComment(text, rating) },
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                        )
+                    }
                 }
             }
         },

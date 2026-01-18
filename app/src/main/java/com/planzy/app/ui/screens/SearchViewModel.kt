@@ -67,6 +67,8 @@ class SearchViewModel(
         private set
     var vacations by mutableStateOf<List<Vacation>>(emptyList())
         private set
+    var isSearchBarFocused by mutableStateOf(false)
+        private set
 
     init {
         viewModelScope.launch {
@@ -77,12 +79,17 @@ class SearchViewModel(
         }
     }
 
+    fun updateSearchBarFocus(isFocused: Boolean) {
+        isSearchBarFocused = isFocused
+    }
+
     fun clearSearch() {
         searchQuery = ""
         places = emptyList()
         placesWithStats = emptyList()
         vacations = emptyList()
         errorMessage = null
+        isSearchBarFocused = false
     }
 
     fun setUserLocation(lat: Double, lon: Double) {

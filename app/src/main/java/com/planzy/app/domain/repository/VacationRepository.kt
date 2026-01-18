@@ -1,6 +1,7 @@
 package com.planzy.app.domain.repository
 
 import com.planzy.app.domain.model.Vacation
+import com.planzy.app.domain.model.VacationComment
 import com.planzy.app.domain.model.VacationPlace
 
 interface VacationsRepository {
@@ -28,5 +29,19 @@ interface VacationsRepository {
     suspend fun removePlaceFromVacation(
         vacationId: String,
         placeId: String
+    ): Result<Unit>
+    suspend fun getVacationComments(
+        vacationId: String
+    ): Result<List<VacationComment>>
+    suspend fun addVacationComment(
+        vacationId: String,
+        text: String
+    ): Result<VacationComment>
+    suspend fun updateVacationComment(
+        commentId: String,
+        text: String
+    ): Result<Unit>
+    suspend fun deleteVacationComment(
+        commentId: String
     ): Result<Unit>
 }

@@ -13,6 +13,8 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import com.planzy.app.domain.model.VacationComment
 
 @Serializable
 data class UserInfo(
@@ -359,6 +361,162 @@ class VacationsRepositoryImpl(
         } catch (e: Exception) {
             Log.e(TAG, "Error removing place from vacation: ${e.message}", e)
             Result.failure(Exception(resourceProvider.getString(R.string.error_removing_place)))
+        }
+    }
+
+    override suspend fun getVacationComments(vacationId: String): Result<List<VacationComment>> {
+        return try {
+
+            val response = supabaseClient.client.postgrest
+                .from("vacation_comments")
+                .select(Columns.raw("id, vacation_id, user_id, text, created_at")) {
+                    filter {
+                        eq("vacation_id", vacationId)
+                    }
+                    order("created_at", order = Order.DESCENDING)
+                }
+
+            val commentDTOs = response.decodeList<VacationCommentDTO>()
+
+            val comments = commentDTOs.map { dto ->
+                val username = try {
+                    val userResponse = supabaseClient.client.postgrest
+                        .from("users")
+                        .select(Columns.raw("username")) {
+                            filter {
+                                eq("auth_id", dto.userId)
+                            }
+                            limit(1)
+                        }
+
+                    val userInfo = userResponse.decodeSingle<UserInfo>()
+                    userInfo.username
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error fetching username for user ${dto.userId}: ${e.message}", e)
+                    resourceProvider.getString(R.string.unknown_user)
+                }
+
+                VacationComment(
+                    id = dto.id,
+                    vacationId = dto.vacationId,
+                    userId = dto.userId,
+                    userName = username,
+                    text = dto.text,
+                    createdAt = dto.createdAt,
+                    isOwner = dto.userId == supabaseClient.client.auth.currentUserOrNull()?.id
+                )
+            }
+
+            Result.success(comments)
+        } catch (e: SerializationException) {
+            Log.e(TAG, "Serialization error: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_parsing_comments)))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting vacation comments: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.unknown_error)))
+        }
+    }
+
+    override suspend fun addVacationComment(
+        vacationId: String,
+        text: String
+    ): Result<VacationComment> {
+        return try {
+            val currentUser = supabaseClient.client.auth.currentUserOrNull()
+                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+
+            val commentToInsert = VacationCommentInsertDTO(
+                vacationId = vacationId,
+                userId = currentUser.id,
+                text = text.trim()
+            )
+
+            val response = supabaseClient.client.postgrest
+                .from("vacation_comments")
+                .insert(commentToInsert) {
+                    select(Columns.raw("id, vacation_id, user_id, text, created_at"))
+                }
+
+            val dto = response.decodeSingle<VacationCommentDTO>()
+
+            val username = try {
+                val userResponse = supabaseClient.client.postgrest
+                    .from("users")
+                    .select(Columns.raw("username")) {
+                        filter {
+                            eq("auth_id", currentUser.id)
+                        }
+                        limit(1)
+                    }
+
+                val userInfo = userResponse.decodeSingle<UserInfo>()
+                userInfo.username
+            } catch (e: Exception) {
+                Log.e(TAG, "Error fetching username: ${e.message}", e)
+                "Unknown User"
+            }
+
+            val comment = VacationComment(
+                id = dto.id,
+                vacationId = dto.vacationId,
+                userId = dto.userId,
+                userName = username,
+                text = dto.text,
+                createdAt = dto.createdAt,
+                isOwner = true
+            )
+
+            Result.success(comment)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error adding vacation comment: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_posting_comment)))
+        }
+    }
+
+    override suspend fun updateVacationComment(
+        commentId: String,
+        text: String
+    ): Result<Unit> {
+        return try {
+            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
+                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+
+            supabaseClient.client.postgrest
+                .from("vacation_comments")
+                .update({
+                    set("text", text.trim())
+                }) {
+                    filter {
+                        eq("id", commentId)
+                        eq("user_id", currentUserId)
+                    }
+                }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating vacation comment: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_updating_comment)))
+        }
+    }
+
+    override suspend fun deleteVacationComment(commentId: String): Result<Unit> {
+        return try {
+            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
+                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+
+            supabaseClient.client.postgrest
+                .from("vacation_comments")
+                .delete {
+                    filter {
+                        eq("id", commentId)
+                        eq("user_id", currentUserId)
+                    }
+                }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deleting vacation comment: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_deleting_comment)))
         }
     }
 }

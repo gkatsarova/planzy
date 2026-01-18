@@ -11,9 +11,9 @@ import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
+import com.planzy.app.domain.model.VacationComment
 import com.planzy.app.domain.repository.PlacesRepository
-import com.planzy.app.domain.usecase.vacation.GetVacationDetailsUseCase
-import com.planzy.app.domain.usecase.vacation.RemovePlaceFromVacationUseCase
+import com.planzy.app.domain.usecase.vacation.*
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -22,8 +22,12 @@ import kotlinx.coroutines.launch
 class VacationDetailsViewModel(
     private val getVacationDetailsUseCase: GetVacationDetailsUseCase,
     private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase,
+    private val getVacationCommentsUseCase: GetVacationCommentsUseCase,
+    private val addVacationCommentUseCase: AddVacationCommentUseCase,
+    private val updateVacationCommentUseCase: UpdateVacationCommentUseCase,
+    private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
     private val placesRepository: PlacesRepository,
-    private val recourceProvider: ResourceProvider,
+    private val resourceProvider: ResourceProvider,
     private val vacationId: String
 ) : ViewModel() {
 
@@ -45,10 +49,32 @@ class VacationDetailsViewModel(
     var isOwner by mutableStateOf(false)
         private set
 
+    var vacationComments by mutableStateOf<List<VacationComment>>(emptyList())
+        private set
+
+    var isLoadingComments by mutableStateOf(false)
+        private set
+
+    var commentsErrorMessage by mutableStateOf<String?>(null)
+        private set
+
+    var isSubmittingComment by mutableStateOf(false)
+        private set
+
+    var commentErrorMessage by mutableStateOf<String?>(null)
+        private set
+
+    var isDeletingComment by mutableStateOf(false)
+        private set
+
+    var isUpdatingComment by mutableStateOf(false)
+        private set
+
     private var userRatingsCache = mutableMapOf<String, Pair<Double?, Int>>()
 
     init {
         loadVacationDetails()
+        loadVacationComments()
     }
 
     fun loadVacationDetails() {
@@ -70,7 +96,7 @@ class VacationDetailsViewModel(
                     isLoading = false
                 }
                 .onFailure { exception ->
-                    errorMessage = exception.message ?: recourceProvider.getString(R.string.unknown_error)
+                    errorMessage = exception.message ?: resourceProvider.getString(R.string.unknown_error)
                     isLoading = false
                 }
         }
@@ -110,15 +136,85 @@ class VacationDetailsViewModel(
         }
     }
 
+    fun loadVacationComments() {
+        viewModelScope.launch {
+            isLoadingComments = true
+            commentsErrorMessage = null
+            getVacationCommentsUseCase(vacationId)
+                .onSuccess {
+                    vacationComments = it
+                    isLoadingComments = false
+                }
+                .onFailure {
+                    commentsErrorMessage = resourceProvider.getString(R.string.error_loading_community_comments)
+                    isLoadingComments = false
+                }
+        }
+    }
+
+    fun addVacationComment(text: String) {
+        viewModelScope.launch {
+            isSubmittingComment = true
+            commentErrorMessage = null
+
+            addVacationCommentUseCase(vacationId, text)
+                .onSuccess { newComment ->
+                    vacationComments = listOf(newComment) + vacationComments
+                    isSubmittingComment = false
+                }
+                .onFailure { error ->
+                    commentErrorMessage = error.message
+                    isSubmittingComment = false
+                }
+        }
+    }
+
+    fun updateVacationComment(commentId: String, text: String) {
+        viewModelScope.launch {
+            isUpdatingComment = true
+            commentErrorMessage = null
+
+            updateVacationCommentUseCase(commentId, text)
+                .onSuccess {
+                    loadVacationComments()
+                    isUpdatingComment = false
+                }
+                .onFailure { error ->
+                    commentErrorMessage = error.message
+                    isUpdatingComment = false
+                }
+        }
+    }
+
+    fun deleteVacationComment(commentId: String) {
+        viewModelScope.launch {
+            isDeletingComment = true
+
+            deleteVacationCommentUseCase(commentId)
+                .onSuccess {
+                    vacationComments = vacationComments.filter { it.id != commentId }
+                    isDeletingComment = false
+                }
+                .onFailure {
+                    isDeletingComment = false
+                }
+        }
+    }
+
     fun onRetry() {
         loadVacationDetails()
+        loadVacationComments()
     }
 
     class Factory(
         private val getVacationDetailsUseCase: GetVacationDetailsUseCase,
         private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase,
+        private val getVacationCommentsUseCase: GetVacationCommentsUseCase,
+        private val addVacationCommentUseCase: AddVacationCommentUseCase,
+        private val updateVacationCommentUseCase: UpdateVacationCommentUseCase,
+        private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
         private val placesRepository: PlacesRepository,
-        private val recourceProvider: ResourceProvider,
+        private val resourceProvider: ResourceProvider,
         private val vacationId: String
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -126,8 +222,12 @@ class VacationDetailsViewModel(
             return VacationDetailsViewModel(
                 getVacationDetailsUseCase,
                 removePlaceFromVacationUseCase,
+                getVacationCommentsUseCase,
+                addVacationCommentUseCase,
+                updateVacationCommentUseCase,
+                deleteVacationCommentUseCase,
                 placesRepository,
-                recourceProvider,
+                resourceProvider,
                 vacationId
             ) as T
         }

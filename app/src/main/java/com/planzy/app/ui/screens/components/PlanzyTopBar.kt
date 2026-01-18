@@ -29,7 +29,8 @@ import com.planzy.app.ui.theme.Raleway
 fun PlanzyTopAppBar(
     title: String,
     navController: NavController,
-    onSearch: (String) -> Unit
+    onSearch: (String) -> Unit,
+    onSearchFocusChanged: (Boolean) -> Unit = {}
 ) {
     var isSearchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
@@ -60,6 +61,7 @@ fun PlanzyTopAppBar(
                             isSearchActive = false
                             searchQuery = ""
                             onSearch("")
+                            onSearchFocusChanged(false)
                         }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -93,7 +95,9 @@ fun PlanzyTopAppBar(
                 },
                 actions = {
                     if (!isSearchActive) {
-                        IconButton(onClick = { isSearchActive = true }) {
+                        IconButton(onClick = {
+                            isSearchActive = true
+                            onSearchFocusChanged(true)}) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_search),
                                 contentDescription = stringResource(id = R.string.search),

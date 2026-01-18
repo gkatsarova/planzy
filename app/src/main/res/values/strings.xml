@@ -141,4 +141,7 @@
     <string name="remove_from_vacation">Remove from vacation</string>
     <string name="error_removing_place">Error removing place from this vacation</string>
     <string name="you">You</string>
+    <string name="no_comments_yet">No comments yet. Be the first to comment on this vacation.</string>
+    <string name="community_comments">Community Comments</string>
+    <string name="unknown_user">Unknown User</string>
 </resources>
