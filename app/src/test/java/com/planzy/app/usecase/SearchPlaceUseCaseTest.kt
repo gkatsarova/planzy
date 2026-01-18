@@ -14,7 +14,7 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
-class SearchPlacesUseCaseTest {
+class SearchPlaceUseCaseTest {
 
     private lateinit var placesRepository: PlacesRepository
     private lateinit var useCase: SearchPlacesUseCase

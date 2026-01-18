@@ -28,7 +28,8 @@ class VacationDetailsViewModel(
     private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
     private val placesRepository: PlacesRepository,
     private val resourceProvider: ResourceProvider,
-    private val vacationId: String
+    private val vacationId: String,
+    private val getCurrentUserId: () -> String? = { SupabaseClient.client.auth.currentUserOrNull()?.id }
 ) : ViewModel() {
 
     var isLoading by mutableStateOf(true)
@@ -88,7 +89,7 @@ class VacationDetailsViewModel(
                     creatorUsername = details.creatorUsername
                     places = details.places
 
-                    val currentUserId = SupabaseClient.client.auth.currentUserOrNull()?.id
+                    val currentUserId = getCurrentUserId()
                     isOwner = currentUserId == details.vacation.userId
 
                     loadUserRatingsForPlaces(details.places)
