@@ -147,5 +147,7 @@
 
     <string name="home">home</string>
     <string name="planner">planner</string>
+    <string name="describe_your_dream_vacation">Describe your dream vacation…</string>
+    <string name="send">Send</string>
 
 </resources>
