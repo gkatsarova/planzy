@@ -110,6 +110,9 @@ fun PlaceDetailsScreen(
                 navController = navController,
                 onSearch = { query ->
                     searchViewModel.searchForPlaces(query)
+                },
+                onSearchFocusChanged = { isFocused ->
+                    searchViewModel.updateSearchBarFocus(isFocused)
                 }
             )
         },

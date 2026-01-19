@@ -48,3 +48,8 @@ data object VacationDetails : AppDestination {
     const val ARG_VACATION_ID = "vacationId"
     val routeWithArgs = "$route/{$ARG_VACATION_ID}"
 }
+
+data object VacationPlanner : AppDestination {
+    override val route = "vacation_planner_screen"
+    override val title = "Vacation Planner"
+}

@@ -3,13 +3,14 @@ package com.planzy.app.ui.navigation
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
@@ -24,14 +25,17 @@ import com.planzy.app.ui.screens.auth.registration.RegisterScreen
 import com.planzy.app.ui.screens.auth.login.LoginScreen
 import com.planzy.app.ui.screens.home.HomeScreen
 import com.planzy.app.ui.screens.place.PlaceDetailsScreen
+import com.planzy.app.ui.screens.planner.VacationPlannerScreen
 import com.planzy.app.ui.screens.profile.ProfileScreen
 import com.planzy.app.ui.screens.vacation.VacationDetailsScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
-    val navController = rememberNavController()
+fun Navigation(deepLinkViewModel: DeepLinkViewModel,
+               navController: NavHostController,
+               modifier: Modifier = Modifier
+) {
     val deepLinkResult by deepLinkViewModel.deepLinkResult.collectAsState()
     var hasHandledDeepLink by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -91,7 +95,7 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
         }
     )
 
-    NavHost(navController = navController, startDestination = Welcome.route) {
+    NavHost(navController = navController, startDestination = Welcome.route, modifier = modifier) {
         composable(route = Welcome.route) {
             WelcomeScreen(navController = navController)
         }
@@ -150,6 +154,13 @@ fun Navigation(deepLinkViewModel: DeepLinkViewModel) {
             VacationDetailsScreen(
                 navController = navController,
                 vacationId = vacationId,
+                searchViewModel = searchViewModel
+            )
+        }
+
+        composable(route = VacationPlanner.route){
+            VacationPlannerScreen(
+                navController = navController,
                 searchViewModel = searchViewModel
             )
         }

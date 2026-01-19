@@ -144,4 +144,8 @@
     <string name="no_comments_yet">No comments yet. Be the first to comment on this vacation.</string>
     <string name="community_comments">Community Comments</string>
     <string name="unknown_user">Unknown User</string>
+
+    <string name="home">home</string>
+    <string name="planner">planner</string>
+
 </resources>
