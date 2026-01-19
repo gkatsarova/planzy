@@ -29,6 +29,28 @@ class TripadvisorApi {
         response.body<SearchResponse>()
     }
 
+    suspend fun searchNearbyForPlanner(
+        latLong: String,
+        category: String,
+        subCategory: String? = null,
+        limit: Int = 10
+    ): Result<SearchResponse> = runCatching {
+        val response = client.get("$baseUrl/location/nearby_search") {
+            parameter("key", apiKey)
+            parameter("latLong", latLong)
+            parameter("category", category)
+            subCategory?.let { parameter("searchQuery", it) }
+            parameter("radius", "15")
+            parameter("radiusUnit", "km")
+            parameter("limit", limit.toString())
+        }
+
+        if (!response.status.isSuccess()) {
+            throw Exception("TRIPADVISOR_API_ERROR: ${response.status.value}")
+        }
+        response.body<SearchResponse>()
+    }
+
     suspend fun getLocationDetails(
         locationId: String
     ): Result<LocationDetailsResponse> = runCatching {

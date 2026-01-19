@@ -149,5 +149,13 @@
     <string name="planner">planner</string>
     <string name="describe_your_dream_vacation">Describe your dream vacation…</string>
     <string name="send">Send</string>
-
+    <string name="success_vacation_created">All set! Your vacation is ready.</string>
+    <string name="error_city_not_found">City not found.</string>
+    <string name="where_is_your_dream_vacation">Where is your dream vacation?</string>
+    <string name="error_analyzing">Error analyzing</string>
+    <string name="unknown">Unknown</string>
+    <string name="traveller">Traveller</string>
+    <string name="planner_default_text2">Describe your dream vacation (e.g. 5 days historical vacation in Rome)…</string>
+    <string name="planner_default_text1">What type of vacation are you looking for?</string>
+    <string name="something_wrong">Oops! Something went wrong:</string>
 </resources>

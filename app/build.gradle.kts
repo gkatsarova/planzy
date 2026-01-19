@@ -106,4 +106,7 @@ dependencies {
     implementation(libs.play.services.location)
 
     implementation(libs.mlkit.entity.extraction)
+
+    implementation(libs.language.id)
+    implementation(libs.kotlinx.coroutines.play.services)
 }

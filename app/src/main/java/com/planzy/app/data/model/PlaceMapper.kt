@@ -49,3 +49,16 @@ fun ReviewData.toDomainModel(): PlaceReview {
         date = publishedDate ?: ""
     )
 }
+
+fun Place.toDTO(): PlaceDTO = PlaceDTO(
+    id = null,
+    locationId = id,
+    name = name,
+    address = location.address,
+    latitude = location.latitude.toString(),
+    longitude = location.longitude.toString(),
+    rating = rating.toString(),
+    description = description,
+    imageUrl = photoUrl,
+    category = category
+)

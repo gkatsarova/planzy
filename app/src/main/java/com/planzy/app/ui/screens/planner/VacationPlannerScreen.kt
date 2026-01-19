@@ -66,6 +66,13 @@ fun VacationPlannerScreen(
         }
     }
 
+    LaunchedEffect(plannerViewModel.createdVacationId) {
+        plannerViewModel.createdVacationId?.let { vacationId ->
+            navController.navigate(VacationDetails.createRoute(vacationId))
+            plannerViewModel.clearCreatedVacationId()
+        }
+    }
+
     Scaffold(
         topBar = {
             PlanzyTopAppBar(
@@ -125,6 +132,21 @@ fun VacationPlannerScreen(
                                     items(plannerViewModel.messages) { message ->
                                         ChatBubble(message = message)
                                     }
+
+                                    if (plannerViewModel.isProcessing) {
+                                        item {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    color = AmaranthPurple
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
 
                                 if (searchViewModel.vacations.isNotEmpty()) {
@@ -181,7 +203,11 @@ fun VacationPlannerScreen(
             }
 
             if (!isSearchActive) {
-                ChatInputBar(onSendMessage = { })
+                ChatInputBar(
+                    onSendMessage = { message ->
+                        plannerViewModel.sendMessage(message)
+                    }
+                )
             }
         }
     }
