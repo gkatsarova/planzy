@@ -53,3 +53,8 @@ data object VacationPlanner : AppDestination {
     override val route = "vacation_planner_screen"
     override val title = "Vacation Planner"
 }
+
+data object VacationHistory: AppDestination {
+    override val route = "vacation_history_screen"
+    override val title = "History"
+}
