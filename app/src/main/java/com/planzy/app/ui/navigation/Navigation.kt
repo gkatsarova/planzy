@@ -1,7 +1,5 @@
 package com.planzy.app.ui.navigation
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,11 +28,11 @@ import com.planzy.app.ui.screens.profile.ProfileScreen
 import com.planzy.app.ui.screens.vacation.VacationDetailsScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun Navigation(deepLinkViewModel: DeepLinkViewModel,
-               navController: NavHostController,
-               modifier: Modifier = Modifier
+fun Navigation(
+    deepLinkViewModel: DeepLinkViewModel,
+    navController: NavHostController,
+    modifier: Modifier = Modifier
 ) {
     val deepLinkResult by deepLinkViewModel.deepLinkResult.collectAsState()
     var hasHandledDeepLink by remember { mutableStateOf(false) }

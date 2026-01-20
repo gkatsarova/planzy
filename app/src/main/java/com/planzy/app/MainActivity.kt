@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
@@ -63,7 +64,9 @@ class MainActivity : ComponentActivity() {
                     Navigation(
                         deepLinkViewModel = deepLinkViewModel,
                         navController = navController,
-                        modifier = Modifier.padding(top = innerPadding.calculateTopPadding())
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
                     )
                 }
             }

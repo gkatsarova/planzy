@@ -107,8 +107,6 @@ fun VacationDetailsScreen(
             searchViewModel.isLoading ||
             searchViewModel.isSearchBarFocused
 
-    var isInputFieldFocused by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             PlanzyTopAppBar(
@@ -128,23 +126,19 @@ fun VacationDetailsScreen(
                     color = Lavender,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .imePadding(),
-                    shadowElevation = 8.dp
+                        .imePadding()
                 ) {
                     AddVacationCommentSection(
                         isSubmitting = viewModel.isSubmittingComment,
                         errorMessage = viewModel.commentErrorMessage,
                         onSubmit = { text -> viewModel.addVacationComment(text) },
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-                        onFocusChange = { isInputFieldFocused = it }
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
                     )
                 }
             }
         },
         containerColor = Lavender,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        modifier = Modifier.padding(bottom = if (!isInputFieldFocused && !isSearchActive) 80.dp else 0.dp)
-
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Box(
             modifier = Modifier
@@ -177,8 +171,7 @@ fun VacationDetailsScreen(
 
                 searchViewModel.vacations.isNotEmpty() || searchViewModel.placesWithStats.isNotEmpty() -> {
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {

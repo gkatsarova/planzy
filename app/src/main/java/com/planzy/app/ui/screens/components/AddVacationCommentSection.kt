@@ -45,8 +45,7 @@ fun AddVacationCommentSection(
     errorMessage: String? = null,
     initialText: String = "",
     onCancel: (() -> Unit)? = null,
-    buttonText: String = stringResource(id = R.string.post_comment),
-    onFocusChange: (Boolean) -> Unit = {}
+    buttonText: String = stringResource(id = R.string.post_comment)
 ) {
     var commentText by remember { mutableStateOf(initialText) }
     var isExpanded by remember { mutableStateOf(initialText.isNotEmpty()) }
@@ -83,7 +82,6 @@ fun AddVacationCommentSection(
                         .fillMaxWidth()
                         .onFocusChanged { focusState ->
                             if (focusState.isFocused) isExpanded = true
-                            onFocusChange(focusState.isFocused)
                         },
                     enabled = !isSubmitting,
                     colors = TextFieldDefaults.colors(

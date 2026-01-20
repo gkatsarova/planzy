@@ -100,8 +100,6 @@ fun PlaceDetailsScreen(
             searchViewModel.isLoading ||
             searchViewModel.isSearchBarFocused
 
-    var isInputFieldFocused by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             PlanzyTopAppBar(
@@ -121,23 +119,20 @@ fun PlaceDetailsScreen(
                     color = Lavender,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .imePadding(),
-                    shadowElevation = 8.dp
+                        .imePadding()
                 ) {
                     AddCommentSection(
                         isSubmitting = viewModel.isSubmittingComment,
                         errorMessage = viewModel.commentErrorMessage,
                         onSubmit = { text, rating -> viewModel.addUserComment(text, rating) },
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-                        onFocusChange = { isInputFieldFocused = it }
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
                     )
                 }
             }
         },
         containerColor = Lavender,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        modifier = Modifier.padding(bottom = if (!isInputFieldFocused && !isSearchActive) 80.dp else 0.dp)
-    ) { padding ->
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()

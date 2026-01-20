@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,8 +28,7 @@ import com.planzy.app.ui.theme.MediumBluePurple
 
 @Composable
 fun ChatInputBar(
-    onSendMessage: (String) -> Unit,
-    onFocusChange: (Boolean) -> Unit = {}
+    onSendMessage: (String) -> Unit
 ) {
     var textState by remember { mutableStateOf("") }
 
@@ -54,8 +52,7 @@ fun ChatInputBar(
                     value = textState,
                     onValueChange = { textState = it },
                     modifier = Modifier
-                        .weight(1f)
-                        .onFocusChanged { onFocusChange(it.isFocused) },
+                        .weight(1f),
                     placeholder = {
                         Text(
                             text = stringResource(id = R.string.describe_your_dream_vacation),

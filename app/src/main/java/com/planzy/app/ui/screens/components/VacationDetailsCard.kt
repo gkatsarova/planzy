@@ -1,7 +1,5 @@
 package com.planzy.app.ui.screens.components
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -18,7 +16,6 @@ import com.planzy.app.ui.theme.AmaranthPurple
 import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.Raleway
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun VacationDetailsCard(
     places: List<Place>,
@@ -28,7 +25,8 @@ fun VacationDetailsCard(
     onRemovePlace: (Place) -> Unit,
     isOwner: Boolean,
     getUserRating: (String) -> Pair<Double?, Int>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showMetadata: Boolean = true
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -43,27 +41,29 @@ fun VacationDetailsCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = "Created by $creatorUsername",
-                    fontFamily = Raleway,
-                    fontSize = 14.sp,
-                    color = Lavender
-                )
-                Text(
-                    text = DateFormatter.formatToShort(createdAt),
-                    fontFamily = Raleway,
-                    fontSize = 14.sp,
-                    color = Lavender
+            if (showMetadata) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Created by $creatorUsername",
+                        fontFamily = Raleway,
+                        fontSize = 14.sp,
+                        color = Lavender
+                    )
+                    Text(
+                        text = DateFormatter.formatToShort(createdAt),
+                        fontFamily = Raleway,
+                        fontSize = 14.sp,
+                        color = Lavender
+                    )
+                }
+
+                HorizontalDivider(
+                    color = Lavender,
+                    thickness = 1.dp
                 )
             }
-
-            HorizontalDivider(
-                color = Lavender,
-                thickness = 1.dp
-            )
 
             if (places.isEmpty()) {
                 Box(
@@ -80,17 +80,21 @@ fun VacationDetailsCard(
                     )
                 }
             } else {
-                places.forEach { place ->
-                    val (userRating, userReviewsCount) = getUserRating(place.id)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    places.forEach { place ->
+                        val (userRating, userReviewsCount) = getUserRating(place.id)
 
-                    PlaceCard(
-                        place = place,
-                        onCardClick = { onPlaceClick(place) },
-                        showRemoveButton = isOwner,
-                        onRemoveClick = { onRemovePlace(place) },
-                        userRating = userRating,
-                        userReviewsCount = userReviewsCount
-                    )
+                        PlaceCard(
+                            place = place,
+                            onCardClick = { onPlaceClick(place) },
+                            showRemoveButton = isOwner,
+                            onRemoveClick = { onRemovePlace(place) },
+                            userRating = userRating,
+                            userReviewsCount = userReviewsCount
+                        )
+                    }
                 }
             }
         }
