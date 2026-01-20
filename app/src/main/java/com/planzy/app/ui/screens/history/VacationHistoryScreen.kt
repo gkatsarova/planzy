@@ -12,16 +12,24 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.planzy.app.R
+import com.planzy.app.data.remote.SupabaseClient
+import com.planzy.app.data.repository.VacationsRepositoryImpl
+import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.usecase.vacation.GetUserVacationsUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.navigation.VacationDetails
 import com.planzy.app.ui.navigation.VacationHistory
@@ -38,7 +46,18 @@ import com.planzy.app.ui.theme.Raleway
 fun VacationHistoryScreen(
     navController: NavController,
     searchViewModel: SearchViewModel
-){
+) {
+    val context = LocalContext.current
+    val resourceProvider = remember { ResourceProviderImpl(context) }
+    val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
+    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository) }
+
+    val viewModel: VacationHistoryViewModel = viewModel(
+        factory = VacationHistoryViewModel.Factory(
+            getUserVacationsUseCase = getUserVacationsUseCase
+        )
+    )
+
     Scaffold(
         topBar = {
             PlanzyTopAppBar(
@@ -80,7 +99,7 @@ fun VacationHistoryScreen(
                     }
                 }
 
-                else -> {
+                searchViewModel.vacations.isNotEmpty() || searchViewModel.placesWithStats.isNotEmpty() -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
@@ -135,6 +154,60 @@ fun VacationHistoryScreen(
                                     userReviewsCount = placeWithStats.userReviewsCount
                                 )
                             }
+                        }
+                    }
+                }
+
+                viewModel.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                viewModel.errorMessage != null -> {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = viewModel.errorMessage!!,
+                            color = ErrorColor,
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        TextButton(onClick = { viewModel.retry() }) {
+                            Text(text = stringResource(id = R.string.retry))
+                        }
+                    }
+                }
+
+                viewModel.vacations.isEmpty() -> {
+                    Text(
+                        text = stringResource(id = R.string.no_vacations),
+                        modifier = Modifier.align(Alignment.Center),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(viewModel.vacations) { vacation ->
+                            VacationCard(
+                                vacation = vacation,
+                                onCardClick = {
+                                    navController.navigate(
+                                        VacationDetails.createRoute(vacation.id)
+                                    )
+                                }
+                            )
                         }
                     }
                 }

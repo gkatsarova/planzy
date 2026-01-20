@@ -160,4 +160,5 @@
     <string name="something_wrong">Oops! Something went wrong:</string>
     <string name="error_saving_place">Failed to save place to database</string>
     <string name="history">history</string>
+    <string name="no_vacations">No vacations yet. Start planning your next adventure!</string>
 </resources>
