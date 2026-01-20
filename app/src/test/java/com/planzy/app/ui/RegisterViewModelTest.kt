@@ -3,10 +3,10 @@ package com.planzy.app.ui
 import com.planzy.app.R
 import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
-import com.planzy.app.domain.usecase.CheckEmailAvailabilityUseCase
-import com.planzy.app.domain.usecase.CheckUsernameAvailabilityUseCase
-import com.planzy.app.domain.usecase.RegisterUserUseCase
-import com.planzy.app.domain.usecase.ResendVerificationEmailUseCase
+import com.planzy.app.domain.usecase.auth.CheckEmailAvailabilityUseCase
+import com.planzy.app.domain.usecase.auth.CheckUsernameAvailabilityUseCase
+import com.planzy.app.domain.usecase.auth.RegisterUserUseCase
+import com.planzy.app.domain.usecase.auth.ResendVerificationEmailUseCase
 import com.planzy.app.ui.screens.auth.registration.RegisterViewModel
 import io.mockk.coEvery
 import io.mockk.every

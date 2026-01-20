@@ -8,10 +8,10 @@ import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.repository.AuthRepository
 import com.planzy.app.domain.repository.UserRepository
-import com.planzy.app.domain.usecase.CheckEmailAvailabilityUseCase
-import com.planzy.app.domain.usecase.CheckUsernameAvailabilityUseCase
-import com.planzy.app.domain.usecase.RegisterUserUseCase
-import com.planzy.app.domain.usecase.ResendVerificationEmailUseCase
+import com.planzy.app.domain.usecase.auth.CheckEmailAvailabilityUseCase
+import com.planzy.app.domain.usecase.auth.CheckUsernameAvailabilityUseCase
+import com.planzy.app.domain.usecase.auth.RegisterUserUseCase
+import com.planzy.app.domain.usecase.auth.ResendVerificationEmailUseCase
 import com.planzy.app.ui.screens.auth.BaseAuthViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

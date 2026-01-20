@@ -3,7 +3,7 @@ package com.planzy.app.usecase
 import com.planzy.app.R
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.repository.AuthRepository
-import com.planzy.app.domain.usecase.SendPasswordResetEmailUseCase
+import com.planzy.app.domain.usecase.auth.SendPasswordResetEmailUseCase
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.every
