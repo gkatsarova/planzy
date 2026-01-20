@@ -158,4 +158,5 @@
     <string name="planner_default_text2">Describe your dream vacation (e.g. 5 days historical vacation in Rome)…</string>
     <string name="planner_default_text1">What type of vacation are you looking for?</string>
     <string name="something_wrong">Oops! Something went wrong:</string>
+    <string name="error_saving_place">Failed to save place to database</string>
 </resources>

@@ -5,6 +5,7 @@ import com.planzy.app.R
 import com.planzy.app.data.model.UserCommentDTO
 import com.planzy.app.data.model.UserCommentInsertDTO
 import com.planzy.app.data.model.UserCommentStatsDTO
+import com.planzy.app.data.model.toDTO
 import com.planzy.app.data.model.toDomainModel
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
@@ -238,6 +239,24 @@ class PlacesRepositoryImpl(
         } catch (e: Exception) {
             Log.e(TAG, "Error getting comments stats: ${e.message}", e)
             Result.success(Pair(null, 0))
+        }
+    }
+
+    override suspend fun savePlace(place: Place): Result<Unit> {
+        return try {
+            Log.d(TAG, "Saving place to database: ${place.name} (${place.id})")
+            val placeDTO = place.toDTO()
+
+           supabaseClient.client.postgrest["places"]
+                .upsert(placeDTO) {
+                    onConflict = "location_id"
+                }
+
+            Log.d(TAG, "Successfully saved place: ${place.name}")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving place: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_saving_place)))
         }
     }
 }

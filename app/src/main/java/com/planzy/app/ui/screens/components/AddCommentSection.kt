@@ -30,7 +30,8 @@ fun AddCommentSection(
     initialText: String = "",
     initialRating: Int = 5,
     onCancel: (() -> Unit)? = null,
-    buttonText: String = stringResource(id = R.string.post_comment)
+    buttonText: String = stringResource(id = R.string.post_comment),
+    onFocusChange: (Boolean) -> Unit = {}
 ) {
     var commentText by remember { mutableStateOf(initialText) }
     var selectedRating by remember { mutableIntStateOf(initialRating) }
@@ -38,9 +39,10 @@ fun AddCommentSection(
 
     Column(modifier = modifier.fillMaxWidth()) {
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth(),
             color = MediumBluePurple,
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(10.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -67,6 +69,7 @@ fun AddCommentSection(
                         .fillMaxWidth()
                         .onFocusChanged { focusState ->
                             if (focusState.isFocused) isExpanded = true
+                            onFocusChange(focusState.isFocused)
                         },
                     enabled = !isSubmitting,
                     colors = TextFieldDefaults.colors(

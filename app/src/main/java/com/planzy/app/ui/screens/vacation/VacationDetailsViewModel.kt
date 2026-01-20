@@ -71,19 +71,15 @@ class VacationDetailsViewModel(
 
     var isUpdatingComment by mutableStateOf(false)
         private set
-    private var currentUserId: String? = null
 
+    private var currentUserId: String? = null
     private var userRatingsCache = mutableMapOf<String, Pair<Double?, Int>>()
 
     init {
-        loadCurrentUserId()
-        loadVacationDetails()
-        loadVacationComments()
-    }
-
-    private fun loadCurrentUserId() {
         viewModelScope.launch {
             currentUserId = getCurrentUserUseCase()?.id
+            loadVacationDetails()
+            loadVacationComments()
         }
     }
 
@@ -134,9 +130,7 @@ class VacationDetailsViewModel(
             removePlaceFromVacationUseCase(vacationId, placeId)
                 .onSuccess {
                     places = places.filter { it.id != placeId }
-
-                    vacation = vacation?.copy(placesCount = vacation!!.placesCount - 1)
-
+                    vacation = vacation?.copy(placesCount = (vacation?.placesCount ?: 1) - 1)
                     userRatingsCache.remove(placeId)
                 }
                 .onFailure { exception ->

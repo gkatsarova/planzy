@@ -104,26 +104,32 @@ class VacationsRepositoryImpl(
 
     override suspend fun addPlaceToVacation(vacationId: String, placeId: String): Result<VacationPlace> {
         return try {
+            Log.d(TAG, "Adding place $placeId to vacation $vacationId")
+
             val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            if (currentUserId == null) {
+                Log.e(TAG, "User not logged in")
+                return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            }
 
             val vacationCheck = supabaseClient.client.postgrest
                 .from("vacations")
-                .select(Columns.raw("id")) {
+                .select(Columns.raw("id, user_id")) {
                     filter {
                         eq("id", vacationId)
-                        eq("user_id", currentUserId)
                     }
                     limit(1)
                 }
 
-            val vacationExists = try {
-                vacationCheck.decodeList<VacationIdDTO>().isNotEmpty()
-            } catch (_: Exception) {
-                false
+            val vacation = try {
+                vacationCheck.decodeList<VacationIdDTO>().firstOrNull()
+            } catch (e: Exception) {
+                Log.e(TAG, "Vacation not found: ${e.message}")
+                null
             }
 
-            if (!vacationExists) {
+            if (vacation == null) {
+                Log.e(TAG, "Vacation $vacationId does not exist")
                 return Result.failure(Exception(resourceProvider.getString(R.string.error_vacation_not_found)))
             }
 
@@ -144,6 +150,7 @@ class VacationsRepositoryImpl(
             }
 
             if (placeAlreadyExists) {
+                Log.w(TAG, "Place already exists in vacation")
                 return Result.failure(Exception(resourceProvider.getString(R.string.error_place_already_in_vacation)))
             }
 
@@ -164,6 +171,8 @@ class VacationsRepositoryImpl(
                 0
             }
 
+            Log.d(TAG, "Max order index: $maxOrderIndex, new will be: ${maxOrderIndex + 1}")
+
             val placeToInsert = VacationPlaceInsertDTO(
                 vacationId = vacationId,
                 placeId = placeId,
@@ -177,9 +186,12 @@ class VacationsRepositoryImpl(
                 }
 
             val vacationPlace = response.decodeSingle<VacationPlaceDTO>().toDomainModel()
+            Log.d(TAG, "Successfully added place to vacation")
             Result.success(vacationPlace)
+
         } catch (e: Exception) {
             Log.e(TAG, "Error adding place to vacation: ${e.message}", e)
+            Log.e(TAG, "Stack trace:", e)
 
             if (e.message?.contains("unique constraint", ignoreCase = true) == true ||
                 e.message?.contains("duplicate", ignoreCase = true) == true) {

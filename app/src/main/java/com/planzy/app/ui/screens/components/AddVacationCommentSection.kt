@@ -45,16 +45,18 @@ fun AddVacationCommentSection(
     errorMessage: String? = null,
     initialText: String = "",
     onCancel: (() -> Unit)? = null,
-    buttonText: String = stringResource(id = R.string.post_comment)
+    buttonText: String = stringResource(id = R.string.post_comment),
+    onFocusChange: (Boolean) -> Unit = {}
 ) {
     var commentText by remember { mutableStateOf(initialText) }
     var isExpanded by remember { mutableStateOf(initialText.isNotEmpty()) }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth(),
             color = MediumBluePurple,
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(10.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -81,6 +83,7 @@ fun AddVacationCommentSection(
                         .fillMaxWidth()
                         .onFocusChanged { focusState ->
                             if (focusState.isFocused) isExpanded = true
+                            onFocusChange(focusState.isFocused)
                         },
                     enabled = !isSubmitting,
                     colors = TextFieldDefaults.colors(

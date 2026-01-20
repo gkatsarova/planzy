@@ -1,12 +1,11 @@
 package com.planzy.app.ui.screens.vacation
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -65,7 +64,6 @@ import com.planzy.app.ui.theme.ErrorColor
 import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.Raleway
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun VacationDetailsScreen(
     navController: NavController,
@@ -109,6 +107,8 @@ fun VacationDetailsScreen(
             searchViewModel.isLoading ||
             searchViewModel.isSearchBarFocused
 
+    var isInputFieldFocused by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             PlanzyTopAppBar(
@@ -123,25 +123,28 @@ fun VacationDetailsScreen(
             )
         },
         bottomBar = {
-            if (!isSearchActive) {
+            if (!isSearchActive && !isEditingAnyComment) {
                 Surface(
                     color = Lavender,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .imePadding()
+                        .imePadding(),
+                    shadowElevation = 8.dp
                 ) {
-                    if (!isEditingAnyComment) {
-                        AddVacationCommentSection(
-                            isSubmitting = viewModel.isSubmittingComment,
-                            errorMessage = viewModel.commentErrorMessage,
-                            onSubmit = { text -> viewModel.addVacationComment(text) },
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-                        )
-                    }
+                    AddVacationCommentSection(
+                        isSubmitting = viewModel.isSubmittingComment,
+                        errorMessage = viewModel.commentErrorMessage,
+                        onSubmit = { text -> viewModel.addVacationComment(text) },
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                        onFocusChange = { isInputFieldFocused = it }
+                    )
                 }
             }
         },
-        containerColor = Lavender
+        containerColor = Lavender,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        modifier = Modifier.padding(bottom = if (!isInputFieldFocused && !isSearchActive) 80.dp else 0.dp)
+
     ) { padding ->
         Box(
             modifier = Modifier
@@ -174,7 +177,8 @@ fun VacationDetailsScreen(
 
                 searchViewModel.vacations.isNotEmpty() || searchViewModel.placesWithStats.isNotEmpty() -> {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -279,16 +283,14 @@ fun VacationDetailsScreen(
                                 places = viewModel.places,
                                 creatorUsername = creatorUsername,
                                 createdAt = vacation.createdAt,
-                                onPlaceClick = { place ->
-                                    navController.navigate(PlaceDetails.createRoute(place.id))
+                                onPlaceClick = { p ->
+                                    navController.navigate(PlaceDetails.createRoute(p.id))
                                 },
                                 onRemovePlace = { place ->
                                     viewModel.removePlaceFromVacation(place.id)
                                 },
                                 isOwner = viewModel.isOwner,
-                                getUserRating = { placeId ->
-                                    viewModel.getUserRating(placeId)
-                                }
+                                getUserRating = { placeId -> viewModel.getUserRating(placeId) }
                             )
                         }
 

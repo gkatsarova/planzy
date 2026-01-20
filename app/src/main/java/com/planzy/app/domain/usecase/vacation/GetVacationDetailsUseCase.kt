@@ -25,8 +25,16 @@ class GetVacationDetailsUseCase(
 
                     placeIdsResult.fold(
                         onSuccess = { placeIds ->
-                            val places = placeIds.mapNotNull { placeId ->
-                                placesRepository.getPlaceDetails(placeId).getOrNull()
+                             val places = placeIds.mapIndexedNotNull { index, placeId ->
+                                val placeResult = placesRepository.getPlaceDetails(placeId)
+                                placeResult.fold(
+                                    onSuccess = { place ->
+                                        place
+                                    },
+                                    onFailure = { error ->
+                                        null
+                                    }
+                                )
                             }
 
                             Result.success(

@@ -167,36 +167,13 @@ class SearchViewModel(
 
             Log.d(TAG, "Starting search for: $cleanQuery")
 
-            val foundLocationInText = detectLocationInQuery(cleanQuery)
-
-            val (latLong, radius) = buildSearchParameters(foundLocationInText)
-
-            Log.d(TAG, "Query: $cleanQuery  Location Detected: $foundLocationInText GPS Active: ${latLong != null}")
-
-            val placesResult = searchPlacesUseCase(cleanQuery, latLong = latLong, radius = radius)
-
             Log.d(TAG, "Searching vacations...")
             val vacationsResult = searchVacationsUseCase(cleanQuery)
 
-            placesResult.onSuccess { list ->
-                places = list
-                Log.d(TAG, "Found ${list.size} places")
-
-                val stats = list.map { place ->
-                    val (rating, count) = getUserCommentsStatsUseCase(place.id).getOrNull()
-                        ?: Pair(null, 0)
-                    PlaceWithStats(place, rating, count)
-                }
-
-                placesWithStats = stats
-                searchCache[cleanQuery] = stats
-            }.onFailure { exception ->
-                Log.e(TAG, "Error searching places: ${exception.message}", exception)
-                errorMessage = resourceProvider.getString(mapExceptionToErrorResource(exception))
-            }
-
+            var hasVacations = false
             vacationsResult.onSuccess { list ->
                 Log.d(TAG, "Found ${list.size} vacations")
+                hasVacations = list.isNotEmpty()
 
                 val vacationsWithComments = list.map { vacation ->
                     val commentsCount = getVacationCommentsCountUseCase(vacation.id)
@@ -211,7 +188,34 @@ class SearchViewModel(
                 Log.e(TAG, "Error searching vacations: ${exception.message}", exception)
             }
 
-            if (places.isEmpty() && vacations.isEmpty()) {
+            val foundLocationInText = detectLocationInQuery(cleanQuery)
+            val (latLong, radius) = buildSearchParameters(foundLocationInText)
+
+            Log.d(TAG, "Query: $cleanQuery  Location Detected: $foundLocationInText GPS Active: ${latLong != null}")
+
+            val placesResult = searchPlacesUseCase(cleanQuery, latLong = latLong, radius = radius)
+
+            var hasPlaces = false
+            placesResult.onSuccess { list ->
+                places = list
+                hasPlaces = list.isNotEmpty()
+                Log.d(TAG, "Found ${list.size} places")
+
+                val stats = list.map { place ->
+                    val (rating, count) = getUserCommentsStatsUseCase(place.id).getOrNull()
+                        ?: Pair(null, 0)
+                    PlaceWithStats(place, rating, count)
+                }
+
+                placesWithStats = stats
+                searchCache[cleanQuery] = stats
+            }.onFailure { exception ->
+                if (!hasVacations) {
+                    errorMessage = resourceProvider.getString(mapExceptionToErrorResource(exception))
+                }
+            }
+
+            if (!hasPlaces && !hasVacations) {
                 errorMessage = resourceProvider.getString(R.string.error_no_results_found)
             }
 

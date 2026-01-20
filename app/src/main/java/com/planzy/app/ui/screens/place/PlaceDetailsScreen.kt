@@ -1,7 +1,5 @@
 package com.planzy.app.ui.screens.place
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,7 +38,6 @@ import kotlinx.coroutines.launch
 import com.planzy.app.ui.navigation.VacationDetails
 
 @OptIn(DelicateCoroutinesApi::class)
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PlaceDetailsScreen(
     navController: NavController,
@@ -71,7 +68,7 @@ fun PlaceDetailsScreen(
 
     val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository) }
     val createVacationUseCase = remember { CreateVacationUseCase(vacationsRepository) }
-    val addPlaceToVacationUseCase = remember { AddPlaceToVacationUseCase(vacationsRepository) }
+    val addPlaceToVacationUseCase = remember { AddPlaceToVacationUseCase(vacationsRepository, placesRepository) }
 
     var isEditingAnyComment by remember { mutableStateOf(false) }
     var showAddToVacationDialog by remember { mutableStateOf(false) }
@@ -103,6 +100,8 @@ fun PlaceDetailsScreen(
             searchViewModel.isLoading ||
             searchViewModel.isSearchBarFocused
 
+    var isInputFieldFocused by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             PlanzyTopAppBar(
@@ -117,25 +116,27 @@ fun PlaceDetailsScreen(
             )
         },
         bottomBar = {
-            if (!isSearchActive) {
+            if (!isSearchActive && !isEditingAnyComment) {
                 Surface(
                     color = Lavender,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .imePadding()
+                        .imePadding(),
+                    shadowElevation = 8.dp
                 ) {
-                    if (!isEditingAnyComment) {
-                        AddCommentSection(
-                            isSubmitting = viewModel.isSubmittingComment,
-                            errorMessage = viewModel.commentErrorMessage,
-                            onSubmit = { text, rating -> viewModel.addUserComment(text, rating) },
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
-                        )
-                    }
+                    AddCommentSection(
+                        isSubmitting = viewModel.isSubmittingComment,
+                        errorMessage = viewModel.commentErrorMessage,
+                        onSubmit = { text, rating -> viewModel.addUserComment(text, rating) },
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                        onFocusChange = { isInputFieldFocused = it }
+                    )
                 }
             }
         },
-        containerColor = Lavender
+        containerColor = Lavender,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        modifier = Modifier.padding(bottom = if (!isInputFieldFocused && !isSearchActive) 80.dp else 0.dp)
     ) { padding ->
         Box(
             modifier = Modifier
@@ -146,7 +147,11 @@ fun PlaceDetailsScreen(
                 searchViewModel.vacations.isNotEmpty() ||
                 searchViewModel.isLoading
             ) {
-                Box(modifier = Modifier.fillMaxSize().background(Lavender)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Lavender)
+                ) {
                     when {
                         searchViewModel.isLoading -> {
                             CircularProgressIndicator(
@@ -171,7 +176,8 @@ fun PlaceDetailsScreen(
                         }
                         else -> {
                             LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier
+                                    .fillMaxSize(),
                                 contentPadding = PaddingValues(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {

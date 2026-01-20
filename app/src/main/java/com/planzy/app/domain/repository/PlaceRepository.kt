@@ -49,4 +49,8 @@ interface PlacesRepository {
     suspend fun getUserCommentsStats(
         placeId: String
     ): Result<Pair<Double?, Int>>
+
+    suspend fun savePlace(
+        place: Place
+    ): Result<Unit>
 }

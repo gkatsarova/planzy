@@ -1,5 +1,6 @@
 package com.planzy.app.data.model
 
+import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
 import kotlinx.serialization.Serializable
 
@@ -23,7 +24,8 @@ sealed class VacationPlannerResponse {
     data class Success(
         val vacation: Vacation,
         val placesAdded: Int,
-        val message: String
+        val message: String,
+        val places: List<Place> = emptyList()
     ) : VacationPlannerResponse()
     data class Error(val message: String) : VacationPlannerResponse()
 }

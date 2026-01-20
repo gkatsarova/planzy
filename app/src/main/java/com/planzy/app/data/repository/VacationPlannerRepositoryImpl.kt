@@ -1,8 +1,6 @@
 package com.planzy.app.data.repository
 
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import com.planzy.app.R
 import com.planzy.app.data.ml.VacationIntentParser
 import com.planzy.app.data.model.*
@@ -25,19 +23,35 @@ class VacationPlannerRepositoryImpl(
 
     private val TAG = VacationPlannerRepositoryImpl::class.java.simpleName
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun createVacationFromText(userMessage: String): Result<VacationPlannerResponse> {
         return try {
             Log.d(TAG, "Starting creation for: $userMessage")
 
             val intent = intentParser.parseIntent(userMessage).getOrElse {
+                Log.e(TAG, "Failed to parse intent")
                 return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.error_analyzing)))
             }
 
-            val userId = supabaseClient.client.auth.currentUserOrNull()?.id ?: return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            Log.d(TAG, "Parsed destination: ${intent.destination}")
+            Log.d(TAG, "Duration: ${intent.durationDays} days")
 
+            val userId = supabaseClient.client.auth.currentUserOrNull()?.id
+            if (userId == null) {
+                Log.e(TAG, "User not logged in")
+                return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            }
+
+            Log.d(TAG, "Searching for location: ${intent.destination}")
             val search = tripadvisorApi.searchLocations(intent.destination).getOrNull()
-            val firstResult = search?.data?.firstOrNull() ?: return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.error_city_not_found)))
+            Log.d(TAG, "Search results: ${search?.data?.size ?: 0} locations found")
+
+            val firstResult = search?.data?.firstOrNull()
+            if (firstResult == null) {
+                Log.e(TAG, "No location found for: ${intent.destination}")
+                return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.error_city_not_found)))
+            }
+
+            Log.d(TAG, "Found location: ${firstResult.name} (ID: ${firstResult.locationId})")
 
             val destDetails = tripadvisorApi.getLocationDetails(firstResult.locationId).getOrNull() ?: return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.where_is_your_dream_vacation)))
             val latLong = "${destDetails.latitude},${destDetails.longitude}"
@@ -97,7 +111,8 @@ class VacationPlannerRepositoryImpl(
             return Result.success(VacationPlannerResponse.Success(
                 vacation = Vacation(vacationId, userId, vacationDTO.title, vacationDTO.createdAt, uniquePlaces.size),
                 placesAdded = uniquePlaces.size,
-                message = resourceProvider.getString(R.string.success_vacation_created)
+                message = resourceProvider.getString(R.string.success_vacation_created),
+                places = uniquePlaces
             ))
 
         } catch (e: Exception) {

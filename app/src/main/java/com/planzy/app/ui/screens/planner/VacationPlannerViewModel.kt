@@ -13,112 +13,97 @@ import com.planzy.app.data.ml.VacationIntentParser
 import com.planzy.app.data.model.VacationPlannerResponse
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
-import com.planzy.app.data.repository.AuthRepositoryImpl
-import com.planzy.app.data.repository.VacationPlannerRepositoryImpl
+import com.planzy.app.data.repository.*
 import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.planner.CreateVacationFromTextUseCase
+import com.planzy.app.domain.usecase.vacation.RemovePlaceFromVacationUseCase
 import com.planzy.app.ui.screens.components.ChatMessage
 import kotlinx.coroutines.launch
 
 class VacationPlannerViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val createVacationFromTextUseCase: CreateVacationFromTextUseCase,
-    private val recourceProvider: ResourceProviderImpl
+    private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase,
+    private val resourceProvider: ResourceProviderImpl
 ) : ViewModel() {
 
     val messages = mutableStateListOf<ChatMessage>()
     var username by mutableStateOf<String?>(null)
-        private set
     var isProcessing by mutableStateOf(false)
-        private set
-    var errorMessage by mutableStateOf<String?>(null)
-        private set
     var createdVacationId by mutableStateOf<String?>(null)
-        private set
+    val lastCreatedVacationPlaces = mutableStateListOf<Place>()
 
     init {
-        loadUserData()
-    }
-
-    private fun loadUserData() {
         viewModelScope.launch {
             val user = getCurrentUserUseCase()
             username = user?.userMetadata?.get("username")?.toString()?.removeSurrounding("\"")
-                ?: recourceProvider.getString(R.string.traveller)
-
-            if (messages.isEmpty()) {
-                messages.add(ChatMessage("Hello, $username!" + recourceProvider.getString(R.string.planner_default_text1), false))
-                messages.add(ChatMessage(recourceProvider.getString(R.string.planner_default_text2), false))
-            }
+                ?: resourceProvider.getString(R.string.traveller)
+            messages.add(ChatMessage("Hello, $username! ${resourceProvider.getString(R.string.planner_default_text1)}", false))
+            messages.add(ChatMessage(resourceProvider.getString(R.string.planner_default_text2), false))
         }
     }
 
     fun sendMessage(userMessage: String) {
         if (userMessage.isBlank()) return
-
         messages.add(ChatMessage(userMessage, true))
         isProcessing = true
-        errorMessage = null
         createdVacationId = null
+        lastCreatedVacationPlaces.clear()
 
         viewModelScope.launch {
-            try {
-                val result = createVacationFromTextUseCase(userMessage)
-
-                result.fold(
-                    onSuccess = { response ->
-                        when (response) {
-                            is VacationPlannerResponse.Success -> {
-                                messages.add(ChatMessage(response.message, false))
-                                createdVacationId = response.vacation.id
-                            }
-                            is VacationPlannerResponse.Error -> {
-                                messages.add(ChatMessage("Sorry, ${response.message}", false))
-                                errorMessage = response.message
-                            }
-                        }
-                    },
-                    onFailure = { exception ->
-                        val errorMsg = exception.message ?: recourceProvider.getString(R.string.unknown_error)
-                        messages.add(ChatMessage(recourceProvider.getString(R.string.something_wrong) + errorMsg, false))
-                        errorMessage = errorMsg
+            createVacationFromTextUseCase(userMessage)
+                .onSuccess { response ->
+                    if (response is VacationPlannerResponse.Success) {
+                        messages.add(ChatMessage(response.message, false))
+                        messages.add(ChatMessage(response.vacation.title, false))
+                        createdVacationId = response.vacation.id
+                        lastCreatedVacationPlaces.addAll(response.places)
+                    } else if (response is VacationPlannerResponse.Error) {
+                        messages.add(ChatMessage(response.message, false))
                     }
-                )
-            } catch (e: Exception) {
-                messages.add(ChatMessage("Error: ${e.message}", false))
-                errorMessage = e.message
-            } finally {
-                isProcessing = false
-            }
+                }
+                .onFailure { error ->
+                    messages.add(ChatMessage("Error: ${error.message}", false))
+                }
+            isProcessing = false
         }
     }
 
-    fun clearCreatedVacationId() {
-        createdVacationId = null
+    fun removePlaceFromVacation(placeId: String) {
+        val vacationId = createdVacationId ?: return
+        viewModelScope.launch {
+            removePlaceFromVacationUseCase(vacationId, placeId)
+                .onSuccess {
+                    lastCreatedVacationPlaces.removeAll { it.id == placeId }
+                }
+        }
     }
 
     class Factory(private val context: Context) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             val resourceProvider = ResourceProviderImpl(context)
-            val authRepository = AuthRepositoryImpl(resourceProvider, null)
-            val getCurrentUserUseCase = GetCurrentUserUseCase(authRepository)
-
-            val intentParser = VacationIntentParser(context, resourceProvider)
-            val tripadvisorApi = TripadvisorApi()
             val supabaseClient = SupabaseClient
-            val plannerRepository = VacationPlannerRepositoryImpl(
-                intentParser,
-                tripadvisorApi,
-                supabaseClient,
+            val tripadvisorApi = TripadvisorApi()
+            val vacationIntentParser = VacationIntentParser(
+                context,
                 resourceProvider
             )
-            val createVacationFromTextUseCase = CreateVacationFromTextUseCase(plannerRepository, resourceProvider)
+            val vacationPlannerRepository = VacationPlannerRepositoryImpl(
+                vacationIntentParser,
+                tripadvisorApi,
+                supabaseClient,
+                resourceProvider)
+            val vacationRepository = VacationsRepositoryImpl(
+                supabaseClient,
+                resourceProvider)
 
             return VacationPlannerViewModel(
-                getCurrentUserUseCase,
-                createVacationFromTextUseCase,
+                GetCurrentUserUseCase(AuthRepositoryImpl(resourceProvider, null)),
+                CreateVacationFromTextUseCase(vacationPlannerRepository, resourceProvider),
+                RemovePlaceFromVacationUseCase(vacationRepository),
                 resourceProvider
             ) as T
         }

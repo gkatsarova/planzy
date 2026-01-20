@@ -2,7 +2,6 @@ package com.planzy.app.ui.screens.components
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -28,16 +28,20 @@ import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.MediumBluePurple
 
 @Composable
-fun ChatInputBar(onSendMessage: (String) -> Unit) {
+fun ChatInputBar(
+    onSendMessage: (String) -> Unit,
+    onFocusChange: (Boolean) -> Unit = {}
+) {
     var textState by remember { mutableStateOf("") }
 
     Surface(
-        color = Color.Transparent,
-        modifier = Modifier.imePadding()
+        color = Lavender,
+        modifier = Modifier
+            .fillMaxWidth()
     ) {
         Surface(
             modifier = Modifier
-                .padding(8.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
                 .fillMaxWidth(),
             color = MediumBluePurple,
             shape = RoundedCornerShape(10.dp)
@@ -49,7 +53,9 @@ fun ChatInputBar(onSendMessage: (String) -> Unit) {
                 TextField(
                     value = textState,
                     onValueChange = { textState = it },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .onFocusChanged { onFocusChange(it.isFocused) },
                     placeholder = {
                         Text(
                             text = stringResource(id = R.string.describe_your_dream_vacation),
