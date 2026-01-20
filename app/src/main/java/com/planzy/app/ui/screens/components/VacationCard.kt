@@ -1,7 +1,5 @@
 package com.planzy.app.ui.screens.components
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,7 +28,6 @@ import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.MediumBluePurple
 import com.planzy.app.ui.theme.Raleway
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun VacationCard(
     vacation: Vacation,

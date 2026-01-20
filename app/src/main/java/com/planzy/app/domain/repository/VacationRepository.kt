@@ -47,4 +47,18 @@ interface VacationsRepository {
     suspend fun getVacationCommentsCount(
         vacationId: String
     ): Result<Int>
+
+    suspend fun saveVacation(
+        vacationId: String
+    ): Result<Unit>
+
+    suspend fun unsaveVacation(
+        vacationId: String
+    ): Result<Unit>
+
+    suspend fun getSavedVacations(): Result<List<Vacation>>
+
+    suspend fun isVacationSaved(
+        vacationId: String
+    ): Result<Boolean>
 }

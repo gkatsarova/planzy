@@ -66,7 +66,7 @@ fun PlaceDetailsScreen(
     val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(placesRepository, resourceProvider) }
     val deleteUserCommentUseCase = remember { DeleteUserCommentUseCase(placesRepository) }
 
-    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository) }
+    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository, resourceProvider) }
     val createVacationUseCase = remember { CreateVacationUseCase(vacationsRepository) }
     val addPlaceToVacationUseCase = remember { AddPlaceToVacationUseCase(vacationsRepository, placesRepository) }
 

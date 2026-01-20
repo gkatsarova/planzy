@@ -15,6 +15,7 @@ import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import com.planzy.app.domain.model.VacationComment
+import io.github.jan.supabase.postgrest.from
 
 @Serializable
 data class UserInfo(
@@ -547,6 +548,147 @@ class VacationsRepositoryImpl(
         } catch (e: Exception) {
             Log.e(TAG, "Error getting vacation comments count: ${e.message}", e)
             Result.failure(e)
+        }
+    }
+
+    override suspend fun saveVacation(vacationId: String): Result<Unit> {
+        return try {
+            val userId = supabaseClient.client.auth.currentUserOrNull()?.id
+                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+
+            supabaseClient.client.from("saved_vacations")
+                .insert(
+                    mapOf(
+                        "user_id" to userId,
+                        "vacation_id" to vacationId
+                    )
+                )
+
+            Result.success(Unit)
+        } catch (_: Exception) {
+            Result.failure(Exception(resourceProvider.getString(R.string.failed_to_save_vacation)))
+        }
+    }
+
+    override suspend fun unsaveVacation(vacationId: String): Result<Unit> {
+        return try {
+            val userId = supabaseClient.client.auth.currentUserOrNull()?.id
+                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+
+            supabaseClient.client.from("saved_vacations")
+                .delete {
+                    filter {
+                        eq("user_id", userId)
+                        eq("vacation_id", vacationId)
+                    }
+                }
+
+            Result.success(Unit)
+        } catch (_: Exception) {
+            Result.failure(Exception(resourceProvider.getString(R.string.failed_to_unsave_vacation)))
+        }
+    }
+
+    override suspend fun getSavedVacations(): Result<List<Vacation>> {
+        return try {
+            val userId = supabaseClient.client.auth.currentUserOrNull()?.id
+            if (userId == null) {
+                return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            }
+
+            val savedVacationDtos = supabaseClient.client.from("saved_vacations")
+                .select {
+                    filter {
+                        eq("user_id", userId)
+                    }
+                }
+                .decodeList<SavedVacationDTO>()
+
+            Log.d(TAG, "getSavedVacations: Found ${savedVacationDtos.size} saved vacation records")
+
+            if (savedVacationDtos.isEmpty()) {
+                Log.d(TAG, "getSavedVacations: No saved vacations, returning empty list")
+                return Result.success(emptyList())
+            }
+
+            val vacations = savedVacationDtos.mapNotNull { savedDto ->
+                try {
+
+                    val vacationDto = supabaseClient.client.from("vacations")
+                        .select {
+                            filter {
+                                eq("id", savedDto.vacationId)
+                            }
+                        }
+                        .decodeSingle<VacationDTO>()
+
+                    val placesCount = try {
+                        supabaseClient.client.from("vacation_places")
+                            .select(Columns.raw("id")) {
+                                filter {
+                                    eq("vacation_id", vacationDto.id)
+                                }
+                            }
+                            .decodeList<VacationIdDTO>()
+                            .size
+                    } catch (e: Exception) {
+                        Log.e(TAG, "getSavedVacations: Error getting places count: ${e.message}")
+                        0
+                    }
+
+                    val commentsCount = try {
+                        supabaseClient.client.from("vacation_comments")
+                            .select(Columns.raw("id")) {
+                                filter {
+                                    eq("vacation_id", vacationDto.id)
+                                }
+                            }
+                            .decodeList<VacationIdDTO>()
+                            .size
+                    } catch (e: Exception) {
+                        Log.e(TAG, "getSavedVacations: Error getting comments count: ${e.message}")
+                        0
+                    }
+
+                    val vacation = vacationDto.toDomainModelWithSaved(
+                        isSaved = true,
+                        placesCount = placesCount,
+                        commentsCount = commentsCount
+                    )
+                    vacation
+                } catch (e: Exception) {
+                    Log.e(TAG, "getSavedVacations: Error fetching vacation ${savedDto.vacationId}: ${e.message}", e)
+                    null
+                }
+            }
+            vacations.forEach { v ->
+                Log.d(TAG, "getSavedVacations: Final vacation - ${v.title}, isSaved=${v.isSaved}")
+            }
+
+            Result.success(vacations)
+        } catch (e: Exception) {
+            Log.e(TAG, "getSavedVacations: Critical error: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.failed_to_load_saved_vacations)))
+        }
+    }
+
+    override suspend fun isVacationSaved(vacationId: String): Result<Boolean> {
+        return try {
+            val userId = supabaseClient.client.auth.currentUserOrNull()?.id
+                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+
+            val result = supabaseClient.client.from("saved_vacations")
+                .select {
+                    filter {
+                        eq("user_id", userId)
+                        eq("vacation_id", vacationId)
+                    }
+                }
+                .decodeList<SavedVacationDTO>()
+
+            Result.success(result.isNotEmpty())
+        } catch (_: Exception) {
+            Result.failure(Exception(resourceProvider.getString(R.string.failed_to_check_saved_status)))
         }
     }
 }

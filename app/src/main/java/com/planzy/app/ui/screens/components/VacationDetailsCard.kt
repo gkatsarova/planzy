@@ -2,6 +2,9 @@ package com.planzy.app.ui.screens.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,8 +27,11 @@ fun VacationDetailsCard(
     onPlaceClick: (Place) -> Unit,
     onRemovePlace: (Place) -> Unit,
     isOwner: Boolean,
-    getUserRating: (String) -> Pair<Double?, Int>,
     modifier: Modifier = Modifier,
+    isSaved: Boolean? = null,
+    onSaveToggle: (() -> Unit)? = null,
+    isSavingInProgress: Boolean = false,
+    getUserRating: (String) -> Pair<Double?, Int>,
     showMetadata: Boolean = true
 ) {
     Card(
@@ -45,18 +51,52 @@ fun VacationDetailsCard(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(
-                        text = "Created by $creatorUsername",
-                        fontFamily = Raleway,
-                        fontSize = 14.sp,
-                        color = Lavender
-                    )
-                    Text(
-                        text = DateFormatter.formatToShort(createdAt),
-                        fontFamily = Raleway,
-                        fontSize = 14.sp,
-                        color = Lavender
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "Created by $creatorUsername",
+                                fontFamily = Raleway,
+                                fontSize = 14.sp,
+                                color = Lavender
+                            )
+                            Text(
+                                text = DateFormatter.formatToShort(createdAt),
+                                fontFamily = Raleway,
+                                fontSize = 14.sp,
+                                color = Lavender
+                            )
+                        }
+
+                        if (!isOwner) {
+                            if (onSaveToggle != null) {
+                                IconButton(
+                                    onClick = onSaveToggle,
+                                    enabled = !isSavingInProgress
+                                ) {
+                                    if (isSavingInProgress) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = Lavender,
+                                            strokeWidth = 2.dp
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = if (isSaved == true) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                            contentDescription = if (isSaved == true) stringResource(id = R.string.unsave_vacation) else stringResource(id = R.string.save_vacation),
+                                            tint = Lavender,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 HorizontalDivider(

@@ -14,7 +14,10 @@ class VacationHistoryViewModel(
     private val getUserVacationsUseCase: GetUserVacationsUseCase
 ) : ViewModel() {
 
-    var vacations by mutableStateOf<List<Vacation>>(emptyList())
+    var myVacations by mutableStateOf<List<Vacation>>(emptyList())
+        private set
+
+    var savedVacations by mutableStateOf<List<Vacation>>(emptyList())
         private set
 
     var isLoading by mutableStateOf(false)
@@ -33,12 +36,15 @@ class VacationHistoryViewModel(
             errorMessage = null
 
             getUserVacationsUseCase()
-                .onSuccess {
-                    vacations = it
+                .onSuccess { (userVacations, savedVacationsList) ->
+
+                    myVacations = userVacations
+                    savedVacations = savedVacationsList
+
                     isLoading = false
                 }
-                .onFailure {
-                    errorMessage = it.message
+                .onFailure { exception ->
+                    errorMessage = exception.message
                     isLoading = false
                 }
         }

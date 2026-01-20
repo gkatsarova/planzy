@@ -27,6 +27,9 @@ class VacationDetailsViewModel(
     private val addVacationCommentUseCase: AddVacationCommentUseCase,
     private val updateVacationCommentUseCase: UpdateVacationCommentUseCase,
     private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
+    private val saveVacationUseCase: SaveVacationUseCase,
+    private val unsaveVacationUseCase: UnsaveVacationUseCase,
+    private val isVacationSavedUseCase: IsVacationSavedUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val placesRepository: PlacesRepository,
     private val resourceProvider: ResourceProvider,
@@ -72,6 +75,12 @@ class VacationDetailsViewModel(
     var isUpdatingComment by mutableStateOf(false)
         private set
 
+    var isSaved by mutableStateOf(false)
+        private set
+
+    var isSavingInProgress by mutableStateOf(false)
+        private set
+
     private var currentUserId: String? = null
     private var userRatingsCache = mutableMapOf<String, Pair<Double?, Int>>()
 
@@ -80,6 +89,7 @@ class VacationDetailsViewModel(
             currentUserId = getCurrentUserUseCase()?.id
             loadVacationDetails()
             loadVacationComments()
+            checkIfVacationIsSaved()
         }
     }
 
@@ -204,6 +214,39 @@ class VacationDetailsViewModel(
         }
     }
 
+    private fun checkIfVacationIsSaved() {
+        viewModelScope.launch {
+            isVacationSavedUseCase(vacationId)
+                .onSuccess { isSaved = it }
+        }
+    }
+
+    fun toggleSaveVacation() {
+        viewModelScope.launch {
+            isSavingInProgress = true
+
+            if (isSaved) {
+                unsaveVacationUseCase(vacationId)
+                    .onSuccess {
+                        isSaved = false
+                    }
+                    .onFailure {
+                        errorMessage = resourceProvider.getString(R.string.failed_to_unsave_vacation)
+                    }
+            } else {
+                saveVacationUseCase(vacationId)
+                    .onSuccess {
+                        isSaved = true
+                    }
+                    .onFailure {
+                        errorMessage = resourceProvider.getString(R.string.failed_to_save_vacation)
+                    }
+            }
+
+            isSavingInProgress = false
+        }
+    }
+
     fun onRetry() {
         loadVacationDetails()
         loadVacationComments()
@@ -216,6 +259,9 @@ class VacationDetailsViewModel(
         private val addVacationCommentUseCase: AddVacationCommentUseCase,
         private val updateVacationCommentUseCase: UpdateVacationCommentUseCase,
         private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
+        private val saveVacationUseCase: SaveVacationUseCase,
+        private val unsaveVacationUseCase: UnsaveVacationUseCase,
+        private val isVacationSavedUseCase: IsVacationSavedUseCase,
         private val placesRepository: PlacesRepository,
         private val resourceProvider: ResourceProvider,
         private val vacationId: String
@@ -231,6 +277,9 @@ class VacationDetailsViewModel(
                 addVacationCommentUseCase,
                 updateVacationCommentUseCase,
                 deleteVacationCommentUseCase,
+                saveVacationUseCase,
+                unsaveVacationUseCase,
+                isVacationSavedUseCase,
                 getCurrentUserUseCase,
                 placesRepository,
                 resourceProvider,

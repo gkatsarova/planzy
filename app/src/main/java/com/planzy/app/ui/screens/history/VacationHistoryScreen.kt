@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -37,6 +38,7 @@ import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.PlaceCard
 import com.planzy.app.ui.screens.components.PlanzyTopAppBar
 import com.planzy.app.ui.screens.components.VacationCard
+import com.planzy.app.ui.theme.AmaranthPurple
 import com.planzy.app.ui.theme.AmericanBlue
 import com.planzy.app.ui.theme.ErrorColor
 import com.planzy.app.ui.theme.Lavender
@@ -50,7 +52,7 @@ fun VacationHistoryScreen(
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context) }
     val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
-    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository) }
+    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository, resourceProvider) }
 
     val viewModel: VacationHistoryViewModel = viewModel(
         factory = VacationHistoryViewModel.Factory(
@@ -80,7 +82,10 @@ fun VacationHistoryScreen(
         ) {
             when {
                 searchViewModel.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = AmaranthPurple
+                    )
                 }
 
                 searchViewModel.errorMessage != null -> {
@@ -111,7 +116,6 @@ fun VacationHistoryScreen(
                                     text = stringResource(id = R.string.vacations),
                                     fontFamily = Raleway,
                                     fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
                                     color = AmericanBlue,
                                     modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                                 )
@@ -184,30 +188,74 @@ fun VacationHistoryScreen(
                     }
                 }
 
-                viewModel.vacations.isEmpty() -> {
-                    Text(
-                        text = stringResource(id = R.string.no_vacations),
-                        modifier = Modifier.align(Alignment.Center),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(viewModel.vacations) { vacation ->
-                            VacationCard(
-                                vacation = vacation,
-                                onCardClick = {
-                                    navController.navigate(
-                                        VacationDetails.createRoute(vacation.id)
+                        if (viewModel.myVacations.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = stringResource(id = R.string.my_vacations),
+                                    fontFamily = Raleway,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AmericanBlue,
+                                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                )
+                            }
+
+                            items(viewModel.myVacations) { vacation ->
+                                VacationCard(
+                                    vacation = vacation,
+                                    onCardClick = {
+                                        navController.navigate(
+                                            VacationDetails.createRoute(vacation.id)
+                                        )
+                                    }
+                                )
+                            }
+                        }
+
+                        if (viewModel.savedVacations.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = stringResource(id = R.string.saved_vacations),
+                                    fontFamily = Raleway,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AmericanBlue,
+                                    modifier = Modifier.padding(
+                                        top = if (viewModel.myVacations.isNotEmpty()) 16.dp else 8.dp,
+                                        bottom = 4.dp
                                     )
-                                }
-                            )
+                                )
+                            }
+
+                            items(viewModel.savedVacations) { vacation ->
+                                VacationCard(
+                                    vacation = vacation,
+                                    onCardClick = {
+                                        navController.navigate(
+                                            VacationDetails.createRoute(vacation.id)
+                                        )
+                                    }
+                                )
+                            }
+                        }
+
+                        if (viewModel.myVacations.isEmpty() && viewModel.savedVacations.isEmpty()) {
+                            item {
+                                Text(
+                                    text = stringResource(id = R.string.no_vacations),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 32.dp),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
                         }
                     }
                 }

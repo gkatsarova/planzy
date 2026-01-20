@@ -161,4 +161,13 @@
     <string name="error_saving_place">Failed to save place to database</string>
     <string name="history">history</string>
     <string name="no_vacations">No vacations yet. Start planning your next adventure!</string>
+
+    <string name="my_vacations">My Vacations</string>
+    <string name="saved_vacations">Saved Vacations</string>
+    <string name="failed_to_save_vacation">Failed to save vacation</string>
+    <string name="failed_to_unsave_vacation">Failed to unsave vacation</string>
+    <string name="failed_to_load_saved_vacations">Failed to load saved vacations</string>
+    <string name="failed_to_check_saved_status">Failed to check saved status</string>
+    <string name="unsave_vacation">Unsave vacation</string>
+    <string name="save_vacation">Save vacation</string>
 </resources>

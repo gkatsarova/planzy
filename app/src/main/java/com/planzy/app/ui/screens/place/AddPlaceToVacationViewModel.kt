@@ -48,7 +48,9 @@ class AddToVacationViewModel(
             isLoading = true
             errorMessage = null
             getUserVacationsUseCase()
-                .onSuccess { vacations = it }
+                .onSuccess { (myVacationsList, _) ->
+                    vacations = myVacationsList
+                }
                 .onFailure { errorMessage = it.message }
             isLoading = false
         }
