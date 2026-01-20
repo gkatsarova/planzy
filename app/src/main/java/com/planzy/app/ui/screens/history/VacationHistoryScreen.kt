@@ -12,10 +12,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,11 +36,14 @@ import com.planzy.app.R
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.model.Vacation
+import com.planzy.app.domain.usecase.vacation.DeleteVacationUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.navigation.VacationDetails
 import com.planzy.app.ui.navigation.VacationHistory
 import com.planzy.app.ui.screens.SearchViewModel
+import com.planzy.app.ui.screens.components.DeleteVacationDialog
 import com.planzy.app.ui.screens.components.PlaceCard
 import com.planzy.app.ui.screens.components.PlanzyTopAppBar
 import com.planzy.app.ui.screens.components.VacationCard
@@ -53,12 +62,24 @@ fun VacationHistoryScreen(
     val resourceProvider = remember { ResourceProviderImpl(context) }
     val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
     val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository, resourceProvider) }
+    val deleteVacationUseCase = remember { DeleteVacationUseCase(vacationsRepository) }
 
     val viewModel: VacationHistoryViewModel = viewModel(
         factory = VacationHistoryViewModel.Factory(
-            getUserVacationsUseCase = getUserVacationsUseCase
+            getUserVacationsUseCase = getUserVacationsUseCase,
+            deleteVacationUseCase = deleteVacationUseCase
         )
     )
+
+    var vacationToDelete by remember { mutableStateOf<Vacation?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(viewModel.deleteErrorMessage) {
+        viewModel.deleteErrorMessage?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearDeleteError()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -73,6 +94,7 @@ fun VacationHistoryScreen(
                 }
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Lavender
     ){ padding ->
         Box(
@@ -213,6 +235,10 @@ fun VacationHistoryScreen(
                                         navController.navigate(
                                             VacationDetails.createRoute(vacation.id)
                                         )
+                                    },
+                                    showDeleteButton = true,
+                                    onDeleteClick = {
+                                        vacationToDelete = vacation
                                     }
                                 )
                             }
@@ -258,6 +284,31 @@ fun VacationHistoryScreen(
                             }
                         }
                     }
+                }
+            }
+
+            if (vacationToDelete != null) {
+                DeleteVacationDialog(
+                    vacation = vacationToDelete!!,
+                    isDeleting = viewModel.isDeleting,
+                    onConfirm = {
+                        viewModel.deleteVacation(vacationToDelete!!.id)
+                        vacationToDelete = null
+                    },
+                    onDismiss = {
+                        vacationToDelete = null
+                    }
+                )
+            }
+
+            if (viewModel.isDeleting) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = AmaranthPurple)
                 }
             }
         }

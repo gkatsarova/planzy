@@ -61,4 +61,8 @@ interface VacationsRepository {
     suspend fun isVacationSaved(
         vacationId: String
     ): Result<Boolean>
+
+    suspend fun deleteVacation(
+        vacationId: String
+    ): Result<Unit>
 }

@@ -691,4 +691,48 @@ class VacationsRepositoryImpl(
             Result.failure(Exception(resourceProvider.getString(R.string.failed_to_check_saved_status)))
         }
     }
+
+    override suspend fun deleteVacation(vacationId: String): Result<Unit> {
+        return try {
+            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
+                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+
+            val vacationCheck = supabaseClient.client.postgrest
+                .from("vacations")
+                .select(Columns.raw("id, user_id")) {
+                    filter {
+                        eq("id", vacationId)
+                        eq("user_id", currentUserId)
+                    }
+                    limit(1)
+                }
+
+            val vacation = try {
+                vacationCheck.decodeList<VacationIdDTO>().firstOrNull()
+            } catch (e: Exception) {
+                Log.e(TAG, "Vacation not found: ${e.message}")
+                null
+            }
+
+            if (vacation == null) {
+                Log.e(TAG, "Vacation $vacationId not found or user is not the owner")
+                return Result.failure(Exception(resourceProvider.getString(R.string.error_vacation_not_found_or_no_permission)))
+            }
+
+            supabaseClient.client.postgrest
+                .from("vacations")
+                .delete {
+                    filter {
+                        eq("id", vacationId)
+                        eq("user_id", currentUserId)
+                    }
+                }
+
+            Log.d(TAG, "Successfully deleted vacation $vacationId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deleting vacation: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_deleting_vacation)))
+        }
+    }
 }
