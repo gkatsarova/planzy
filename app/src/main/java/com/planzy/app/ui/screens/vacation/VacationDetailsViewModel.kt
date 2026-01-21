@@ -27,10 +27,14 @@ class VacationDetailsViewModel(
     private val addVacationCommentUseCase: AddVacationCommentUseCase,
     private val updateVacationCommentUseCase: UpdateVacationCommentUseCase,
     private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
+    private val saveVacationUseCase: SaveVacationUseCase,
+    private val unsaveVacationUseCase: UnsaveVacationUseCase,
+    private val isVacationSavedUseCase: IsVacationSavedUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val placesRepository: PlacesRepository,
     private val resourceProvider: ResourceProvider,
-    private val vacationId: String
+    private val vacationId: String,
+    private val onCommentsChanged: () -> Unit = {}
 ) : ViewModel() {
 
     var isLoading by mutableStateOf(true)
@@ -72,6 +76,12 @@ class VacationDetailsViewModel(
     var isUpdatingComment by mutableStateOf(false)
         private set
 
+    var isSaved by mutableStateOf(false)
+        private set
+
+    var isSavingInProgress by mutableStateOf(false)
+        private set
+
     private var currentUserId: String? = null
     private var userRatingsCache = mutableMapOf<String, Pair<Double?, Int>>()
 
@@ -80,6 +90,7 @@ class VacationDetailsViewModel(
             currentUserId = getCurrentUserUseCase()?.id
             loadVacationDetails()
             loadVacationComments()
+            checkIfVacationIsSaved()
         }
     }
 
@@ -164,6 +175,7 @@ class VacationDetailsViewModel(
                 .onSuccess { newComment ->
                     vacationComments = listOf(newComment) + vacationComments
                     isSubmittingComment = false
+                    onCommentsChanged()
                 }
                 .onFailure { error ->
                     commentErrorMessage = error.message
@@ -197,10 +209,44 @@ class VacationDetailsViewModel(
                 .onSuccess {
                     vacationComments = vacationComments.filter { it.id != commentId }
                     isDeletingComment = false
+                    onCommentsChanged()
                 }
                 .onFailure {
                     isDeletingComment = false
                 }
+        }
+    }
+
+    private fun checkIfVacationIsSaved() {
+        viewModelScope.launch {
+            isVacationSavedUseCase(vacationId)
+                .onSuccess { isSaved = it }
+        }
+    }
+
+    fun toggleSaveVacation() {
+        viewModelScope.launch {
+            isSavingInProgress = true
+
+            if (isSaved) {
+                unsaveVacationUseCase(vacationId)
+                    .onSuccess {
+                        isSaved = false
+                    }
+                    .onFailure {
+                        errorMessage = resourceProvider.getString(R.string.failed_to_unsave_vacation)
+                    }
+            } else {
+                saveVacationUseCase(vacationId)
+                    .onSuccess {
+                        isSaved = true
+                    }
+                    .onFailure {
+                        errorMessage = resourceProvider.getString(R.string.failed_to_save_vacation)
+                    }
+            }
+
+            isSavingInProgress = false
         }
     }
 
@@ -216,9 +262,13 @@ class VacationDetailsViewModel(
         private val addVacationCommentUseCase: AddVacationCommentUseCase,
         private val updateVacationCommentUseCase: UpdateVacationCommentUseCase,
         private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
+        private val saveVacationUseCase: SaveVacationUseCase,
+        private val unsaveVacationUseCase: UnsaveVacationUseCase,
+        private val isVacationSavedUseCase: IsVacationSavedUseCase,
         private val placesRepository: PlacesRepository,
         private val resourceProvider: ResourceProvider,
-        private val vacationId: String
+        private val vacationId: String,
+        private val onCommentsChanged: () -> Unit = {}
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -231,10 +281,14 @@ class VacationDetailsViewModel(
                 addVacationCommentUseCase,
                 updateVacationCommentUseCase,
                 deleteVacationCommentUseCase,
+                saveVacationUseCase,
+                unsaveVacationUseCase,
+                isVacationSavedUseCase,
                 getCurrentUserUseCase,
                 placesRepository,
                 resourceProvider,
-                vacationId
+                vacationId,
+                onCommentsChanged
             ) as T
         }
     }

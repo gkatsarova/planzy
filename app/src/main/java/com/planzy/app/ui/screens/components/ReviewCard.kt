@@ -1,7 +1,5 @@
 package com.planzy.app.ui.screens.components
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,7 +15,6 @@ import com.planzy.app.data.util.DateFormatter
 import com.planzy.app.domain.model.PlaceReview
 import com.planzy.app.ui.theme.*
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ReviewCard(
     review: PlaceReview,

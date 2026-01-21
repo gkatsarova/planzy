@@ -46,7 +46,10 @@ import com.planzy.app.domain.usecase.vacation.AddVacationCommentUseCase
 import com.planzy.app.domain.usecase.vacation.DeleteVacationCommentUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationCommentsUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationDetailsUseCase
+import com.planzy.app.domain.usecase.vacation.IsVacationSavedUseCase
 import com.planzy.app.domain.usecase.vacation.RemovePlaceFromVacationUseCase
+import com.planzy.app.domain.usecase.vacation.SaveVacationUseCase
+import com.planzy.app.domain.usecase.vacation.UnsaveVacationUseCase
 import com.planzy.app.domain.usecase.vacation.UpdateVacationCommentUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.navigation.VacationDetails
@@ -85,6 +88,9 @@ fun VacationDetailsScreen(
     val addVacationCommentUseCase = remember { AddVacationCommentUseCase(vacationsRepository, resourceProvider) }
     val updateVacationCommentUseCase = remember { UpdateVacationCommentUseCase(vacationsRepository, resourceProvider) }
     val deleteVacationCommentUseCase = remember { DeleteVacationCommentUseCase(vacationsRepository) }
+    val saveVacationUseCase = remember { SaveVacationUseCase(vacationsRepository) }
+    val unsaveVacationUseCase = remember { UnsaveVacationUseCase(vacationsRepository) }
+    val isVacationSavedUseCase = remember { IsVacationSavedUseCase(vacationsRepository) }
 
     var isEditingAnyComment by remember { mutableStateOf(false) }
 
@@ -96,9 +102,17 @@ fun VacationDetailsScreen(
             addVacationCommentUseCase = addVacationCommentUseCase,
             updateVacationCommentUseCase = updateVacationCommentUseCase,
             deleteVacationCommentUseCase = deleteVacationCommentUseCase,
+            saveVacationUseCase = saveVacationUseCase,
+            unsaveVacationUseCase = unsaveVacationUseCase,
+            isVacationSavedUseCase = isVacationSavedUseCase,
             placesRepository = placesRepository,
             resourceProvider = resourceProvider,
-            vacationId = vacationId
+            vacationId = vacationId,
+            onCommentsChanged = {
+                navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set("comments_changed", true)
+            }
         )
     )
 
@@ -283,6 +297,9 @@ fun VacationDetailsScreen(
                                     viewModel.removePlaceFromVacation(place.id)
                                 },
                                 isOwner = viewModel.isOwner,
+                                isSaved = viewModel.isSaved,
+                                onSaveToggle = { viewModel.toggleSaveVacation() },
+                                isSavingInProgress = viewModel.isSavingInProgress,
                                 getUserRating = { placeId -> viewModel.getUserRating(placeId) }
                             )
                         }

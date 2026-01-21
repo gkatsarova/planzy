@@ -20,6 +20,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.planzy.app.ui.navigation.Home
 import com.planzy.app.ui.navigation.VacationPlanner
 import com.planzy.app.R
+import com.planzy.app.ui.navigation.VacationHistory
 import com.planzy.app.ui.theme.AmaranthPurple
 import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.Raleway
@@ -41,6 +42,36 @@ fun BottomNavBar(navController: NavController) {
             windowInsets = WindowInsets(0, 0, 0, 0),
             modifier = Modifier.height(70.dp)
         ) {
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_history),
+                        contentDescription = stringResource(id = R.string.history),
+                        modifier = Modifier.size(40.dp),
+                        tint = Lavender
+                    )
+                },
+                label = {
+                    Text(
+                        text = stringResource(id = R.string.history),
+                        color = Lavender,
+                        fontFamily = Raleway,
+                        fontSize = 12.sp
+                    )
+                },
+                selected = currentRoute == VacationHistory.route,
+                onClick = {
+                    if (currentRoute != VacationHistory.route) {
+                        navController.navigate(
+                            VacationHistory.route
+                        )
+                    }
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = Color.Transparent
+                )
+            )
+
             NavigationBarItem(
                 icon = {
                     Icon(

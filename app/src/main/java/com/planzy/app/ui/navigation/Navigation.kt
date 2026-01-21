@@ -21,6 +21,7 @@ import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.auth.registration.DeepLinkViewModel
 import com.planzy.app.ui.screens.auth.registration.RegisterScreen
 import com.planzy.app.ui.screens.auth.login.LoginScreen
+import com.planzy.app.ui.screens.history.VacationHistoryScreen
 import com.planzy.app.ui.screens.home.HomeScreen
 import com.planzy.app.ui.screens.place.PlaceDetailsScreen
 import com.planzy.app.ui.screens.planner.VacationPlannerScreen
@@ -158,6 +159,13 @@ fun Navigation(
 
         composable(route = VacationPlanner.route){
             VacationPlannerScreen(
+                navController = navController,
+                searchViewModel = searchViewModel
+            )
+        }
+
+        composable(route = VacationHistory.route){
+            VacationHistoryScreen(
                 navController = navController,
                 searchViewModel = searchViewModel
             )

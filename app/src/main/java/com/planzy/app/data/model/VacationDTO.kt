@@ -79,3 +79,13 @@ fun VacationPlaceDTO.toDomainModel() = VacationPlace(
     orderIndex = orderIndex,
     createdAt = createdAt
 )
+
+fun VacationDTO.toDomainModelWithSaved(isSaved: Boolean = false, placesCount: Int = 0, commentsCount: Int = 0) = Vacation(
+    id = id,
+    userId = userId,
+    title = title,
+    createdAt = createdAt,
+    placesCount = placesCount,
+    commentsCount = commentsCount,
+    isSaved = isSaved
+)
