@@ -13,21 +13,31 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.planzy.app.R
+import com.planzy.app.data.repository.UserRepositoryImpl
+import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.planzy.app.data.repository.AuthRepositoryImpl
+import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.navigation.Profile
 import com.planzy.app.ui.navigation.VacationDetails
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.PlaceCard
 import com.planzy.app.ui.screens.components.PlanzyTopAppBar
+import com.planzy.app.ui.screens.components.ProfileCard
+import com.planzy.app.ui.screens.components.RetrySection
 import com.planzy.app.ui.screens.components.VacationCard
 import com.planzy.app.ui.theme.AmericanBlue
 import com.planzy.app.ui.theme.ErrorColor
@@ -38,6 +48,21 @@ fun ProfileScreen(
     navController: NavController,
     searchViewModel: SearchViewModel
 ){
+    val context = LocalContext.current
+    val resourceProvider = remember { ResourceProviderImpl(context) }
+    val authRepository = remember { AuthRepositoryImpl(resourceProvider) }
+    val userRepository = remember { UserRepositoryImpl() }
+    val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
+    val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
+
+    val viewModel: ProfileViewModel = viewModel(
+        factory = ProfileViewModel.Factory(
+            getCurrentUserUseCase = getCurrentUserUseCase,
+            getUserByAuthIdUseCase = getUserByAuthIdUseCase,
+            resourceProvider = resourceProvider
+        )
+    )
+
     Scaffold(
         topBar = {
             PlanzyTopAppBar(
@@ -45,6 +70,9 @@ fun ProfileScreen(
                 navController = navController,
                 onSearch = { query ->
                     searchViewModel.searchForPlaces(query)
+                },
+                onSearchFocusChanged = { isFocused ->
+                    searchViewModel.updateSearchBarFocus(isFocused)
                 }
             )
         }
@@ -75,7 +103,7 @@ fun ProfileScreen(
                     }
                 }
 
-                else -> {
+                searchViewModel.vacations.isNotEmpty() || searchViewModel.placesWithStats.isNotEmpty() -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
@@ -131,6 +159,34 @@ fun ProfileScreen(
                                 )
                             }
                         }
+                    }
+                }
+
+                viewModel.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = AmericanBlue
+                    )
+                }
+
+                viewModel.errorMessage != null -> {
+                    RetrySection(
+                        errorMessage = viewModel.errorMessage!!,
+                        onRetry = { viewModel.retry() },
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                else -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        ProfileCard(
+                            username = viewModel.username,
+                            email = viewModel.email
+                        )
                     }
                 }
             }

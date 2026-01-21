@@ -53,4 +53,21 @@ class UserRepositoryImpl : UserRepository {
             Result.failure(e)
         }
     }
+
+    override suspend fun getUserByAuthId(authId: String): Result<User?> {
+        return try {
+            val response = SupabaseClient.client.postgrest["users"]
+                .select {
+                    filter {
+                        eq("auth_id", authId)
+                    }
+                }
+
+            val users = response.decodeList<User>()
+            Result.success(users.firstOrNull())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting user by auth_id: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
 }
