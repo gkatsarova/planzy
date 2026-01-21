@@ -120,7 +120,10 @@ fun Navigation(
         }
 
         composable(route = Profile.route) {
-            ProfileScreen()
+            ProfileScreen(
+                navController = navController,
+                searchViewModel = searchViewModel
+            )
         }
 
         composable(
