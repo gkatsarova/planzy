@@ -7,16 +7,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
+import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.usecase.auth.DeleteAccountUseCase
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val getUserByAuthIdUseCase: GetUserByAuthIdUseCase,
     private val signOutUseCase: SignOutUseCase,
+    private val deleteAccountUseCase: DeleteAccountUseCase,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -35,6 +39,12 @@ class ProfileViewModel(
     var isLogoutSuccessful by mutableStateOf(false)
         private set
 
+    var showDeleteConfirmation by mutableStateOf(false)
+        private set
+
+    var isDeleteSuccessful by mutableStateOf(false)
+        private set
+
     init {
         loadUserProfile()
     }
@@ -45,6 +55,7 @@ class ProfileViewModel(
             errorMessage = null
 
             try {
+                SupabaseClient.client.auth.refreshCurrentSession()
                 val currentUser = getCurrentUserUseCase()
 
                 if (currentUser != null) {
@@ -52,8 +63,10 @@ class ProfileViewModel(
 
                     getUserByAuthIdUseCase(authId)
                         .onSuccess { user ->
-                            username = user?.username ?: ""
-                            email = user?.email ?: ""
+                            if (user != null) {
+                                username = user.username
+                                email = user.email
+                            }
                             isLoading = false
                         }
                         .onFailure { exception ->
@@ -88,6 +101,32 @@ class ProfileViewModel(
         }
     }
 
+    fun showDeleteDialog() {
+        showDeleteConfirmation = true
+    }
+
+    fun dismissDeleteDialog() {
+        showDeleteConfirmation = false
+    }
+
+    fun deleteAccount() {
+        viewModelScope.launch {
+            isLoading = true
+            errorMessage = null
+            showDeleteConfirmation = false
+
+            deleteAccountUseCase()
+                .onSuccess {
+                    isLoading = false
+                    isDeleteSuccessful = true
+                }
+                .onFailure { exception ->
+                    errorMessage = exception.message
+                    isLoading = false
+                }
+        }
+    }
+
     fun retry() {
         loadUserProfile()
     }
@@ -96,6 +135,7 @@ class ProfileViewModel(
         private val getCurrentUserUseCase: GetCurrentUserUseCase,
         private val getUserByAuthIdUseCase: GetUserByAuthIdUseCase,
         private val signOutUseCase: SignOutUseCase,
+        private val deleteAccountUseCase: DeleteAccountUseCase,
         private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -104,6 +144,7 @@ class ProfileViewModel(
                 getCurrentUserUseCase,
                 getUserByAuthIdUseCase,
                 signOutUseCase,
+                deleteAccountUseCase,
                 resourceProvider
             ) as T
         }

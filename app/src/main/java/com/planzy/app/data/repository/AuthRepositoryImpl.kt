@@ -46,6 +46,10 @@ class AuthRepositoryImpl(
                 Result.failure(Exception(resourceProvider.getString(R.string.error_creating_auth_user)))
             } else {
                 Log.i(TAG, "Auth user created with ID: ${authResponse.id}")
+
+                val session = SupabaseClient.client.auth.currentSessionOrNull()
+                Log.d(TAG, "Session after signup: ${session?.user?.id}")
+
                 Result.success(authResponse)
             }
         } catch (e: Exception) {
@@ -73,6 +77,10 @@ class AuthRepositoryImpl(
                 Result.failure(Exception(resourceProvider.getString(R.string.error_login_failed)))
             } else {
                 Log.i(TAG, "Sign in successful for user: ${currentUser.id}")
+
+                val session = SupabaseClient.client.auth.currentSessionOrNull()
+                Log.d(TAG, "Session after sign in: ${session?.user?.id}")
+
                 Result.success(currentUser)
             }
         } catch (e: AuthRestException) {
@@ -92,6 +100,31 @@ class AuthRepositoryImpl(
         } catch (e: Exception) {
             Log.e(TAG, "Error signing out: ${e.message}", e)
             Result.failure(Exception(resourceProvider.getString(R.string.error_logout_failed)))
+        }
+    }
+
+    override suspend fun deleteAccount(): Result<Unit> {
+        return try {
+            Log.d(TAG, "Deleting user account...")
+
+            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
+            if (currentUser == null) {
+                Log.e(TAG, "No user logged in")
+                return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            }
+
+            SupabaseClient.client.postgrest.rpc(
+                function = "delete_user",
+                parameters = emptyMap<String, String>()
+            )
+
+            SupabaseClient.client.auth.signOut()
+
+            Log.i(TAG, "User account deleted successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deleting account: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_delete_account_failed)))
         }
     }
 

@@ -1,6 +1,8 @@
 package com.planzy.app.ui.screens.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -30,6 +33,7 @@ fun ProfileCard(
     username: String,
     email: String,
     onLogoutClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -58,26 +62,53 @@ fun ProfileCard(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                IconButton(
-                    onClick = onLogoutClick
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Logout,
-                        contentDescription = stringResource(id = R.string.logout),
-                        tint = Lavender,
-                        modifier = Modifier.size(40.dp)
+                    IconButton(
+                        onClick = onDeleteClick
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(id = R.string.delete_account),
+                            tint = Lavender,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+
+                    Text(
+                        text = stringResource(id = R.string.delete_account),
+                        fontFamily = Raleway,
+                        fontSize = 12.sp,
+                        color = Lavender
                     )
                 }
 
-                Text(
-                    text = stringResource(id = R.string.logout),
-                    fontFamily = Raleway,
-                    fontSize = 12.sp,
-                    color = Lavender
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    IconButton(
+                        onClick = onLogoutClick
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = stringResource(id = R.string.logout),
+                            tint = Lavender,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+
+                    Text(
+                        text = stringResource(id = R.string.logout),
+                        fontFamily = Raleway,
+                        fontSize = 12.sp,
+                        color = Lavender
+                    )
+                }
             }
         }
     }

@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,16 +27,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.planzy.app.R
 import com.planzy.app.data.repository.UserRepositoryImpl
+import com.planzy.app.domain.usecase.auth.DeleteAccountUseCase
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
-import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
+import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.navigation.Profile
+import com.planzy.app.ui.navigation.Register
 import com.planzy.app.ui.navigation.VacationDetails
-import com.planzy.app.ui.navigation.Welcome
 import com.planzy.app.ui.screens.SearchViewModel
+import com.planzy.app.ui.screens.components.DeleteAccountDialog
 import com.planzy.app.ui.screens.components.PlaceCard
 import com.planzy.app.ui.screens.components.PlanzyTopAppBar
 import com.planzy.app.ui.screens.components.ProfileCard
@@ -57,15 +61,40 @@ fun ProfileScreen(
     val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
     val signOutUseCase = remember { SignOutUseCase(authRepository) }
+    val deleteAccountUseCase = remember { DeleteAccountUseCase(authRepository) }
 
     val viewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModel.Factory(
             getCurrentUserUseCase = getCurrentUserUseCase,
             getUserByAuthIdUseCase = getUserByAuthIdUseCase,
             signOutUseCase = signOutUseCase,
+            deleteAccountUseCase = deleteAccountUseCase,
             resourceProvider = resourceProvider
         )
     )
+
+    LaunchedEffect(viewModel.isLogoutSuccessful) {
+        if (viewModel.isLogoutSuccessful) {
+            navController.navigate(Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    LaunchedEffect(viewModel.isDeleteSuccessful) {
+        if (viewModel.isDeleteSuccessful) {
+            navController.navigate(Register.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    if (viewModel.showDeleteConfirmation) {
+        DeleteAccountDialog(
+            onConfirm = { viewModel.deleteAccount() },
+            onDismiss = { viewModel.dismissDeleteDialog() }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -190,10 +219,8 @@ fun ProfileScreen(
                         ProfileCard(
                             username = viewModel.username,
                             email = viewModel.email,
-                            onLogoutClick = {
-                                viewModel.signOut()
-                                navController.navigate(Welcome.route)
-                            }
+                            onLogoutClick = { viewModel.signOut() },
+                            onDeleteClick = { viewModel.showDeleteDialog() }
                         )
                     }
                 }
