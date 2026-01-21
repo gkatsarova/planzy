@@ -33,7 +33,8 @@ class VacationDetailsViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val placesRepository: PlacesRepository,
     private val resourceProvider: ResourceProvider,
-    private val vacationId: String
+    private val vacationId: String,
+    private val onCommentsChanged: () -> Unit = {}
 ) : ViewModel() {
 
     var isLoading by mutableStateOf(true)
@@ -174,6 +175,7 @@ class VacationDetailsViewModel(
                 .onSuccess { newComment ->
                     vacationComments = listOf(newComment) + vacationComments
                     isSubmittingComment = false
+                    onCommentsChanged()
                 }
                 .onFailure { error ->
                     commentErrorMessage = error.message
@@ -207,6 +209,7 @@ class VacationDetailsViewModel(
                 .onSuccess {
                     vacationComments = vacationComments.filter { it.id != commentId }
                     isDeletingComment = false
+                    onCommentsChanged()
                 }
                 .onFailure {
                     isDeletingComment = false
@@ -264,7 +267,8 @@ class VacationDetailsViewModel(
         private val isVacationSavedUseCase: IsVacationSavedUseCase,
         private val placesRepository: PlacesRepository,
         private val resourceProvider: ResourceProvider,
-        private val vacationId: String
+        private val vacationId: String,
+        private val onCommentsChanged: () -> Unit = {}
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -283,7 +287,8 @@ class VacationDetailsViewModel(
                 getCurrentUserUseCase,
                 placesRepository,
                 resourceProvider,
-                vacationId
+                vacationId,
+                onCommentsChanged
             ) as T
         }
     }

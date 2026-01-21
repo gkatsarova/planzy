@@ -20,6 +20,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,6 +57,8 @@ import com.planzy.app.ui.theme.AmericanBlue
 import com.planzy.app.ui.theme.ErrorColor
 import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.Raleway
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
 fun VacationHistoryScreen(
@@ -86,6 +89,19 @@ fun VacationHistoryScreen(
         viewModel.deleteErrorMessage?.let { error ->
             snackbarHostState.showSnackbar(error)
             viewModel.clearDeleteError()
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshVacations()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 

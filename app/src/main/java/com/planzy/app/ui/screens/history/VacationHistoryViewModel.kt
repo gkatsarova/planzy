@@ -84,6 +84,10 @@ class VacationHistoryViewModel(
         loadUserVacations()
     }
 
+    fun refreshVacations() {
+        loadUserVacations()
+    }
+
     class Factory(
         private val getUserVacationsUseCase: GetUserVacationsUseCase,
         private val deleteVacationUseCase: DeleteVacationUseCase

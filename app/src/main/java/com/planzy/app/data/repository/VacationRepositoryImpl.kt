@@ -59,12 +59,16 @@ class VacationsRepositoryImpl(
                     0
                 }
 
+                val commentsCount = getVacationCommentsCount(vacationDTO.id)
+                    .getOrDefault(0)
+
                 Vacation(
                     id = vacationDTO.id,
                     userId = vacationDTO.userId,
                     title = vacationDTO.title,
                     createdAt = vacationDTO.createdAt,
-                    placesCount = placesCount
+                    placesCount = placesCount,
+                    commentsCount = commentsCount
                 )
             }
 
@@ -233,12 +237,16 @@ class VacationsRepositoryImpl(
                     0
                 }
 
+                val commentsCount = getVacationCommentsCount(vacationDTO.id)
+                    .getOrDefault(0)
+
                 Vacation(
                     id = vacationDTO.id,
                     userId = vacationDTO.userId,
                     title = vacationDTO.title,
                     createdAt = vacationDTO.createdAt,
-                    placesCount = placesCount
+                    placesCount = placesCount,
+                    commentsCount = commentsCount
                 )
             }
 
@@ -300,12 +308,16 @@ class VacationsRepositoryImpl(
                 0
             }
 
+            val commentsCount = getVacationCommentsCount(vacationDTO.id)
+                .getOrDefault(0)
+
             val vacation = Vacation(
                 id = vacationDTO.id,
                 userId = vacationDTO.userId,
                 title = vacationDTO.title,
                 createdAt = vacationDTO.createdAt,
-                placesCount = placesCount
+                placesCount = placesCount,
+                commentsCount = commentsCount
             )
 
             Result.success(Pair(vacation, username))

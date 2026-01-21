@@ -107,7 +107,12 @@ fun VacationDetailsScreen(
             isVacationSavedUseCase = isVacationSavedUseCase,
             placesRepository = placesRepository,
             resourceProvider = resourceProvider,
-            vacationId = vacationId
+            vacationId = vacationId,
+            onCommentsChanged = {
+                navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set("comments_changed", true)
+            }
         )
     )
 
