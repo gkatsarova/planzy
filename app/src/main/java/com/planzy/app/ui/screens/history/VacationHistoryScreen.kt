@@ -6,9 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -24,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +62,10 @@ fun VacationHistoryScreen(
     navController: NavController,
     searchViewModel: SearchViewModel
 ) {
+    val configuration = LocalConfiguration.current
+    val sectionHeight = configuration.screenHeightDp.dp * 0.60f
+    val scrollState = rememberScrollState()
+
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context) }
     val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
@@ -211,76 +219,92 @@ fun VacationHistoryScreen(
                 }
 
                 else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        if (viewModel.myVacations.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = stringResource(id = R.string.my_vacations),
-                                    fontFamily = Raleway,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AmericanBlue,
-                                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                                )
-                            }
-
-                            items(viewModel.myVacations) { vacation ->
-                                VacationCard(
-                                    vacation = vacation,
-                                    onCardClick = {
-                                        navController.navigate(
-                                            VacationDetails.createRoute(vacation.id)
-                                        )
-                                    },
-                                    showDeleteButton = true,
-                                    onDeleteClick = {
-                                        vacationToDelete = vacation
-                                    }
-                                )
-                            }
-                        }
-
-                        if (viewModel.savedVacations.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = stringResource(id = R.string.saved_vacations),
-                                    fontFamily = Raleway,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AmericanBlue,
-                                    modifier = Modifier.padding(
-                                        top = if (viewModel.myVacations.isNotEmpty()) 16.dp else 8.dp,
-                                        bottom = 4.dp
-                                    )
-                                )
-                            }
-
-                            items(viewModel.savedVacations) { vacation ->
-                                VacationCard(
-                                    vacation = vacation,
-                                    onCardClick = {
-                                        navController.navigate(
-                                            VacationDetails.createRoute(vacation.id)
-                                        )
-                                    }
-                                )
-                            }
-                        }
-
-                        if (viewModel.myVacations.isEmpty() && viewModel.savedVacations.isEmpty()) {
-                            item {
-                                Text(
-                                    text = stringResource(id = R.string.no_vacations),
+                    if (viewModel.myVacations.isEmpty() && viewModel.savedVacations.isEmpty()) {
+                        Text(
+                            text = stringResource(id = R.string.no_vacations),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.Center)
+                                .padding(32.dp),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    } else {
+                        Column (
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(scrollState)
+                        ) {
+                            if (viewModel.myVacations.isNotEmpty()) {
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(top = 32.dp),
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
+                                        .height(sectionHeight)
+                                        .padding(vertical = 16.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(id = R.string.my_vacations),
+                                        fontFamily = Raleway,
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = AmericanBlue,
+                                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                                    )
+                                    LazyColumn(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        items(viewModel.myVacations) { vacation ->
+                                            VacationCard(
+                                                vacation = vacation,
+                                                onCardClick = {
+                                                    navController.navigate(
+                                                        VacationDetails.createRoute(vacation.id)
+                                                    )
+                                                },
+                                                showDeleteButton = true,
+                                                onDeleteClick = {
+                                                    vacationToDelete = vacation
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (viewModel.savedVacations.isNotEmpty()) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(sectionHeight)
+                                        .padding(vertical = 16.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(id = R.string.saved_vacations),
+                                        fontFamily = Raleway,
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = AmericanBlue,
+                                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                                    )
+                                    LazyColumn(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        items(viewModel.savedVacations) { vacation ->
+                                            VacationCard(
+                                                vacation = vacation,
+                                                onCardClick = {
+                                                    navController.navigate(
+                                                        VacationDetails.createRoute(vacation.id)
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
