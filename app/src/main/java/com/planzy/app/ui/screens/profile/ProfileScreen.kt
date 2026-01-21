@@ -29,10 +29,12 @@ import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.navigation.Profile
 import com.planzy.app.ui.navigation.VacationDetails
+import com.planzy.app.ui.navigation.Welcome
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.PlaceCard
 import com.planzy.app.ui.screens.components.PlanzyTopAppBar
@@ -54,11 +56,13 @@ fun ProfileScreen(
     val userRepository = remember { UserRepositoryImpl() }
     val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
+    val signOutUseCase = remember { SignOutUseCase(authRepository) }
 
     val viewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModel.Factory(
             getCurrentUserUseCase = getCurrentUserUseCase,
             getUserByAuthIdUseCase = getUserByAuthIdUseCase,
+            signOutUseCase = signOutUseCase,
             resourceProvider = resourceProvider
         )
     )
@@ -185,7 +189,11 @@ fun ProfileScreen(
                     ) {
                         ProfileCard(
                             username = viewModel.username,
-                            email = viewModel.email
+                            email = viewModel.email,
+                            onLogoutClick = {
+                                viewModel.signOut()
+                                navController.navigate(Welcome.route)
+                            }
                         )
                     }
                 }

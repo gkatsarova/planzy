@@ -9,12 +9,14 @@ import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val getUserByAuthIdUseCase: GetUserByAuthIdUseCase,
+    private val signOutUseCase: SignOutUseCase,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -28,6 +30,9 @@ class ProfileViewModel(
         private set
 
     var errorMessage by mutableStateOf<String?>(null)
+        private set
+
+    var isLogoutSuccessful by mutableStateOf(false)
         private set
 
     init {
@@ -66,6 +71,23 @@ class ProfileViewModel(
         }
     }
 
+    fun signOut() {
+        viewModelScope.launch {
+            isLoading = true
+            errorMessage = null
+
+            signOutUseCase()
+                .onSuccess {
+                    isLoading = false
+                    isLogoutSuccessful = true
+                }
+                .onFailure { exception ->
+                    errorMessage = exception.message
+                    isLoading = false
+                }
+        }
+    }
+
     fun retry() {
         loadUserProfile()
     }
@@ -73,6 +95,7 @@ class ProfileViewModel(
     class Factory(
         private val getCurrentUserUseCase: GetCurrentUserUseCase,
         private val getUserByAuthIdUseCase: GetUserByAuthIdUseCase,
+        private val signOutUseCase: SignOutUseCase,
         private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -80,6 +103,7 @@ class ProfileViewModel(
             return ProfileViewModel(
                 getCurrentUserUseCase,
                 getUserByAuthIdUseCase,
+                signOutUseCase,
                 resourceProvider
             ) as T
         }

@@ -84,6 +84,17 @@ class AuthRepositoryImpl(
         }
     }
 
+    override suspend fun signOut(): Result<Unit> {
+        return try {
+            SupabaseClient.client.auth.signOut()
+            Log.i(TAG, "User signed out successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error signing out: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_logout_failed)))
+        }
+    }
+
     override suspend fun checkEmailExistsInAuth(email: String): Result<Boolean> {
         return try {
             val response = SupabaseClient.client.postgrest.rpc(
