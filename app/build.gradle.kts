@@ -109,4 +109,6 @@ dependencies {
 
     implementation(libs.language.id)
     implementation(libs.kotlinx.coroutines.play.services)
+
+    implementation(libs.coil.compose.v250)
 }

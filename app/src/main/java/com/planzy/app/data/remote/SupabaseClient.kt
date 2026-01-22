@@ -4,6 +4,7 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.ktor.client.engine.android.Android
+import io.github.jan.supabase.storage.Storage
 
 object SupabaseClient {
 
@@ -26,5 +27,6 @@ object SupabaseClient {
         }
 
         install(Postgrest.Companion)
+        install(Storage)
     }
 }

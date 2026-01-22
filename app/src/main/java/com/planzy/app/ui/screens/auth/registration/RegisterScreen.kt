@@ -39,8 +39,8 @@ fun RegisterScreen(
 ) {
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context = context) }
-    val authRepo = remember { AuthRepositoryImpl(resourceProvider = ResourceProviderImpl(context)) }
-    val userRepo = remember { UserRepositoryImpl() }
+    val authRepo = remember { AuthRepositoryImpl(resourceProvider = resourceProvider) }
+    val userRepo = remember { UserRepositoryImpl(resourceProvider = resourceProvider) }
     val cooldownManager = remember { CooldownManager(context) }
 
     val viewModel: RegisterViewModel = viewModel(

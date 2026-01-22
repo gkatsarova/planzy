@@ -1,5 +1,6 @@
 [versions]
 agp = "8.11.2"
+coilCompose = "2.5.0"
 coreTesting = "2.2.0"
 kotlinxCoroutinesTest = "1.10.2"
 languageId = "17.0.6"
@@ -29,6 +30,7 @@ androidx-core-testing = { module = "androidx.arch.core:core-testing", version.re
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 
+coil-compose-v250 = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesTest" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 language-id = { module = "com.google.mlkit:language-id", version.ref = "languageId" }

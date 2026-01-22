@@ -180,4 +180,11 @@
     <string name="delete_account">delete account</string>
     <string name="delete_account_title">Delete your account</string>
     <string name="delete_account_message">Are you sure that you want to delete your account? This action cannot be undone.</string>
+    <string name="profile_picture">Profile picture</string>
+    <string name="upload_profile_picture">Upload Profile Picture</string>
+    <string name="edit_profile_picture">Edit Profile Picture</string>
+    <string name="upload">Upload</string>
+    <string name="change">Change</string>
+    <string name="remove">Remove</string>
+    <string name="error_loading_profile_picture">Error loading profile picture</string>
 </resources>

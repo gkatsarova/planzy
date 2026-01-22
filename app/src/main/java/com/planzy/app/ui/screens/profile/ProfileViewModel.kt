@@ -12,15 +12,22 @@ import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.usecase.auth.DeleteAccountUseCase
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.auth.SignOutUseCase
+import com.planzy.app.domain.usecase.user.DeleteProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
+import com.planzy.app.domain.usecase.user.UpdateProfilePictureUseCase
+import com.planzy.app.domain.usecase.user.UploadProfilePictureUseCase
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
+import java.io.File
 
 class ProfileViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val getUserByAuthIdUseCase: GetUserByAuthIdUseCase,
     private val signOutUseCase: SignOutUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase,
+    private val uploadProfilePictureUseCase: UploadProfilePictureUseCase,
+    private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
+    private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -45,6 +52,12 @@ class ProfileViewModel(
     var isDeleteSuccessful by mutableStateOf(false)
         private set
 
+    var isUploadingPicture by mutableStateOf(false)
+        private set
+
+    var profilePictureUrl by mutableStateOf<String?>(null)
+        private set
+
     init {
         loadUserProfile()
     }
@@ -66,6 +79,7 @@ class ProfileViewModel(
                             if (user != null) {
                                 username = user.username
                                 email = user.email
+                                profilePictureUrl = user.profilePictureUrl
                             }
                             isLoading = false
                         }
@@ -127,6 +141,52 @@ class ProfileViewModel(
         }
     }
 
+    fun uploadProfilePicture(imageFile: File) {
+        viewModelScope.launch {
+            isUploadingPicture = true
+            errorMessage = null
+
+            uploadProfilePictureUseCase(imageFile)
+                .onSuccess { url ->
+                    updateProfilePictureUseCase(url)
+                        .onSuccess {
+                            profilePictureUrl = url
+                            isUploadingPicture = false
+                        }
+                        .onFailure { exception ->
+                            errorMessage = exception.message
+                            isUploadingPicture = false
+                        }
+                }
+                .onFailure { exception ->
+                    errorMessage = exception.message
+                    isUploadingPicture = false
+                }
+        }
+    }
+
+    fun deleteProfilePicture() {
+        viewModelScope.launch {
+            isUploadingPicture = true
+            errorMessage = null
+
+            val currentUrl = profilePictureUrl ?: run {
+                isUploadingPicture = false
+                return@launch
+            }
+
+            deleteProfilePictureUseCase(currentUrl)
+                .onSuccess {
+                    profilePictureUrl = null
+                    isUploadingPicture = false
+                }
+                .onFailure { exception ->
+                    errorMessage = exception.message
+                    isUploadingPicture = false
+                }
+        }
+    }
+
     fun retry() {
         loadUserProfile()
     }
@@ -136,6 +196,9 @@ class ProfileViewModel(
         private val getUserByAuthIdUseCase: GetUserByAuthIdUseCase,
         private val signOutUseCase: SignOutUseCase,
         private val deleteAccountUseCase: DeleteAccountUseCase,
+        private val uploadProfilePictureUseCase: UploadProfilePictureUseCase,
+        private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
+        private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
         private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -145,6 +208,9 @@ class ProfileViewModel(
                 getUserByAuthIdUseCase,
                 signOutUseCase,
                 deleteAccountUseCase,
+                uploadProfilePictureUseCase,
+                updateProfilePictureUseCase,
+                deleteProfilePictureUseCase,
                 resourceProvider
             ) as T
         }
