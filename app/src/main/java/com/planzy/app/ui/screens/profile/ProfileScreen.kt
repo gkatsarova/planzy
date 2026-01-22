@@ -1,5 +1,9 @@
 package com.planzy.app.ui.screens.profile
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -11,11 +15,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.planzy.app.R
@@ -33,14 +41,14 @@ import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.navigation.Register
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.DeleteAccountDialog
+import com.planzy.app.ui.screens.components.GalleryPermissionDialog
 import com.planzy.app.ui.screens.components.ProfileCard
 import com.planzy.app.ui.screens.components.ProfilePictureSection
 import com.planzy.app.ui.screens.components.RetrySection
-import com.planzy.app.ui.theme.AmericanBlue
-import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
 import com.planzy.app.ui.screens.components.SearchResultsOverlay
+import com.planzy.app.ui.theme.AmaranthPurple
 
 @Composable
 fun ProfileScreen(
@@ -107,6 +115,54 @@ fun ProfileScreen(
         }
     }
 
+    var showPermissionDialog by remember { mutableStateOf(false) }
+
+    fun getGalleryPermission(): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_IMAGES
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+    }
+
+    fun hasGalleryPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context,
+            getGalleryPermission()
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    val galleryPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            imagePickerLauncher.launch("image/*")
+        }
+    }
+
+    fun handleImagePick() {
+        when {
+            hasGalleryPermission() -> {
+                imagePickerLauncher.launch("image/*")
+            }
+            else -> {
+                showPermissionDialog = true
+            }
+        }
+    }
+
+    if (showPermissionDialog) {
+        GalleryPermissionDialog(
+            onConfirm = {
+                showPermissionDialog = false
+                galleryPermissionLauncher.launch(getGalleryPermission())
+            },
+            onDismiss = {
+                showPermissionDialog = false
+            }
+        )
+    }
+
     if (viewModel.showDeleteConfirmation) {
         DeleteAccountDialog(
             onConfirm = { viewModel.deleteAccount() },
@@ -123,7 +179,7 @@ fun ProfileScreen(
                 viewModel.isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = AmericanBlue
+                        color = AmaranthPurple
                     )
                 }
                 viewModel.errorMessage != null -> {
@@ -144,7 +200,7 @@ fun ProfileScreen(
                             profilePictureUrl = viewModel.profilePictureUrl,
                             isUploading = viewModel.isUploadingPicture,
                             onUploadClick = {
-                                imagePickerLauncher.launch("image/*")
+                                handleImagePick()
                             },
                             onDeleteClick = {
                                 viewModel.deleteProfilePicture()

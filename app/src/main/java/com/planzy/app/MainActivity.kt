@@ -52,6 +52,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        SupabaseClient.initialize()
+
         handleDeepLink(intent)
 
         setContent {
@@ -83,17 +85,17 @@ class MainActivity : ComponentActivity() {
                 val searchViewModel: SearchViewModel = viewModel(
                     factory = remember {
                         SearchViewModel.Factory(
-                            context = this,
+                            context = this@MainActivity,
                             repository = PlacesRepositoryImpl(
                                 TripadvisorApi(),
                                 SupabaseClient,
-                                ResourceProviderImpl(this)
+                                ResourceProviderImpl(this@MainActivity)
                             ),
                             entityExtractor = LocationEntityExtractor(),
-                            resourceProvider = ResourceProviderImpl(this),
+                            resourceProvider = ResourceProviderImpl(this@MainActivity),
                             vacationsRepository = VacationsRepositoryImpl(
                                 supabaseClient =SupabaseClient,
-                                resourceProvider = ResourceProviderImpl(this)
+                                resourceProvider = ResourceProviderImpl(this@MainActivity)
                             )
                         )
                     }

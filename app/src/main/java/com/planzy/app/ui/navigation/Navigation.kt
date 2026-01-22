@@ -28,6 +28,7 @@ import com.planzy.app.ui.screens.planner.VacationPlannerScreen
 import com.planzy.app.ui.screens.profile.ProfileScreen
 import com.planzy.app.ui.screens.vacation.VacationDetailsScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
+import io.github.jan.supabase.auth.auth
 
 @Composable
 fun Navigation(
@@ -94,7 +95,16 @@ fun Navigation(
         }
     )
 
-    NavHost(navController = navController, startDestination = Welcome.route, modifier = modifier) {
+    val startDestination = remember {
+        val currentUser = SupabaseClient.client.auth.currentUserOrNull()
+        if (currentUser != null) {
+            Home.route
+        } else {
+            Welcome.route
+        }
+    }
+
+    NavHost(navController = navController, startDestination = startDestination, modifier = modifier) {
         composable(route = Welcome.route) {
             WelcomeScreen(navController = navController)
         }
