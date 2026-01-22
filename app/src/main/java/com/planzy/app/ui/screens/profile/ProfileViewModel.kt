@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.manager.ProfilePictureManager
 import com.planzy.app.domain.usecase.auth.DeleteAccountUseCase
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.auth.SignOutUseCase
@@ -151,6 +152,7 @@ class ProfileViewModel(
                     updateProfilePictureUseCase(url)
                         .onSuccess {
                             profilePictureUrl = url
+                            ProfilePictureManager.updateUrl(url)
                             isUploadingPicture = false
                         }
                         .onFailure { exception ->
@@ -178,6 +180,7 @@ class ProfileViewModel(
             deleteProfilePictureUseCase(currentUrl)
                 .onSuccess {
                     profilePictureUrl = null
+                    ProfilePictureManager.updateUrl(null)
                     isUploadingPicture = false
                 }
                 .onFailure { exception ->

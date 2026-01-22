@@ -14,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -44,21 +43,17 @@ import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.vacation.DeleteVacationUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsUseCase
-import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.navigation.VacationDetails
-import com.planzy.app.ui.navigation.VacationHistory
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.DeleteVacationDialog
-import com.planzy.app.ui.screens.components.PlaceCard
-import com.planzy.app.ui.screens.components.PlanzyTopAppBar
 import com.planzy.app.ui.screens.components.VacationCard
 import com.planzy.app.ui.theme.AmaranthPurple
 import com.planzy.app.ui.theme.AmericanBlue
 import com.planzy.app.ui.theme.ErrorColor
-import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.Raleway
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.planzy.app.ui.screens.components.SearchResultsOverlay
 
 @Composable
 fun VacationHistoryScreen(
@@ -105,119 +100,25 @@ fun VacationHistoryScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            PlanzyTopAppBar(
-                title = VacationHistory.title,
-                navController = navController,
-                onSearch = { query ->
-                    searchViewModel.searchForPlaces(query)
-                },
-                onSearchFocusChanged = { isFocused ->
-                    searchViewModel.updateSearchBarFocus(isFocused)
-                }
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Lavender
-    ){ padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+    Box(modifier = Modifier.fillMaxSize()) {
+        SearchResultsOverlay(
+            searchViewModel = searchViewModel,
+            navController = navController
         ) {
             when {
-                searchViewModel.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        color = AmaranthPurple
-                    )
-                }
-
-                searchViewModel.errorMessage != null -> {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = searchViewModel.errorMessage!!,
-                            color = ErrorColor,
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-                }
-
-                searchViewModel.vacations.isNotEmpty() || searchViewModel.placesWithStats.isNotEmpty() -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        if (searchViewModel.vacations.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = stringResource(id = R.string.vacations),
-                                    fontFamily = Raleway,
-                                    fontSize = 20.sp,
-                                    color = AmericanBlue,
-                                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                                )
-                            }
-
-                            items(searchViewModel.vacations) { vacation ->
-                                VacationCard(
-                                    vacation = vacation,
-                                    onCardClick = {
-                                        searchViewModel.clearSearch()
-                                        navController.navigate(VacationDetails.createRoute(vacation.id))
-                                    }
-                                )
-                            }
-                        }
-
-                        if (searchViewModel.placesWithStats.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = stringResource(id = R.string.places),
-                                    fontFamily = Raleway,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AmericanBlue,
-                                    modifier = Modifier.padding(
-                                        top = if (searchViewModel.vacations.isNotEmpty()) 16.dp else 8.dp,
-                                        bottom = 4.dp
-                                    )
-                                )
-                            }
-
-                            items(searchViewModel.placesWithStats) { placeWithStats ->
-                                PlaceCard(
-                                    place = placeWithStats.place,
-                                    onCardClick = {
-                                        searchViewModel.clearSearch()
-                                        navController.navigate(PlaceDetails.createRoute(placeWithStats.place.id))
-                                    },
-                                    userRating = placeWithStats.userRating,
-                                    userReviewsCount = placeWithStats.userReviewsCount
-                                )
-                            }
-                        }
-                    }
-                }
-
                 viewModel.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
 
                 viewModel.errorMessage != null -> {
                     Column(
                         modifier = Modifier
-                            .align(Alignment.Center)
+                            .fillMaxSize()
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -240,13 +141,12 @@ fun VacationHistoryScreen(
                             text = stringResource(id = R.string.no_vacations),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .align(Alignment.Center)
                                 .padding(32.dp),
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodyLarge
                         )
                     } else {
-                        Column (
+                        Column(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .verticalScroll(scrollState)
@@ -326,31 +226,34 @@ fun VacationHistoryScreen(
                     }
                 }
             }
+        }
 
-            if (vacationToDelete != null) {
-                DeleteVacationDialog(
-                    vacation = vacationToDelete!!,
-                    isDeleting = viewModel.isDeleting,
-                    onConfirm = {
-                        viewModel.deleteVacation(vacationToDelete!!.id)
-                        vacationToDelete = null
-                    },
-                    onDismiss = {
-                        vacationToDelete = null
-                    }
-                )
-            }
-
-            if (viewModel.isDeleting) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = AmaranthPurple)
+        if (vacationToDelete != null) {
+            DeleteVacationDialog(
+                vacation = vacationToDelete!!,
+                isDeleting = viewModel.isDeleting,
+                onConfirm = {
+                    viewModel.deleteVacation(vacationToDelete!!.id)
+                    vacationToDelete = null
+                },
+                onDismiss = {
+                    vacationToDelete = null
                 }
+            )
+        }
+
+        if (viewModel.isDeleting) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = AmaranthPurple)
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }

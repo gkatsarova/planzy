@@ -2,8 +2,8 @@ package com.planzy.app.ui.screens.planner
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +27,6 @@ import androidx.navigation.NavController
 import com.planzy.app.R
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.navigation.VacationDetails
-import com.planzy.app.ui.navigation.VacationPlanner
 import com.planzy.app.ui.screens.components.*
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.theme.*
@@ -56,36 +54,11 @@ fun VacationPlannerScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            PlanzyTopAppBar(
-                title = VacationPlanner.title,
-                navController = navController,
-                onSearch = { searchViewModel.searchForPlaces(it) },
-                onSearchFocusChanged = { searchViewModel.updateSearchBarFocus(it) }
-            )
-        },
-        bottomBar = {
-            if (!isSearchActive) {
-                Surface(
-                    color = Lavender,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .imePadding()
-                ) {
-                    ChatInputBar(
-                        onSendMessage = { plannerViewModel.sendMessage(it) }
-                    )
-                }
-            }
-        },
-        containerColor = Lavender,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
-    ) { padding ->
+    Column(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .weight(1f)
         ) {
             LazyColumn(
                 state = listState,
@@ -183,6 +156,19 @@ fun VacationPlannerScreen(
                         }
                     }
                 }
+            }
+        }
+
+        if (!isSearchActive) {
+            Surface(
+                color = Lavender,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .imePadding()
+            ) {
+                ChatInputBar(
+                    onSendMessage = { plannerViewModel.sendMessage(it) }
+                )
             }
         }
     }
