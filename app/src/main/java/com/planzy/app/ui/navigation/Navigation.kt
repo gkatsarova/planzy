@@ -27,6 +27,7 @@ import com.planzy.app.ui.screens.home.HomeScreen
 import com.planzy.app.ui.screens.place.PlaceDetailsScreen
 import com.planzy.app.ui.screens.planner.VacationPlannerScreen
 import com.planzy.app.ui.screens.profile.ProfileScreen
+import com.planzy.app.ui.screens.profile_details.ProfileDetailsScreen
 import com.planzy.app.ui.screens.vacation.VacationDetailsScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 import io.github.jan.supabase.auth.auth
@@ -184,6 +185,19 @@ fun Navigation(
                 navController = navController,
                 searchViewModel = searchViewModel
             )
+        }
+
+        composable(
+            route = ProfileDetails.routeWithArgs,
+            arguments = listOf(
+                navArgument(ProfileDetails.ARG_USERNAME) {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val username = backStackEntry.arguments?.getString(ProfileDetails.ARG_USERNAME) ?: ""
+
+            ProfileDetailsScreen(username = username)
         }
     }
 }

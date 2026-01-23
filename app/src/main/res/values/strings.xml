@@ -189,4 +189,6 @@
     <string name="error_loading_profile_picture">Error loading profile picture</string>
     <string name="gallery_permission_text">Allow Plazy to access your photos so you can upload profile pictures.</string>
     <string name="profiles">Profiles</string>
+    <string name="user_not_found">User not found</string>
+    <string name="error_loading_user">Error loading user</string>
 </resources>

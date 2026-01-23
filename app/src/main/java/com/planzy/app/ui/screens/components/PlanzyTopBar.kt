@@ -35,13 +35,21 @@ fun PlanzyTopAppBar(
     title: String,
     profilePictureUrl: String?,
     navController: NavController,
+    searchQuery: String,
     onSearch: (String) -> Unit,
     onSearchFocusChanged: (Boolean) -> Unit = {}
 ) {
     var isSearchActive by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
+    var localSearchQuery by remember { mutableStateOf("") }
 
     val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(searchQuery) {
+        localSearchQuery = searchQuery
+        if (searchQuery.isEmpty()) {
+            isSearchActive = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -64,7 +72,7 @@ fun PlanzyTopAppBar(
                     if (isSearchActive) {
                         IconButton(onClick = {
                             isSearchActive = false
-                            searchQuery = ""
+                            localSearchQuery = ""
                             onSearch("")
                             onSearchFocusChanged(false)
                         }) {
@@ -79,8 +87,11 @@ fun PlanzyTopAppBar(
                     if (isSearchActive) {
                         SearchBar(
                             query = searchQuery,
-                            onQueryChange = { searchQuery = it },
-                            onSearch = { onSearch(searchQuery) },
+                            onQueryChange = {
+                                localSearchQuery = it
+                                onSearch(it)
+                            },
+                            onSearch = { onSearch(localSearchQuery) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp)

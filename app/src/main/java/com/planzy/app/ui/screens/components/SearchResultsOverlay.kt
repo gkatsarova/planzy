@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.planzy.app.R
 import com.planzy.app.ui.navigation.PlaceDetails
+import com.planzy.app.ui.navigation.ProfileDetails
 import com.planzy.app.ui.navigation.VacationDetails
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.theme.AmaranthPurple
@@ -43,7 +44,8 @@ fun SearchResultsOverlay(
         content()
 
         val hasResults = searchViewModel.vacations.isNotEmpty() || searchViewModel.placesWithStats.isNotEmpty() || searchViewModel.users.isNotEmpty()
-        val isSearching = searchViewModel.isLoading || searchViewModel.errorMessage != null || hasResults
+        val isSearching = searchViewModel.searchQuery.isNotEmpty() &&
+                (searchViewModel.isLoading || searchViewModel.errorMessage != null || hasResults)
 
         if (isSearching) {
             Surface(
@@ -95,7 +97,10 @@ fun SearchResultsOverlay(
                                 items(searchViewModel.users) { user ->
                                     UserCard(
                                         user = user,
-                                        onCardClick = { }
+                                        onCardClick = {
+                                            searchViewModel.clearSearch()
+                                            navController.navigate(ProfileDetails.createRoute(user.username))
+                                        }
                                     )
                                 }
                             }

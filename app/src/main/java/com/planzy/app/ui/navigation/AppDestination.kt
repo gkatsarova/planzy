@@ -7,7 +7,7 @@ sealed interface AppDestination {
 
 val allDestinations = listOf(
     Login, Register, Welcome, Home, Profile,
-    PlaceDetails, VacationDetails, VacationPlanner, VacationHistory
+    PlaceDetails, VacationDetails, VacationPlanner, VacationHistory, ProfileDetails
 )
 
 fun getTitleForRoute(currentRoute: String?): String {
@@ -72,4 +72,13 @@ data object VacationPlanner : AppDestination {
 data object VacationHistory: AppDestination {
     override val route = "vacation_history_screen"
     override val title = "History"
+}
+
+data object ProfileDetails : AppDestination {
+    override val route = "profile_details_screen"
+    override val title: String? = null
+
+    fun createRoute(username: String) = "$route/$username"
+    const val ARG_USERNAME = "username"
+    val routeWithArgs = "$route/{$ARG_USERNAME}"
 }
