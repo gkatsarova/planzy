@@ -5,19 +5,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.planzy.app.ui.navigation.Profile
 import com.planzy.app.ui.theme.AmaranthPurple
 import com.planzy.app.ui.theme.Lavender
@@ -28,6 +33,7 @@ import com.planzy.app.ui.theme.Raleway
 @Composable
 fun PlanzyTopAppBar(
     title: String,
+    profilePictureUrl: String?,
     navController: NavController,
     onSearch: (String) -> Unit,
     onSearchFocusChanged: (Boolean) -> Unit = {}
@@ -45,8 +51,7 @@ fun PlanzyTopAppBar(
     ) {
         Surface(
             shape = RoundedCornerShape(10.dp),
-            color = AmaranthPurple,
-            shadowElevation = 4.dp
+            color = AmaranthPurple
         ) {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -105,14 +110,26 @@ fun PlanzyTopAppBar(
                             )
                         }
 
-                        IconButton(onClick = {
-                            navController.navigate(Profile.route)
-                        }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.user_profile_pic_placeholder),
-                                contentDescription = stringResource(id = R.string.profile),
-                                modifier = Modifier.height(30.dp)
-                            )
+                        IconButton(onClick = { navController.navigate(Profile.route) }) {
+                            if (profilePictureUrl != null) {
+                                AsyncImage(
+                                    model = profilePictureUrl,
+                                    contentDescription = stringResource(id = R.string.profile),
+                                    modifier = Modifier
+                                        .height(30.dp)
+                                        .width(30.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.user_profile_pic_placeholder),
+                                    contentDescription = stringResource(id = R.string.profile),
+                                    modifier = Modifier
+                                        .height(30.dp)
+                                        .width(30.dp)
+                                )
+                            }
                         }
                     }
                 }

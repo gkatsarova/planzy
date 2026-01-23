@@ -11,19 +11,34 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.planzy.app.data.remote.SupabaseClient
+import com.planzy.app.data.remote.TripadvisorApi
+import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.repository.DeepLinkHandler
+import com.planzy.app.data.repository.PlacesRepositoryImpl
+import com.planzy.app.data.repository.UserRepositoryImpl
+import com.planzy.app.data.repository.VacationsRepositoryImpl
+import com.planzy.app.data.util.LocationEntityExtractor
 import com.planzy.app.data.util.RecoverySessionManager
 import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.navigation.Navigation
 import com.planzy.app.ui.navigation.Register
 import com.planzy.app.ui.navigation.Welcome
+import com.planzy.app.ui.navigation.getTitleForRoute
+import com.planzy.app.ui.screens.PlanzyTopBarViewModel
+import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.auth.registration.DeepLinkViewModel
 import com.planzy.app.ui.screens.components.BottomNavBar
+import com.planzy.app.ui.screens.components.PlanzyTopAppBar
 import com.planzy.app.ui.theme.PlanzyTheme
 import kotlinx.coroutines.launch
 
@@ -37,6 +52,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        SupabaseClient.initialize()
+
         handleDeepLink(intent)
 
         setContent {
@@ -45,17 +62,58 @@ class MainActivity : ComponentActivity() {
 
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
+                val authRepository = remember { AuthRepositoryImpl(resourceProvider) }
+                val userRepository = remember { UserRepositoryImpl(resourceProvider) }
+                val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
+                val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
+
 
                 val authRoutes = listOf(
                     Welcome.route,
                     Login.route,
                     Register.route
                 )
-                val showBottomBar = currentRoute !in authRoutes
+                val showBars = currentRoute !in authRoutes
+
+                val plazyTopBarViewModel: PlanzyTopBarViewModel = viewModel(
+                    factory = PlanzyTopBarViewModel.Factory(
+                        getCurrentUserUseCase = getCurrentUserUseCase,
+                        getUserByAuthIdUseCase = getUserByAuthIdUseCase
+                    )
+                )
+
+                val searchViewModel: SearchViewModel = viewModel(
+                    factory = remember {
+                        SearchViewModel.Factory(
+                            context = this@MainActivity,
+                            repository = PlacesRepositoryImpl(
+                                TripadvisorApi(),
+                                SupabaseClient,
+                                ResourceProviderImpl(this@MainActivity)
+                            ),
+                            entityExtractor = LocationEntityExtractor(),
+                            resourceProvider = ResourceProviderImpl(this@MainActivity),
+                            vacationsRepository = VacationsRepositoryImpl(
+                                supabaseClient =SupabaseClient,
+                                resourceProvider = ResourceProviderImpl(this@MainActivity)
+                            )
+                        )
+                    }
+                )
 
                 Scaffold(
+                    topBar = {
+                        if (showBars) {
+                            PlanzyTopAppBar(
+                                title = getTitleForRoute(currentRoute),
+                                profilePictureUrl = plazyTopBarViewModel.profilePictureUrl,
+                                navController = navController,
+                                onSearch = { query -> searchViewModel.searchForPlaces(query) }
+                            )
+                        }
+                    },
                     bottomBar = {
-                        if (showBottomBar) {
+                        if (showBars) {
                             BottomNavBar(navController = navController)
                         }
                     },

@@ -17,7 +17,7 @@ class DeepLinkHandler(
     private val recoverySessionManager: RecoverySessionManager
 ) {
     private val TAG = DeepLinkHandler::class.java.simpleName
-    private val userRepo = UserRepositoryImpl()
+    private val userRepo = UserRepositoryImpl(resourceProvider)
 
     suspend fun handleAuthDeepLink(intent: Intent?): DeepLinkResult {
         val uri = intent?.data ?: return DeepLinkResult.NoDeepLink

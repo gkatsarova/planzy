@@ -5,6 +5,21 @@ sealed interface AppDestination {
     val title: String?
 }
 
+val allDestinations = listOf(
+    Login, Register, Welcome, Home, Profile,
+    PlaceDetails, VacationDetails, VacationPlanner, VacationHistory
+)
+
+fun getTitleForRoute(currentRoute: String?): String {
+    if (currentRoute == null) return "Planzy"
+
+    val destination = allDestinations.find { dest ->
+        currentRoute.startsWith(dest.route)
+    }
+
+    return destination?.title ?: "Planzy"
+}
+
 data object Login : AppDestination {
     override val route = "login_screen"
     override val title = null

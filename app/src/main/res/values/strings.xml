@@ -174,4 +174,18 @@
     <string name="delete_vacation_confirmation">Are you sure you want to delete "%1$s"? This action cannot be undone.</string>
     <string name="error_deleting_vacation">Failed to delete vacation</string>
     <string name="error_vacation_not_found_or_no_permission">Vacation not found or you don\'t have permission to delete it</string>
+    <string name="error_logout_failed">Error logging out</string>
+    <string name="logout">logout</string>
+    <string name="error_delete_account_failed">Error deleting account</string>
+    <string name="delete_account">delete account</string>
+    <string name="delete_account_title">Delete your account</string>
+    <string name="delete_account_message">Are you sure that you want to delete your account? This action cannot be undone.</string>
+    <string name="profile_picture">Profile picture</string>
+    <string name="upload_profile_picture">Upload Profile Picture</string>
+    <string name="edit_profile_picture">Edit Profile Picture</string>
+    <string name="upload">Upload</string>
+    <string name="change">Change</string>
+    <string name="remove">Remove</string>
+    <string name="error_loading_profile_picture">Error loading profile picture</string>
+    <string name="gallery_permission_text">Allow Plazy to access your photos so you can upload profile pictures.</string>
 </resources>
