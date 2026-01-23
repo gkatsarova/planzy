@@ -188,4 +188,5 @@
     <string name="remove">Remove</string>
     <string name="error_loading_profile_picture">Error loading profile picture</string>
     <string name="gallery_permission_text">Allow Plazy to access your photos so you can upload profile pictures.</string>
+    <string name="profiles">Profiles</string>
 </resources>

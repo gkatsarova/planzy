@@ -8,6 +8,7 @@ import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.place.SearchPlacesUseCase
 import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
+import com.planzy.app.domain.usecase.user.SearchUsersUseCase
 import com.planzy.app.domain.usecase.vacation.SearchVacationsUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationCommentsCountUseCase
 import com.planzy.app.ui.screens.SearchViewModel
@@ -33,6 +34,8 @@ class SearchViewModelTest {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var editor: SharedPreferences.Editor
     private lateinit var getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase
+    private lateinit var searchUsersUseCase: SearchUsersUseCase
+
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -49,6 +52,7 @@ class SearchViewModelTest {
         sharedPreferences = mockk()
         editor = mockk()
         getUserCommentsStatsUseCase = mockk()
+        searchUsersUseCase = mockk()
 
         every { context.getSharedPreferences("planzy_prefs", Context.MODE_PRIVATE) } returns sharedPreferences
         every { sharedPreferences.getBoolean("perm_granted", false) } returns false
@@ -66,6 +70,7 @@ class SearchViewModelTest {
             getUserCommentsStatsUseCase,
             searchVacationsUseCase,
             getVacationCommentsCountUseCase,
+            searchUsersUseCase,
             entityExtractor,
             resourceProvider,
             context
@@ -89,7 +94,7 @@ class SearchViewModelTest {
 
     @Test
     fun `searchForPlaces with blank query does nothing`() = runTest {
-        viewModel.searchForPlaces("   ")
+        viewModel.search("   ")
         advanceUntilIdle()
 
         assertTrue(viewModel.places.isEmpty())
@@ -123,7 +128,7 @@ class SearchViewModelTest {
         coEvery { searchVacationsUseCase("Paris") } returns Result.success(listOf(mockVacation))
         coEvery { getVacationCommentsCountUseCase("vacation1") } returns Result.success(0)
 
-        viewModel.searchForPlaces("Paris")
+        viewModel.search("Paris")
         advanceUntilIdle()
 
         assertEquals("Limit Error", viewModel.errorMessage)
@@ -147,7 +152,7 @@ class SearchViewModelTest {
 
         coEvery { searchVacationsUseCase("Paris") } returns Result.success(emptyList())
 
-        viewModel.searchForPlaces("Paris")
+        viewModel.search("Paris")
         advanceUntilIdle()
 
         assertEquals("No results found", viewModel.errorMessage)
@@ -169,7 +174,7 @@ class SearchViewModelTest {
         } returns Result.success(emptyList())
         coEvery { searchVacationsUseCase(any()) } returns Result.success(emptyList())
 
-        viewModel.searchForPlaces("EmptyPlace")
+        viewModel.search("EmptyPlace")
         advanceUntilIdle()
 
         assertEquals("No results", viewModel.errorMessage)
@@ -199,7 +204,7 @@ class SearchViewModelTest {
         coEvery { getVacationCommentsCountUseCase("vacation1") } returns Result.success(5)
         coEvery { getUserCommentsStatsUseCase(any()) } returns Result.success(Pair(null, 0))
 
-        viewModel.searchForPlaces("Paris")
+        viewModel.search("Paris")
         advanceUntilIdle()
 
         assertEquals(1, viewModel.vacations.size)
@@ -224,7 +229,7 @@ class SearchViewModelTest {
         } returns Result.success(emptyList())
         coEvery { getUserCommentsStatsUseCase(any()) } returns Result.success(Pair(null, 0))
 
-        viewModel.searchForPlaces("bar")
+        viewModel.search("bar")
         advanceUntilIdle()
 
         coVerify {
@@ -260,7 +265,7 @@ class SearchViewModelTest {
         } returns Result.success(emptyList())
         coEvery { getUserCommentsStatsUseCase(any()) } returns Result.success(Pair(null, 0))
 
-        viewModel.searchForPlaces("bars in Sofia")
+        viewModel.search("bars in Sofia")
         advanceUntilIdle()
 
         coVerify {

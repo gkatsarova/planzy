@@ -14,6 +14,7 @@ import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.DeepLinkResult
 import com.planzy.app.data.repository.PlacesRepositoryImpl
+import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.LocationEntityExtractor
 import com.planzy.app.data.util.ResourceProviderImpl
@@ -90,7 +91,8 @@ fun Navigation(
                 vacationsRepository = VacationsRepositoryImpl(
                     supabaseClient =SupabaseClient,
                     resourceProvider = ResourceProviderImpl(context)
-                )
+                ),
+                userRepository = UserRepositoryImpl(ResourceProviderImpl(context))
             )
         }
     )

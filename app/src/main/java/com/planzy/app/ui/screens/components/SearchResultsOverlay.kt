@@ -42,7 +42,7 @@ fun SearchResultsOverlay(
     Box(modifier = modifier.fillMaxSize()) {
         content()
 
-        val hasResults = searchViewModel.vacations.isNotEmpty() || searchViewModel.placesWithStats.isNotEmpty()
+        val hasResults = searchViewModel.vacations.isNotEmpty() || searchViewModel.placesWithStats.isNotEmpty() || searchViewModel.users.isNotEmpty()
         val isSearching = searchViewModel.isLoading || searchViewModel.errorMessage != null || hasResults
 
         if (isSearching) {
@@ -80,6 +80,26 @@ fun SearchResultsOverlay(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            if (searchViewModel.users.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = stringResource(id = R.string.profiles),
+                                        fontFamily = Raleway,
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = AmericanBlue,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                    )
+                                }
+
+                                items(searchViewModel.users) { user ->
+                                    UserCard(
+                                        user = user,
+                                        onCardClick = { }
+                                    )
+                                }
+                            }
+
                             if (searchViewModel.vacations.isNotEmpty()) {
                                 item {
                                     Text(

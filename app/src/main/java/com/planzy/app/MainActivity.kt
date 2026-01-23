@@ -96,7 +96,8 @@ class MainActivity : ComponentActivity() {
                             vacationsRepository = VacationsRepositoryImpl(
                                 supabaseClient =SupabaseClient,
                                 resourceProvider = ResourceProviderImpl(this@MainActivity)
-                            )
+                            ),
+                            userRepository = UserRepositoryImpl(ResourceProviderImpl(this@MainActivity))
                         )
                     }
                 )
@@ -108,7 +109,7 @@ class MainActivity : ComponentActivity() {
                                 title = getTitleForRoute(currentRoute),
                                 profilePictureUrl = plazyTopBarViewModel.profilePictureUrl,
                                 navController = navController,
-                                onSearch = { query -> searchViewModel.searchForPlaces(query) }
+                                onSearch = { query -> searchViewModel.search(query) }
                             )
                         }
                     },
