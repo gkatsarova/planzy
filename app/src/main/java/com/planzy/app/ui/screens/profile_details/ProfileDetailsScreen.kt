@@ -1,6 +1,7 @@
 package com.planzy.app.ui.screens.profile_details
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,9 +15,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -28,10 +31,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.planzy.app.R
+import com.planzy.app.data.repository.FollowRepositoryImpl
 import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.usecase.follow.FollowUserUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
+import com.planzy.app.domain.usecase.follow.UnfollowUserUseCase
+import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
+import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
+import com.planzy.app.ui.navigation.VacationDetails
+import com.planzy.app.ui.screens.components.FollowStatsSection
 import com.planzy.app.ui.screens.components.RetrySection
 import com.planzy.app.ui.screens.components.VacationCard
 import com.planzy.app.ui.theme.AmaranthPurple
@@ -39,9 +50,8 @@ import com.planzy.app.ui.theme.AmericanBlue
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
-import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
-import com.planzy.app.ui.navigation.VacationDetails
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.planzy.app.ui.theme.Raleway
 
 @Composable
@@ -53,14 +63,22 @@ fun ProfileDetailsScreen(
     val resourceProvider = remember { ResourceProviderImpl(context) }
     val userRepository = remember { UserRepositoryImpl(resourceProvider) }
     val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
+    val followRepository = remember { FollowRepositoryImpl(resourceProvider) }
+
     val getUserByUsernameUseCase = remember { GetUserByUsernameUseCase(userRepository) }
     val getUserVacationsByIdUseCase = remember { GetUserVacationsByIdUseCase(vacationsRepository) }
+    val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }
+    val followUserUseCase = remember { FollowUserUseCase(followRepository) }
+    val unfollowUserUseCase = remember { UnfollowUserUseCase(followRepository) }
 
     val viewModel: ProfileDetailsViewModel = viewModel(
         factory = remember {
             ProfileDetailsViewModel.Factory(
                 getUserByUsernameUseCase = getUserByUsernameUseCase,
                 getUserVacationsByIdUseCase = getUserVacationsByIdUseCase,
+                getFollowStatsUseCase = getFollowStatsUseCase,
+                followUserUseCase = followUserUseCase,
+                unfollowUserUseCase = unfollowUserUseCase,
                 resourceProvider = resourceProvider
             )
         }
@@ -68,6 +86,19 @@ fun ProfileDetailsScreen(
 
     LaunchedEffect(username) {
         viewModel.loadUserByUsername(username)
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshFollowStats()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     Box(
@@ -121,6 +152,25 @@ fun ProfileDetailsScreen(
                                     colorFilter = ColorFilter.tint(AmericanBlue)
                                 )
                             }
+                        }
+                    }
+
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    color = Color.Transparent
+                                )
+                        ) {
+                            FollowStatsSection(
+                                followStats = viewModel.followStats,
+                                isLoading = viewModel.isLoadingFollowStats,
+                                isToggling = viewModel.isToggleFollowLoading,
+                                onFollowClick = { viewModel.toggleFollow() },
+                                showFollowButton = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
 

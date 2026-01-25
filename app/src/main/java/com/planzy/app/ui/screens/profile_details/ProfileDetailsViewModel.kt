@@ -9,7 +9,11 @@ import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
 import com.planzy.app.data.model.User
 import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.FollowStats
 import com.planzy.app.domain.model.Vacation
+import com.planzy.app.domain.usecase.follow.FollowUserUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
+import com.planzy.app.domain.usecase.follow.UnfollowUserUseCase
 import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
 import kotlinx.coroutines.launch
@@ -17,6 +21,9 @@ import kotlinx.coroutines.launch
 class ProfileDetailsViewModel(
     private val getUserByUsernameUseCase: GetUserByUsernameUseCase,
     private val getUserVacationsByIdUseCase: GetUserVacationsByIdUseCase,
+    private val getFollowStatsUseCase: GetFollowStatsUseCase,
+    private val followUserUseCase: FollowUserUseCase,
+    private val unfollowUserUseCase: UnfollowUserUseCase,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -38,6 +45,18 @@ class ProfileDetailsViewModel(
     var vacationsError by mutableStateOf<String?>(null)
         private set
 
+    var followStats by mutableStateOf<FollowStats?>(null)
+        private set
+
+    var isLoadingFollowStats by mutableStateOf(false)
+        private set
+
+    var isToggleFollowLoading by mutableStateOf(false)
+        private set
+
+    var followError by mutableStateOf<String?>(null)
+        private set
+
     fun loadUserByUsername(username: String) {
         viewModelScope.launch {
             isLoading = true
@@ -50,6 +69,7 @@ class ProfileDetailsViewModel(
                         errorMessage = resourceProvider.getString(R.string.user_not_found)
                     } else {
                         loadUserVacations(loadedUser.auth_id)
+                        loadFollowStats(loadedUser.auth_id)
                     }
                 }
                 .onFailure { exception ->
@@ -77,9 +97,67 @@ class ProfileDetailsViewModel(
         }
     }
 
+    private fun loadFollowStats(userId: String) {
+        viewModelScope.launch {
+            isLoadingFollowStats = true
+            followError = null
+
+            getFollowStatsUseCase(userId)
+                .onSuccess { stats ->
+                    followStats = stats
+                }
+                .onFailure { exception ->
+                    followError = exception.message
+                }
+
+            isLoadingFollowStats = false
+        }
+    }
+
+    fun toggleFollow() {
+        val currentUser = user ?: return
+        val currentStats = followStats ?: return
+
+        viewModelScope.launch {
+            isToggleFollowLoading = true
+            followError = null
+
+            val result = if (currentStats.isFollowing) {
+                unfollowUserUseCase(currentUser.auth_id)
+            } else {
+                followUserUseCase(currentUser.auth_id)
+            }
+
+            result
+                .onSuccess {
+                    followStats = followStats?.copy(
+                        isFollowing = !currentStats.isFollowing,
+                        followersCount = if (!currentStats.isFollowing) {
+                            currentStats.followersCount + 1
+                        } else {
+                            currentStats.followersCount - 1
+                        }
+                    )
+                }
+                .onFailure { exception ->
+                    followError = exception.message ?: resourceProvider.getString(R.string.error_updating_follow_status)
+                }
+
+            isToggleFollowLoading = false
+        }
+    }
+
+    fun refreshFollowStats() {
+        val userId = user?.auth_id ?: return
+        loadFollowStats(userId)
+    }
+
     class Factory(
         private val getUserByUsernameUseCase: GetUserByUsernameUseCase,
         private val getUserVacationsByIdUseCase: GetUserVacationsByIdUseCase,
+        private val getFollowStatsUseCase: GetFollowStatsUseCase,
+        private val followUserUseCase: FollowUserUseCase,
+        private val unfollowUserUseCase: UnfollowUserUseCase,
         private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -88,6 +166,9 @@ class ProfileDetailsViewModel(
                 return ProfileDetailsViewModel(
                     getUserByUsernameUseCase,
                     getUserVacationsByIdUseCase,
+                    getFollowStatsUseCase,
+                    followUserUseCase,
+                    unfollowUserUseCase,
                     resourceProvider
                 ) as T
             }

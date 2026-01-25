@@ -192,4 +192,9 @@
     <string name="user_not_found">User not found</string>
     <string name="error_loading_user">Error loading user</string>
     <string name="no_vacations_user">No vacations</string>
+    <string name="followers">followers</string>
+    <string name="following">following</string>
+    <string name="unfollow">unfollow</string>
+    <string name="follow">follow</string>
+    <string name="error_updating_follow_status">Error updating follow status</string>
 </resources>
