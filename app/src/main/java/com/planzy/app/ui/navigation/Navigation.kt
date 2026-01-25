@@ -197,7 +197,10 @@ fun Navigation(
         ) { backStackEntry ->
             val username = backStackEntry.arguments?.getString(ProfileDetails.ARG_USERNAME) ?: ""
 
-            ProfileDetailsScreen(username = username)
+            ProfileDetailsScreen(
+                username = username,
+                navController = navController
+            )
         }
     }
 }

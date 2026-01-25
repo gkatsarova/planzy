@@ -747,4 +747,54 @@ class VacationsRepositoryImpl(
             Result.failure(Exception(resourceProvider.getString(R.string.error_deleting_vacation)))
         }
     }
+
+    override suspend fun getUserVacationsById(userId: String): Result<List<Vacation>> {
+        return try {
+            Log.d(TAG, "Getting vacations for user: $userId")
+
+            val vacationsResponse = supabaseClient.client.postgrest
+                .from("vacations")
+                .select {
+                    filter {
+                        eq("user_id", userId)
+                    }
+                    order("created_at", order = Order.DESCENDING)
+                }
+
+            val vacationDTOs = vacationsResponse.decodeList<VacationDTO>()
+            Log.d(TAG, "Found ${vacationDTOs.size} vacations for user $userId")
+
+            val vacationsWithCount = vacationDTOs.map { vacationDTO ->
+                val placesCount = try {
+                    val placesResponse = supabaseClient.client.postgrest
+                        .from("vacation_places")
+                        .select(Columns.raw("id")) {
+                            filter {
+                                eq("vacation_id", vacationDTO.id)
+                            }
+                        }
+                    placesResponse.decodeList<VacationIdDTO>().size
+                } catch (_: Exception) {
+                    0
+                }
+
+                val commentsCount = getVacationCommentsCount(vacationDTO.id)
+                    .getOrDefault(0)
+
+                Vacation(
+                    id = vacationDTO.id,
+                    userId = vacationDTO.userId,
+                    title = vacationDTO.title,
+                    createdAt = vacationDTO.createdAt,
+                    placesCount = placesCount,
+                    commentsCount = commentsCount
+                )
+            }
+
+            Result.success(vacationsWithCount)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting vacations for user $userId: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_loading_vacations)))
+        }
+    }
 }
