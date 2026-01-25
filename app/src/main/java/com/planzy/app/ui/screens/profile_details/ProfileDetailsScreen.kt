@@ -16,6 +16,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,10 +42,13 @@ import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.follow.FollowUserUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
 import com.planzy.app.domain.usecase.follow.UnfollowUserUseCase
 import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
 import com.planzy.app.ui.navigation.VacationDetails
+import com.planzy.app.ui.screens.components.FollowListDialog
 import com.planzy.app.ui.screens.components.FollowStatsSection
 import com.planzy.app.ui.screens.components.RetrySection
 import com.planzy.app.ui.screens.components.VacationCard
@@ -49,7 +56,6 @@ import com.planzy.app.ui.theme.AmaranthPurple
 import com.planzy.app.ui.theme.AmericanBlue
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.planzy.app.ui.theme.Raleway
@@ -68,6 +74,8 @@ fun ProfileDetailsScreen(
     val getUserByUsernameUseCase = remember { GetUserByUsernameUseCase(userRepository) }
     val getUserVacationsByIdUseCase = remember { GetUserVacationsByIdUseCase(vacationsRepository) }
     val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }
+    val getFollowersUseCase = remember { GetFollowersUseCase(followRepository) }
+    val getFollowingUseCase = remember { GetFollowingUseCase(followRepository) }
     val followUserUseCase = remember { FollowUserUseCase(followRepository) }
     val unfollowUserUseCase = remember { UnfollowUserUseCase(followRepository) }
 
@@ -77,6 +85,8 @@ fun ProfileDetailsScreen(
                 getUserByUsernameUseCase = getUserByUsernameUseCase,
                 getUserVacationsByIdUseCase = getUserVacationsByIdUseCase,
                 getFollowStatsUseCase = getFollowStatsUseCase,
+                getFollowersUseCase = getFollowersUseCase,
+                getFollowingUseCase = getFollowingUseCase,
                 followUserUseCase = followUserUseCase,
                 unfollowUserUseCase = unfollowUserUseCase,
                 resourceProvider = resourceProvider
@@ -99,6 +109,31 @@ fun ProfileDetailsScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
+
+    var showFollowersDialog by remember { mutableStateOf(false) }
+    var showFollowingDialog by remember { mutableStateOf(false) }
+
+    if (showFollowersDialog) {
+        FollowListDialog(
+            users = viewModel.followers,
+            isFollowers = true,
+            isLoading = viewModel.isLoadingFollowers,
+            errorMessage = viewModel.followersError,
+            navController = navController,
+            onDismiss = { showFollowersDialog = false }
+        )
+    }
+
+    if (showFollowingDialog) {
+        FollowListDialog(
+            users = viewModel.following,
+            isFollowers = false,
+            isLoading = viewModel.isLoadingFollowing,
+            errorMessage = viewModel.followingError,
+            navController = navController,
+            onDismiss = { showFollowingDialog = false }
+        )
     }
 
     Box(
@@ -162,12 +197,21 @@ fun ProfileDetailsScreen(
                                 .background(
                                     color = Color.Transparent
                                 )
+                                .padding(vertical = 12.dp)
                         ) {
                             FollowStatsSection(
                                 followStats = viewModel.followStats,
                                 isLoading = viewModel.isLoadingFollowStats,
                                 isToggling = viewModel.isToggleFollowLoading,
                                 onFollowClick = { viewModel.toggleFollow() },
+                                onFollowersClick = {
+                                    viewModel.loadFollowers(viewModel.user!!.auth_id)
+                                    showFollowersDialog = true
+                                },
+                                onFollowingClick = {
+                                    viewModel.loadFollowing(viewModel.user!!.auth_id)
+                                    showFollowingDialog = true
+                                },
                                 showFollowButton = true,
                                 modifier = Modifier.fillMaxWidth()
                             )

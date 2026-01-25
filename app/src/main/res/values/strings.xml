@@ -197,4 +197,8 @@
     <string name="unfollow">unfollow</string>
     <string name="follow">follow</string>
     <string name="error_updating_follow_status">Error updating follow status</string>
+    <string name="no_followers">No followers yet</string>
+    <string name="no_following">Not following anyone yet</string>
+    <string name="error_loading_followers">Error loading followers</string>
+    <string name="error_loading_following">Error loading following</string>
 </resources>

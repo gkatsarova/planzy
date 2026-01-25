@@ -3,6 +3,7 @@ package com.planzy.app.data.repository
 import android.util.Log
 import com.planzy.app.R
 import com.planzy.app.data.model.Follow
+import com.planzy.app.data.model.User
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.FollowStats
@@ -79,7 +80,7 @@ class FollowRepositoryImpl(
                     }
                 }
 
-            val users = response.decodeList<com.planzy.app.data.model.User>()
+            val users = response.decodeList<User>()
             val user = users.firstOrNull()
                 ?: return Result.failure(Exception(resourceProvider.getString(R.string.user_not_found)))
 
@@ -143,6 +144,94 @@ class FollowRepositoryImpl(
 
         } catch (e: Exception) {
             Log.e(TAG, "Error checking if following: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getFollowers(userId: String): Result<List<User>> {
+        return try {
+            Log.d(TAG, "Getting followers for user: $userId")
+
+            val followsResponse = SupabaseClient.client.postgrest["follows"]
+                .select {
+                    filter {
+                        eq("following_id", userId)
+                    }
+                }
+
+            val follows = followsResponse.decodeList<Follow>()
+            val followerIds = follows.map { it.follower_id }
+
+            if (followerIds.isEmpty()) {
+                return Result.success(emptyList())
+            }
+
+            val followers = mutableListOf<User>()
+            for (followerId in followerIds) {
+                try {
+                    val userResponse = SupabaseClient.client.postgrest["users"]
+                        .select {
+                            filter {
+                                eq("auth_id", followerId)
+                            }
+                        }
+
+                    val users = userResponse.decodeList<User>()
+                    users.firstOrNull()?.let { followers.add(it) }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error fetching follower info for $followerId: ${e.message}")
+                }
+            }
+
+            Log.d(TAG, "Found ${followers.size} followers for user $userId")
+            Result.success(followers)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting followers: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getFollowing(userId: String): Result<List<User>> {
+        return try {
+            Log.d(TAG, "Getting following for user: $userId")
+
+            val followsResponse = SupabaseClient.client.postgrest["follows"]
+                .select {
+                    filter {
+                        eq("follower_id", userId)
+                    }
+                }
+
+            val follows = followsResponse.decodeList<Follow>()
+            val followingIds = follows.map { it.following_id }
+
+            if (followingIds.isEmpty()) {
+                return Result.success(emptyList())
+            }
+
+            val following = mutableListOf<User>()
+            for (followingId in followingIds) {
+                try {
+                    val userResponse = SupabaseClient.client.postgrest["users"]
+                        .select {
+                            filter {
+                                eq("auth_id", followingId)
+                            }
+                        }
+
+                    val users = userResponse.decodeList<User>()
+                    users.firstOrNull()?.let { following.add(it) }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error fetching following info for $followingId: ${e.message}")
+                }
+            }
+
+            Log.d(TAG, "Found ${following.size} following for user $userId")
+            Result.success(following)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting following: ${e.message}", e)
             Result.failure(e)
         }
     }

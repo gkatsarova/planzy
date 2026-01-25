@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
+import com.planzy.app.data.model.User
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.manager.ProfilePictureManager
@@ -15,6 +16,8 @@ import com.planzy.app.domain.usecase.auth.DeleteAccountUseCase
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
 import com.planzy.app.domain.usecase.user.DeleteProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.user.UpdateProfilePictureUseCase
@@ -32,6 +35,8 @@ class ProfileViewModel(
     private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
     private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
     private val getFollowStatsUseCase: GetFollowStatsUseCase,
+    private val getFollowersUseCase: GetFollowersUseCase,
+    private val getFollowingUseCase: GetFollowingUseCase,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -67,6 +72,26 @@ class ProfileViewModel(
 
     var isLoadingFollowStats by mutableStateOf(false)
         private set
+
+    var followers by mutableStateOf<List<User>>(emptyList())
+        private set
+
+    var following by mutableStateOf<List<User>>(emptyList())
+        private set
+
+    var isLoadingFollowers by mutableStateOf(false)
+        private set
+
+    var isLoadingFollowing by mutableStateOf(false)
+        private set
+
+    var followersError by mutableStateOf<String?>(null)
+        private set
+
+    var followingError by mutableStateOf<String?>(null)
+        private set
+
+    private var currentUserAuthId by mutableStateOf("")
 
     init {
         loadUserProfile()
@@ -122,6 +147,40 @@ class ProfileViewModel(
                 }
 
             isLoadingFollowStats = false
+        }
+    }
+
+    fun loadFollowers() {
+        viewModelScope.launch {
+            isLoadingFollowers = true
+            followersError = null
+
+            getFollowersUseCase(currentUserAuthId)
+                .onSuccess { followersList ->
+                    followers = followersList
+                }
+                .onFailure { exception ->
+                    followersError = exception.message ?: resourceProvider.getString(R.string.error_loading_followers)
+                }
+
+            isLoadingFollowers = false
+        }
+    }
+
+    fun loadFollowing() {
+        viewModelScope.launch {
+            isLoadingFollowing = true
+            followingError = null
+
+            getFollowingUseCase(currentUserAuthId)
+                .onSuccess { followingList ->
+                    following = followingList
+                }
+                .onFailure { exception ->
+                    followingError = exception.message ?: resourceProvider.getString(R.string.error_loading_following)
+                }
+
+            isLoadingFollowing = false
         }
     }
 
@@ -234,6 +293,8 @@ class ProfileViewModel(
         private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
         private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
         private val getFollowStatsUseCase: GetFollowStatsUseCase,
+        private val getFollowersUseCase: GetFollowersUseCase,
+        private val getFollowingUseCase: GetFollowingUseCase,
         private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -247,6 +308,8 @@ class ProfileViewModel(
                 updateProfilePictureUseCase,
                 deleteProfilePictureUseCase,
                 getFollowStatsUseCase,
+                getFollowersUseCase,
+                getFollowingUseCase,
                 resourceProvider
             ) as T
         }

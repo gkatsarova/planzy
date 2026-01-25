@@ -1,5 +1,6 @@
 package com.planzy.app.ui.screens.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,8 @@ fun FollowStatsSection(
     isLoading: Boolean = false,
     isToggling: Boolean = false,
     onFollowClick: () -> Unit = {},
+    onFollowersClick: () -> Unit = {},
+    onFollowingClick: () -> Unit = {},
     showFollowButton: Boolean = true
 ) {
     if (followStats == null) return
@@ -46,7 +49,11 @@ fun FollowStatsSection(
     ) {
         Column(
             modifier = Modifier
-                .weight(1f),
+                .weight(1f)
+                .clickable(
+                    enabled = !isLoading && !isToggling,
+                    onClick = onFollowersClick
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -114,7 +121,11 @@ fun FollowStatsSection(
 
         Column(
             modifier = Modifier
-                .weight(1f),
+                .weight(1f)
+                .clickable(
+                    enabled = !isLoading && !isToggling,
+                    onClick = onFollowingClick
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {

@@ -13,6 +13,8 @@ import com.planzy.app.domain.model.FollowStats
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.follow.FollowUserUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
 import com.planzy.app.domain.usecase.follow.UnfollowUserUseCase
 import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
@@ -22,6 +24,8 @@ class ProfileDetailsViewModel(
     private val getUserByUsernameUseCase: GetUserByUsernameUseCase,
     private val getUserVacationsByIdUseCase: GetUserVacationsByIdUseCase,
     private val getFollowStatsUseCase: GetFollowStatsUseCase,
+    private val getFollowersUseCase: GetFollowersUseCase,
+    private val getFollowingUseCase: GetFollowingUseCase,
     private val followUserUseCase: FollowUserUseCase,
     private val unfollowUserUseCase: UnfollowUserUseCase,
     private val resourceProvider: ResourceProvider
@@ -55,6 +59,24 @@ class ProfileDetailsViewModel(
         private set
 
     var followError by mutableStateOf<String?>(null)
+        private set
+
+    var followers by mutableStateOf<List<User>>(emptyList())
+        private set
+
+    var following by mutableStateOf<List<User>>(emptyList())
+        private set
+
+    var isLoadingFollowers by mutableStateOf(false)
+        private set
+
+    var isLoadingFollowing by mutableStateOf(false)
+        private set
+
+    var followersError by mutableStateOf<String?>(null)
+        private set
+
+    var followingError by mutableStateOf<String?>(null)
         private set
 
     fun loadUserByUsername(username: String) {
@@ -114,6 +136,40 @@ class ProfileDetailsViewModel(
         }
     }
 
+    fun loadFollowers(userId: String) {
+        viewModelScope.launch {
+            isLoadingFollowers = true
+            followersError = null
+
+            getFollowersUseCase(userId)
+                .onSuccess { followersList ->
+                    followers = followersList
+                }
+                .onFailure { exception ->
+                    followersError = exception.message ?: resourceProvider.getString(R.string.error_loading_followers)
+                }
+
+            isLoadingFollowers = false
+        }
+    }
+
+    fun loadFollowing(userId: String) {
+        viewModelScope.launch {
+            isLoadingFollowing = true
+            followingError = null
+
+            getFollowingUseCase(userId)
+                .onSuccess { followingList ->
+                    following = followingList
+                }
+                .onFailure { exception ->
+                    followingError = exception.message ?: resourceProvider.getString(R.string.error_loading_following)
+                }
+
+            isLoadingFollowing = false
+        }
+    }
+
     fun toggleFollow() {
         val currentUser = user ?: return
         val currentStats = followStats ?: return
@@ -156,6 +212,8 @@ class ProfileDetailsViewModel(
         private val getUserByUsernameUseCase: GetUserByUsernameUseCase,
         private val getUserVacationsByIdUseCase: GetUserVacationsByIdUseCase,
         private val getFollowStatsUseCase: GetFollowStatsUseCase,
+        private val getFollowersUseCase: GetFollowersUseCase,
+        private val getFollowingUseCase: GetFollowingUseCase,
         private val followUserUseCase: FollowUserUseCase,
         private val unfollowUserUseCase: UnfollowUserUseCase,
         private val resourceProvider: ResourceProvider
@@ -167,6 +225,8 @@ class ProfileDetailsViewModel(
                     getUserByUsernameUseCase,
                     getUserVacationsByIdUseCase,
                     getFollowStatsUseCase,
+                    getFollowersUseCase,
+                    getFollowingUseCase,
                     followUserUseCase,
                     unfollowUserUseCase,
                     resourceProvider

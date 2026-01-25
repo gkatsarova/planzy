@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,6 +41,8 @@ import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
 import com.planzy.app.domain.usecase.user.DeleteProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.user.UpdateProfilePictureUseCase
@@ -48,6 +51,7 @@ import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.navigation.Register
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.DeleteAccountDialog
+import com.planzy.app.ui.screens.components.FollowListDialog
 import com.planzy.app.ui.screens.components.FollowStatsSection
 import com.planzy.app.ui.screens.components.GalleryPermissionDialog
 import com.planzy.app.ui.screens.components.ProfileCard
@@ -77,6 +81,8 @@ fun ProfileScreen(
     val updateProfilePictureUseCase = remember { UpdateProfilePictureUseCase(userRepository) }
     val deleteProfilePictureUseCase = remember { DeleteProfilePictureUseCase(userRepository) }
     val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }
+    val getFollowersUseCase = remember { GetFollowersUseCase(followRepository) }
+    val getFollowingUseCase = remember { GetFollowingUseCase(followRepository) }
 
 
     val viewModel: ProfileViewModel = viewModel(
@@ -89,6 +95,8 @@ fun ProfileScreen(
             updateProfilePictureUseCase = updateProfilePictureUseCase,
             deleteProfilePictureUseCase = deleteProfilePictureUseCase,
             getFollowStatsUseCase = getFollowStatsUseCase,
+            getFollowersUseCase = getFollowersUseCase,
+            getFollowingUseCase = getFollowingUseCase,
             resourceProvider = resourceProvider
         )
     )
@@ -120,6 +128,31 @@ fun ProfileScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
+
+    var showFollowersDialog by remember { mutableStateOf(false) }
+    var showFollowingDialog by remember { mutableStateOf(false) }
+
+    if (showFollowersDialog) {
+        FollowListDialog(
+            users = viewModel.followers,
+            isFollowers = true,
+            isLoading = viewModel.isLoadingFollowers,
+            errorMessage = viewModel.followersError,
+            navController = navController,
+            onDismiss = { showFollowersDialog = false }
+        )
+    }
+
+    if (showFollowingDialog) {
+        FollowListDialog(
+            users = viewModel.following,
+            isFollowers = false,
+            isLoading = viewModel.isLoadingFollowing,
+            errorMessage = viewModel.followingError,
+            navController = navController,
+            onDismiss = { showFollowingDialog = false }
+        )
     }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -221,6 +254,7 @@ fun ProfileScreen(
                             .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        // Profile Picture
                         ProfilePictureSection(
                             profilePictureUrl = viewModel.profilePictureUrl,
                             isUploading = viewModel.isUploadingPicture,
@@ -236,7 +270,7 @@ fun ProfileScreen(
 
                         Box(
                             modifier = Modifier
-                                .fillMaxSize()
+                                .fillMaxWidth()
                                 .background(color = Color.Transparent)
                         ) {
                             FollowStatsSection(
@@ -244,20 +278,28 @@ fun ProfileScreen(
                                 isLoading = viewModel.isLoadingFollowStats,
                                 isToggling = false,
                                 onFollowClick = {},
+                                onFollowersClick = {
+                                    viewModel.loadFollowers()
+                                    showFollowersDialog = true
+                                },
+                                onFollowingClick = {
+                                    viewModel.loadFollowing()
+                                    showFollowingDialog = true
+                                },
                                 showFollowButton = false,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        ProfileCard(
+                            username = viewModel.username,
+                            email = viewModel.email,
+                            onLogoutClick = { viewModel.signOut() },
+                            onDeleteClick = { viewModel.showDeleteDialog() }
+                        )
                     }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    ProfileCard(
-                        username = viewModel.username,
-                        email = viewModel.email,
-                        onLogoutClick = { viewModel.signOut() },
-                        onDeleteClick = { viewModel.showDeleteDialog() }
-                    )
                 }
             }
         }
