@@ -105,6 +105,7 @@ class FollowRepositoryImpl(
                     Log.d(TAG, "Is following check: $isFollowing")
                 } catch (e: Exception) {
                     Log.e(TAG, "Error checking if following: ${e.message}")
+                    isFollowing = false
                 }
             }
 

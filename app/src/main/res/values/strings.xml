@@ -201,4 +201,5 @@
     <string name="no_following">Not following anyone yet</string>
     <string name="error_loading_followers">Error loading followers</string>
     <string name="error_loading_following">Error loading following</string>
+    <string name="error_loading_follow_stats">Error loading follow stats</string>
 </resources>

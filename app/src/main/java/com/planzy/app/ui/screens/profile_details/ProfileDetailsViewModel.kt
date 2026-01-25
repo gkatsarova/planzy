@@ -95,7 +95,7 @@ class ProfileDetailsViewModel(
                     }
                 }
                 .onFailure { exception ->
-                    errorMessage = exception.message ?: resourceProvider.getString(R.string.error_loading_user)
+                    errorMessage = resourceProvider.getString(R.string.error_loading_user)
                 }
 
             isLoading = false
@@ -112,7 +112,7 @@ class ProfileDetailsViewModel(
                     vacations = userVacations
                 }
                 .onFailure { exception ->
-                    vacationsError = exception.message ?: resourceProvider.getString(R.string.error_loading_vacations)
+                    vacationsError = resourceProvider.getString(R.string.error_loading_vacations)
                 }
 
             isLoadingVacations = false
@@ -129,7 +129,7 @@ class ProfileDetailsViewModel(
                     followStats = stats
                 }
                 .onFailure { exception ->
-                    followError = exception.message
+                    followError = resourceProvider.getString(R.string.error_loading_follow_stats)
                 }
 
             isLoadingFollowStats = false
@@ -146,7 +146,7 @@ class ProfileDetailsViewModel(
                     followers = followersList
                 }
                 .onFailure { exception ->
-                    followersError = exception.message ?: resourceProvider.getString(R.string.error_loading_followers)
+                    followersError = resourceProvider.getString(R.string.error_loading_followers)
                 }
 
             isLoadingFollowers = false
@@ -163,7 +163,7 @@ class ProfileDetailsViewModel(
                     following = followingList
                 }
                 .onFailure { exception ->
-                    followingError = exception.message ?: resourceProvider.getString(R.string.error_loading_following)
+                    followingError = resourceProvider.getString(R.string.error_loading_following)
                 }
 
             isLoadingFollowing = false
@@ -196,7 +196,7 @@ class ProfileDetailsViewModel(
                     )
                 }
                 .onFailure { exception ->
-                    followError = exception.message ?: resourceProvider.getString(R.string.error_updating_follow_status)
+                    followError = resourceProvider.getString(R.string.error_updating_follow_status)
                 }
 
             isToggleFollowLoading = false

@@ -108,6 +108,7 @@ class ProfileViewModel(
 
                 if (currentUser != null) {
                     val authId = currentUser.id
+                    currentUserAuthId = authId
 
                     getUserByAuthIdUseCase(authId)
                         .onSuccess { user ->
@@ -160,7 +161,7 @@ class ProfileViewModel(
                     followers = followersList
                 }
                 .onFailure { exception ->
-                    followersError = exception.message ?: resourceProvider.getString(R.string.error_loading_followers)
+                    followersError = resourceProvider.getString(R.string.error_loading_followers)
                 }
 
             isLoadingFollowers = false
@@ -177,7 +178,7 @@ class ProfileViewModel(
                     following = followingList
                 }
                 .onFailure { exception ->
-                    followingError = exception.message ?: resourceProvider.getString(R.string.error_loading_following)
+                    followingError = resourceProvider.getString(R.string.error_loading_following)
                 }
 
             isLoadingFollowing = false
