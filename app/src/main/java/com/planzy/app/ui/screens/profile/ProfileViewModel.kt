@@ -10,9 +10,11 @@ import com.planzy.app.R
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.manager.ProfilePictureManager
+import com.planzy.app.domain.model.FollowStats
 import com.planzy.app.domain.usecase.auth.DeleteAccountUseCase
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.auth.SignOutUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
 import com.planzy.app.domain.usecase.user.DeleteProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.user.UpdateProfilePictureUseCase
@@ -29,6 +31,7 @@ class ProfileViewModel(
     private val uploadProfilePictureUseCase: UploadProfilePictureUseCase,
     private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
     private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
+    private val getFollowStatsUseCase: GetFollowStatsUseCase,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -59,6 +62,12 @@ class ProfileViewModel(
     var profilePictureUrl by mutableStateOf<String?>(null)
         private set
 
+    var followStats by mutableStateOf<FollowStats?>(null)
+        private set
+
+    var isLoadingFollowStats by mutableStateOf(false)
+        private set
+
     init {
         loadUserProfile()
     }
@@ -81,6 +90,7 @@ class ProfileViewModel(
                                 username = user.username
                                 email = user.email
                                 profilePictureUrl = user.profilePictureUrl
+                                loadFollowStats(authId)
                             }
                             isLoading = false
                         }
@@ -97,6 +107,27 @@ class ProfileViewModel(
                 isLoading = false
             }
         }
+    }
+
+    private fun loadFollowStats(authId: String) {
+        viewModelScope.launch {
+            isLoadingFollowStats = true
+
+            getFollowStatsUseCase(authId)
+                .onSuccess { stats ->
+                    followStats = stats
+                }
+                .onFailure { exception ->
+                    errorMessage = null
+                }
+
+            isLoadingFollowStats = false
+        }
+    }
+
+    fun refreshFollowStats() {
+        val currentAuthId = SupabaseClient.client.auth.currentUserOrNull()?.id ?: return
+        loadFollowStats(currentAuthId)
     }
 
     fun signOut() {
@@ -202,6 +233,7 @@ class ProfileViewModel(
         private val uploadProfilePictureUseCase: UploadProfilePictureUseCase,
         private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
         private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
+        private val getFollowStatsUseCase: GetFollowStatsUseCase,
         private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -214,6 +246,7 @@ class ProfileViewModel(
                 uploadProfilePictureUseCase,
                 updateProfilePictureUseCase,
                 deleteProfilePictureUseCase,
+                getFollowStatsUseCase,
                 resourceProvider
             ) as T
         }
