@@ -1,4 +1,4 @@
-package com.planzy.app.ui.screens.profile_details
+package com.planzy.app.ui.screens.profiledetails
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +20,12 @@ import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
 import kotlinx.coroutines.launch
 
+sealed interface UserState {
+    data object Loading : UserState
+    data class Success(val user: User) : UserState
+    data class Error(val message: String) : UserState
+}
+
 class ProfileDetailsViewModel(
     private val getUserByUsernameUseCase: GetUserByUsernameUseCase,
     private val getUserVacationsByIdUseCase: GetUserVacationsByIdUseCase,
@@ -31,13 +37,7 @@ class ProfileDetailsViewModel(
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
-    var user by mutableStateOf<User?>(null)
-        private set
-
-    var isLoading by mutableStateOf(false)
-        private set
-
-    var errorMessage by mutableStateOf<String?>(null)
+    var userState by mutableStateOf<UserState>(UserState.Loading)
         private set
 
     var vacations by mutableStateOf<List<Vacation>>(emptyList())
@@ -81,24 +81,25 @@ class ProfileDetailsViewModel(
 
     fun loadUserByUsername(username: String) {
         viewModelScope.launch {
-            isLoading = true
-            errorMessage = null
+            userState = UserState.Loading
 
             getUserByUsernameUseCase(username)
                 .onSuccess { loadedUser ->
-                    user = loadedUser
                     if (loadedUser == null) {
-                        errorMessage = resourceProvider.getString(R.string.user_not_found)
+                        userState = UserState.Error(
+                            resourceProvider.getString(R.string.user_not_found)
+                        )
                     } else {
+                        userState = UserState.Success(loadedUser)
                         loadUserVacations(loadedUser.auth_id)
                         loadFollowStats(loadedUser.auth_id)
                     }
                 }
                 .onFailure { exception ->
-                    errorMessage = resourceProvider.getString(R.string.error_loading_user)
+                    userState = UserState.Error(
+                        resourceProvider.getString(R.string.error_loading_user)
+                    )
                 }
-
-            isLoading = false
         }
     }
 
@@ -171,7 +172,10 @@ class ProfileDetailsViewModel(
     }
 
     fun toggleFollow() {
-        val currentUser = user ?: return
+        val currentUser = when (val state = userState) {
+            is UserState.Success -> state.user
+            else -> return
+        }
         val currentStats = followStats ?: return
 
         viewModelScope.launch {
@@ -204,7 +208,10 @@ class ProfileDetailsViewModel(
     }
 
     fun refreshFollowStats() {
-        val userId = user?.auth_id ?: return
+        val userId = when (val state = userState) {
+            is UserState.Success -> state.user.auth_id
+            else -> return
+        }
         loadFollowStats(userId)
     }
 

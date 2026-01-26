@@ -132,6 +132,7 @@ class MainActivity : ComponentActivity() {
                     Navigation(
                         deepLinkViewModel = deepLinkViewModel,
                         navController = navController,
+                        searchViewModel = searchViewModel,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(innerPadding)

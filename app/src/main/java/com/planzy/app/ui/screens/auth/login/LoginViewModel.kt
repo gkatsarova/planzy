@@ -4,14 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
+import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.manager.ProfilePictureManager
 import com.planzy.app.domain.repository.AuthRepository
+import com.planzy.app.domain.repository.UserRepository
 import com.planzy.app.domain.usecase.auth.LoginUseCase
 import com.planzy.app.domain.usecase.auth.ResendVerificationEmailUseCase
 import com.planzy.app.domain.usecase.auth.SendPasswordResetEmailUseCase
 import com.planzy.app.domain.usecase.auth.UpdatePasswordUseCase
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.screens.auth.BaseAuthViewModel
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +32,7 @@ class LoginViewModel(
     private val resendVerificationEmailUseCase: ResendVerificationEmailUseCase,
     private val sendPasswordResetEmailUseCase: SendPasswordResetEmailUseCase,
     private val updatePasswordUseCase: UpdatePasswordUseCase,
+    private val getUserByAuthIdUseCase: GetUserByAuthIdUseCase,
     private val authRepository: AuthRepository,
     resourceProvider: ResourceProvider,
     cooldownManager: CooldownManager
@@ -77,6 +83,12 @@ class LoginViewModel(
 
             _loading.value = false
             if (result.isSuccess) {
+                val userId = SupabaseClient.client.auth.currentUserOrNull()?.id
+                if (userId != null) {
+                    getUserByAuthIdUseCase(userId).onSuccess { user ->
+                        ProfilePictureManager.updateUrl(user?.profilePictureUrl)
+                    }
+                }
                 _success.value = true
             } else {
                 val errorMessage = result.exceptionOrNull()?.message
@@ -220,6 +232,7 @@ class LoginViewModel(
 
     class Factory(
         private val authRepository: AuthRepository,
+        private val userRepository: UserRepository,
         private val resourceProvider: ResourceProvider,
         private val cooldownManager: CooldownManager
     ) : ViewModelProvider.Factory {
@@ -231,6 +244,7 @@ class LoginViewModel(
                     ResendVerificationEmailUseCase(authRepository, resourceProvider),
                     SendPasswordResetEmailUseCase(authRepository, resourceProvider),
                     UpdatePasswordUseCase(authRepository, resourceProvider),
+                    GetUserByAuthIdUseCase(userRepository),
                     authRepository,
                     resourceProvider,
                     cooldownManager

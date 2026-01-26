@@ -2,8 +2,6 @@ package com.planzy.app.ui.navigation
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -11,13 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.planzy.app.data.remote.SupabaseClient
-import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.DeepLinkResult
-import com.planzy.app.data.repository.PlacesRepositoryImpl
-import com.planzy.app.data.repository.UserRepositoryImpl
-import com.planzy.app.data.repository.VacationsRepositoryImpl
-import com.planzy.app.data.util.LocationEntityExtractor
-import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.auth.registration.DeepLinkViewModel
 import com.planzy.app.ui.screens.auth.registration.RegisterScreen
@@ -27,7 +19,7 @@ import com.planzy.app.ui.screens.home.HomeScreen
 import com.planzy.app.ui.screens.place.PlaceDetailsScreen
 import com.planzy.app.ui.screens.planner.VacationPlannerScreen
 import com.planzy.app.ui.screens.profile.ProfileScreen
-import com.planzy.app.ui.screens.profile_details.ProfileDetailsScreen
+import com.planzy.app.ui.screens.profiledetails.ProfileDetailsScreen
 import com.planzy.app.ui.screens.vacation.VacationDetailsScreen
 import com.planzy.app.ui.screens.welcome.WelcomeScreen
 import io.github.jan.supabase.auth.auth
@@ -36,11 +28,11 @@ import io.github.jan.supabase.auth.auth
 fun Navigation(
     deepLinkViewModel: DeepLinkViewModel,
     navController: NavHostController,
+    searchViewModel: SearchViewModel,
     modifier: Modifier = Modifier
 ) {
     val deepLinkResult by deepLinkViewModel.deepLinkResult.collectAsState()
     var hasHandledDeepLink by remember { mutableStateOf(false) }
-    val context = LocalContext.current
 
     LaunchedEffect(deepLinkResult) {
         when (deepLinkResult) {
@@ -77,26 +69,6 @@ fun Navigation(
             navController.removeOnDestinationChangedListener(listener)
         }
     }
-
-    val searchViewModel: SearchViewModel = viewModel(
-        factory = remember {
-            SearchViewModel.Factory(
-                context = context,
-                repository = PlacesRepositoryImpl(
-                    TripadvisorApi(),
-                    SupabaseClient,
-                    ResourceProviderImpl(context)
-                ),
-                entityExtractor = LocationEntityExtractor(),
-                resourceProvider = ResourceProviderImpl(context),
-                vacationsRepository = VacationsRepositoryImpl(
-                    supabaseClient =SupabaseClient,
-                    resourceProvider = ResourceProviderImpl(context)
-                ),
-                userRepository = UserRepositoryImpl(ResourceProviderImpl(context))
-            )
-        }
-    )
 
     val startDestination = remember {
         val currentUser = SupabaseClient.client.auth.currentUserOrNull()
@@ -199,7 +171,8 @@ fun Navigation(
 
             ProfileDetailsScreen(
                 username = username,
-                navController = navController
+                navController = navController,
+                searchViewModel = searchViewModel
             )
         }
     }

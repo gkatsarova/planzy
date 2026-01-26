@@ -116,6 +116,7 @@ class ProfileViewModel(
                                 username = user.username
                                 email = user.email
                                 profilePictureUrl = user.profilePictureUrl
+                                ProfilePictureManager.updateUrl(user.profilePictureUrl)
                                 loadFollowStats(authId)
                             }
                             isLoading = false
@@ -197,6 +198,7 @@ class ProfileViewModel(
 
             signOutUseCase()
                 .onSuccess {
+                    ProfilePictureManager.updateUrl(null)
                     isLoading = false
                     isLogoutSuccessful = true
                 }
@@ -223,6 +225,7 @@ class ProfileViewModel(
 
             deleteAccountUseCase()
                 .onSuccess {
+                    ProfilePictureManager.updateUrl(null)
                     isLoading = false
                     isDeleteSuccessful = true
                 }
