@@ -188,4 +188,18 @@
     <string name="remove">Remove</string>
     <string name="error_loading_profile_picture">Error loading profile picture</string>
     <string name="gallery_permission_text">Allow Plazy to access your photos so you can upload profile pictures.</string>
+    <string name="profiles">Profiles</string>
+    <string name="user_not_found">User not found</string>
+    <string name="error_loading_user">Error loading user</string>
+    <string name="no_vacations_user">No vacations</string>
+    <string name="followers">followers</string>
+    <string name="following">following</string>
+    <string name="unfollow">unfollow</string>
+    <string name="follow">follow</string>
+    <string name="error_updating_follow_status">Error updating follow status</string>
+    <string name="no_followers">No followers yet</string>
+    <string name="no_following">Not following anyone yet</string>
+    <string name="error_loading_followers">Error loading followers</string>
+    <string name="error_loading_following">Error loading following</string>
+    <string name="error_loading_follow_stats">Error loading follow stats</string>
 </resources>

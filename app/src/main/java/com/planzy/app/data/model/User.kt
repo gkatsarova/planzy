@@ -10,5 +10,9 @@ data class User(
     val username: String,
     val email: String,
     @SerialName("profile_picture_url")
-    val profilePictureUrl: String? = null
+    val profilePictureUrl: String? = null,
+    @SerialName("followers_count")
+    val followersCount: Int = 0,
+    @SerialName("following_count")
+    val followingCount: Int = 0
 )

@@ -65,4 +65,8 @@ interface VacationsRepository {
     suspend fun deleteVacation(
         vacationId: String
     ): Result<Unit>
+
+    suspend fun getUserVacationsById(
+        userId: String
+    ): Result<List<Vacation>>
 }

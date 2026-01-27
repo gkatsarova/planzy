@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.R
 import com.planzy.app.data.repository.DeepLinkResult
+import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.RecoverySessionManager
 import com.planzy.app.data.util.ResourceProviderImpl
@@ -49,12 +50,14 @@ fun LoginScreen(
             recoverySessionManager = recoverySessionManager
         )
     }
+    val userRepo = remember { UserRepositoryImpl(resourceProvider) }
     val cooldownManager = remember { CooldownManager(context) }
 
     val viewModel: LoginViewModel = viewModel(
         factory = LoginViewModel.Factory(
             authRepository = authRepo,
             resourceProvider = resourceProvider,
+            userRepository = userRepo,
             cooldownManager = cooldownManager
         )
     )

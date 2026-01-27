@@ -10,4 +10,5 @@ interface UserRepository {
     suspend fun uploadProfilePicture(imageFile: File): Result<String>
     suspend fun updateProfilePictureUrl(url: String): Result<Unit>
     suspend fun deleteProfilePicture(pictureUrl: String): Result<Unit>
+    suspend fun searchUsers(query: String): Result<List<User>>
 }

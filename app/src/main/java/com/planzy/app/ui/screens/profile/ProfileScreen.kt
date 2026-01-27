@@ -6,14 +6,17 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,18 +24,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.planzy.app.R
+import com.planzy.app.data.repository.FollowRepositoryImpl
 import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.domain.usecase.auth.DeleteAccountUseCase
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
 import com.planzy.app.domain.usecase.user.DeleteProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.user.UpdateProfilePictureUseCase
@@ -41,6 +51,8 @@ import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.navigation.Register
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.DeleteAccountDialog
+import com.planzy.app.ui.screens.components.FollowListDialog
+import com.planzy.app.ui.screens.components.FollowStatsSection
 import com.planzy.app.ui.screens.components.GalleryPermissionDialog
 import com.planzy.app.ui.screens.components.ProfileCard
 import com.planzy.app.ui.screens.components.ProfilePictureSection
@@ -59,6 +71,8 @@ fun ProfileScreen(
     val resourceProvider = remember { ResourceProviderImpl(context) }
     val authRepository = remember { AuthRepositoryImpl(resourceProvider) }
     val userRepository = remember { UserRepositoryImpl(resourceProvider) }
+    val followRepository = remember { FollowRepositoryImpl(resourceProvider) }
+
     val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
     val signOutUseCase = remember { SignOutUseCase(authRepository) }
@@ -66,6 +80,9 @@ fun ProfileScreen(
     val uploadProfilePictureUseCase = remember { UploadProfilePictureUseCase(userRepository) }
     val updateProfilePictureUseCase = remember { UpdateProfilePictureUseCase(userRepository) }
     val deleteProfilePictureUseCase = remember { DeleteProfilePictureUseCase(userRepository) }
+    val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }
+    val getFollowersUseCase = remember { GetFollowersUseCase(followRepository) }
+    val getFollowingUseCase = remember { GetFollowingUseCase(followRepository) }
 
 
     val viewModel: ProfileViewModel = viewModel(
@@ -77,6 +94,9 @@ fun ProfileScreen(
             uploadProfilePictureUseCase = uploadProfilePictureUseCase,
             updateProfilePictureUseCase = updateProfilePictureUseCase,
             deleteProfilePictureUseCase = deleteProfilePictureUseCase,
+            getFollowStatsUseCase = getFollowStatsUseCase,
+            getFollowersUseCase = getFollowersUseCase,
+            getFollowingUseCase = getFollowingUseCase,
             resourceProvider = resourceProvider
         )
     )
@@ -95,6 +115,44 @@ fun ProfileScreen(
                 popUpTo(0) { inclusive = true }
             }
         }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshFollowStats()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    var showFollowersDialog by remember { mutableStateOf(false) }
+    var showFollowingDialog by remember { mutableStateOf(false) }
+
+    if (showFollowersDialog) {
+        FollowListDialog(
+            users = viewModel.followers,
+            isFollowers = true,
+            isLoading = viewModel.isLoadingFollowers,
+            errorMessage = viewModel.followersError,
+            navController = navController,
+            onDismiss = { showFollowersDialog = false }
+        )
+    }
+
+    if (showFollowingDialog) {
+        FollowListDialog(
+            users = viewModel.following,
+            isFollowers = false,
+            isLoading = viewModel.isLoadingFollowing,
+            errorMessage = viewModel.followingError,
+            navController = navController,
+            onDismiss = { showFollowingDialog = false }
+        )
     }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -196,6 +254,7 @@ fun ProfileScreen(
                             .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        // Profile Picture
                         ProfilePictureSection(
                             profilePictureUrl = viewModel.profilePictureUrl,
                             isUploading = viewModel.isUploadingPicture,
@@ -206,6 +265,31 @@ fun ProfileScreen(
                                 viewModel.deleteProfilePicture()
                             }
                         )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(color = Color.Transparent)
+                        ) {
+                            FollowStatsSection(
+                                followStats = viewModel.followStats,
+                                isLoading = viewModel.isLoadingFollowStats,
+                                isToggling = false,
+                                onFollowClick = {},
+                                onFollowersClick = {
+                                    viewModel.loadFollowers()
+                                    showFollowersDialog = true
+                                },
+                                onFollowingClick = {
+                                    viewModel.loadFollowing()
+                                    showFollowingDialog = true
+                                },
+                                showFollowButton = false,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(24.dp))
 

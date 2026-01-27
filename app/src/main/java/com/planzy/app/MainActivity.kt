@@ -31,6 +31,7 @@ import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.navigation.Navigation
+import com.planzy.app.ui.navigation.ProfileDetails
 import com.planzy.app.ui.navigation.Register
 import com.planzy.app.ui.navigation.Welcome
 import com.planzy.app.ui.navigation.getTitleForRoute
@@ -96,19 +97,28 @@ class MainActivity : ComponentActivity() {
                             vacationsRepository = VacationsRepositoryImpl(
                                 supabaseClient =SupabaseClient,
                                 resourceProvider = ResourceProviderImpl(this@MainActivity)
-                            )
+                            ),
+                            userRepository = UserRepositoryImpl(ResourceProviderImpl(this@MainActivity))
                         )
                     }
                 )
+
+                val title = when {
+                    currentRoute?.startsWith(ProfileDetails.route) == true -> {
+                        navBackStackEntry?.arguments?.getString(ProfileDetails.ARG_USERNAME) ?: "Profile"
+                    }
+                    else -> getTitleForRoute(currentRoute)
+                }
 
                 Scaffold(
                     topBar = {
                         if (showBars) {
                             PlanzyTopAppBar(
-                                title = getTitleForRoute(currentRoute),
+                                title = title,
                                 profilePictureUrl = plazyTopBarViewModel.profilePictureUrl,
                                 navController = navController,
-                                onSearch = { query -> searchViewModel.searchForPlaces(query) }
+                                searchQuery = searchViewModel.searchQuery,
+                                onSearch = { query -> searchViewModel.search(query) }
                             )
                         }
                     },
@@ -122,6 +132,7 @@ class MainActivity : ComponentActivity() {
                     Navigation(
                         deepLinkViewModel = deepLinkViewModel,
                         navController = navController,
+                        searchViewModel = searchViewModel,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(innerPadding)

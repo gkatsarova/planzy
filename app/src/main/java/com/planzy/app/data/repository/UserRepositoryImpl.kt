@@ -167,4 +167,29 @@ class UserRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun searchUsers(query: String): Result<List<User>> {
+        return try {
+            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
+            val currentUserId = currentUser?.id
+
+            val response = SupabaseClient.client.postgrest["users"]
+                .select {
+                    filter {
+                        or {
+                            ilike("username", "%$query%")
+                        }
+                        currentUserId?.let { neq("auth_id", it) }
+                    }
+                }
+
+            val users = response.decodeList<User>()
+            Log.d(TAG, "Found ${users.size} users matching: $query")
+            Result.success(users)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error searching users: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
 }

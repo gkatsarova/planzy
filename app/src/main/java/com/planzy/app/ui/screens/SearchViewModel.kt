@@ -16,10 +16,13 @@ import com.planzy.app.domain.usecase.place.SearchPlacesUseCase
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import com.google.mlkit.nl.entityextraction.Entity
+import com.planzy.app.data.model.User
+import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.HttpStatusCodes.TOO_MANY_REQUESTS
 import com.planzy.app.data.util.HttpStatusCodes.UNAUTHORIZED
 import com.planzy.app.domain.model.Vacation
+import com.planzy.app.domain.usecase.user.SearchUsersUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationCommentsCountUseCase
 import com.planzy.app.domain.usecase.vacation.SearchVacationsUseCase
 
@@ -29,11 +32,18 @@ data class PlaceWithStats(
     val userReviewsCount: Int
 )
 
+data class SearchResults(
+    val placesWithStats: List<PlaceWithStats>,
+    val vacations: List<Vacation>,
+    val users: List<User>
+)
+
 class SearchViewModel(
     private val searchPlacesUseCase: SearchPlacesUseCase,
     private val getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase,
     private val searchVacationsUseCase: SearchVacationsUseCase,
     private val getVacationCommentsCountUseCase: GetVacationCommentsCountUseCase,
+    private val searchUsersUseCase: SearchUsersUseCase,
     private val entityExtractor: LocationEntityExtractor,
     private val resourceProvider: ResourceProvider,
     context: Context
@@ -47,7 +57,7 @@ class SearchViewModel(
     }
 
     private val prefs = context.getSharedPreferences("planzy_prefs", Context.MODE_PRIVATE)
-    private val searchCache = mutableMapOf<String, List<PlaceWithStats>>()
+    private val searchCache = mutableMapOf<String, SearchResults>()
 
     var searchQuery by mutableStateOf("")
         private set
@@ -71,6 +81,10 @@ class SearchViewModel(
         private set
     var isSearchBarFocused by mutableStateOf(false)
         private set
+    var users by mutableStateOf<List<User>>(emptyList())
+        private set
+
+    private var searchJob: kotlinx.coroutines.Job? = null
 
     init {
         viewModelScope.launch {
@@ -90,6 +104,7 @@ class SearchViewModel(
         places = emptyList()
         placesWithStats = emptyList()
         vacations = emptyList()
+        users = emptyList()
         errorMessage = null
         isSearchBarFocused = false
     }
@@ -142,7 +157,7 @@ class SearchViewModel(
         }
     }
 
-    fun searchForPlaces(query: String) {
+    fun search(query: String) {
         searchQuery = query
 
         val cleanQuery = query.trim()
@@ -150,27 +165,49 @@ class SearchViewModel(
             places = emptyList()
             placesWithStats = emptyList()
             vacations = emptyList()
+            users = emptyList()
             errorMessage = null
+            searchJob?.cancel()
             return
         }
 
         if (searchCache.containsKey(cleanQuery)) {
-            placesWithStats = searchCache[cleanQuery]!!
-            places = placesWithStats.map { it.place }
+            val cached = searchCache[cleanQuery]!!
+            placesWithStats = cached.placesWithStats
+            places = cached.placesWithStats.map { it.place }
+            vacations = cached.vacations
+            users = cached.users
             errorMessage = null
+            searchJob?.cancel()
             return
         }
 
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(500)
+
             isLoading = true
             errorMessage = null
 
             Log.d(TAG, "Starting search for: $cleanQuery")
 
+            val usersResult = searchUsersUseCase(cleanQuery)
+            var hasUsers = false
+            var usersList = emptyList<User>()
+            usersResult.onSuccess { list ->
+                Log.d(TAG, "Found ${list.size} users")
+                hasUsers = list.isNotEmpty()
+                users = list
+                usersList = list
+            }.onFailure { exception ->
+                Log.e(TAG, "Error searching users: ${exception.message}", exception)
+            }
+
             Log.d(TAG, "Searching vacations...")
             val vacationsResult = searchVacationsUseCase(cleanQuery)
 
             var hasVacations = false
+            var vacationsList = emptyList<Vacation>()
             vacationsResult.onSuccess { list ->
                 Log.d(TAG, "Found ${list.size} vacations")
                 hasVacations = list.isNotEmpty()
@@ -183,7 +220,7 @@ class SearchViewModel(
                 }
 
                 vacations = vacationsWithComments
-                Log.d(TAG, "Updated vacations with comments: ${vacationsWithComments.map { "${it.title} (${it.commentsCount} comments)" }}")
+                vacationsList = vacationsWithComments
             }.onFailure { exception ->
                 Log.e(TAG, "Error searching vacations: ${exception.message}", exception)
             }
@@ -196,6 +233,7 @@ class SearchViewModel(
             val placesResult = searchPlacesUseCase(cleanQuery, latLong = latLong, radius = radius)
 
             var hasPlaces = false
+            var placeStatsList = emptyList<PlaceWithStats>()
             placesResult.onSuccess { list ->
                 places = list
                 hasPlaces = list.isNotEmpty()
@@ -208,14 +246,22 @@ class SearchViewModel(
                 }
 
                 placesWithStats = stats
-                searchCache[cleanQuery] = stats
+                placeStatsList = stats
             }.onFailure { exception ->
                 if (!hasVacations) {
                     errorMessage = resourceProvider.getString(mapExceptionToErrorResource(exception))
                 }
             }
 
-            if (!hasPlaces && !hasVacations) {
+            if (hasPlaces || hasVacations || hasUsers) {
+                searchCache[cleanQuery] = SearchResults(
+                    placesWithStats = placeStatsList,
+                    vacations = vacationsList,
+                    users = usersList
+                )
+            }
+
+            if (!hasPlaces && !hasVacations && !hasUsers) {
                 errorMessage = resourceProvider.getString(R.string.error_no_results_found)
             }
 
@@ -226,6 +272,7 @@ class SearchViewModel(
     class Factory(
         private val context: Context,
         private val repository: PlacesRepositoryImpl,
+        private val userRepository: UserRepositoryImpl,
         private val vacationsRepository: VacationsRepositoryImpl,
         private val entityExtractor: LocationEntityExtractor,
         private val resourceProvider: ResourceProvider
@@ -238,6 +285,7 @@ class SearchViewModel(
                     GetUserCommentsStatsUseCase(repository),
                     SearchVacationsUseCase(vacationsRepository),
                     GetVacationCommentsCountUseCase(vacationsRepository),
+                    SearchUsersUseCase(userRepository),
                     entityExtractor,
                     resourceProvider,
                     context.applicationContext
