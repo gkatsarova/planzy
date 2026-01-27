@@ -40,7 +40,23 @@ class HomeViewModel(
                 }
                 .onFailure { exception ->
                     vacationsState = VacationsState.Error(
-                        exception.message ?: resourceProvider.getString(R.string.error_loading_vacations)
+                        resourceProvider.getString(R.string.error_loading_vacations)
+                    )
+                }
+        }
+    }
+
+    fun refreshVacations() {
+        viewModelScope.launch {
+            vacationsState = VacationsState.Loading
+
+            getFollowedUsersVacationsUseCase()
+                .onSuccess { vacations ->
+                    vacationsState = VacationsState.Success(vacations)
+                }
+                .onFailure { exception ->
+                    vacationsState = VacationsState.Error(
+                        resourceProvider.getString(R.string.error_loading_vacations)
                     )
                 }
         }
