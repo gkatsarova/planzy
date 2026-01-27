@@ -1,17 +1,22 @@
 package com.planzy.app.ui
 
 import com.planzy.app.R
+import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.data.model.User
 import com.planzy.app.domain.repository.AuthRepository
 import com.planzy.app.domain.usecase.auth.LoginUseCase
 import com.planzy.app.domain.usecase.auth.ResendVerificationEmailUseCase
 import com.planzy.app.domain.usecase.auth.SendPasswordResetEmailUseCase
 import com.planzy.app.domain.usecase.auth.UpdatePasswordUseCase
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.screens.auth.login.LoginViewModel
-import io.mockk.coEvery
-import io.mockk.every
-import io.mockk.mockk
+import io.github.jan.supabase.SupabaseClient as SupabaseClientType
+import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.user.UserInfo
+import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -31,6 +36,7 @@ class LoginViewModelTest {
     private lateinit var loginUseCase: LoginUseCase
     private lateinit var resendVerificationEmailUseCase: ResendVerificationEmailUseCase
     private lateinit var sendPasswordResetEmailUseCase: SendPasswordResetEmailUseCase
+    private lateinit var getUserByAuthIdUseCase: GetUserByAuthIdUseCase
     private lateinit var updatePasswordUseCase: UpdatePasswordUseCase
     private lateinit var authRepository: AuthRepository
     private lateinit var resourceProvider: ResourceProvider
@@ -45,18 +51,21 @@ class LoginViewModelTest {
         loginUseCase = mockk(relaxed = true)
         resendVerificationEmailUseCase = mockk(relaxed = true)
         sendPasswordResetEmailUseCase = mockk(relaxed = true)
+        getUserByAuthIdUseCase = mockk(relaxed = true)
         updatePasswordUseCase = mockk(relaxed = true)
         authRepository = mockk(relaxed = true)
         resourceProvider = mockk(relaxed = true)
         cooldownManager = mockk(relaxed = true)
 
         setupResourceStrings()
+        setupSupabaseClient()
 
         viewModel = LoginViewModel(
             loginUseCase,
             resendVerificationEmailUseCase,
             sendPasswordResetEmailUseCase,
             updatePasswordUseCase,
+            getUserByAuthIdUseCase,
             authRepository,
             resourceProvider,
             cooldownManager
@@ -76,9 +85,33 @@ class LoginViewModelTest {
                 "Passwords don't match"
     }
 
+    private fun setupSupabaseClient() {
+        val mockUserInfo = mockk<UserInfo>(relaxed = true)
+        every { mockUserInfo.id } returns "test-user-id"
+
+        val mockAuth = mockk<Auth>(relaxed = true)
+        every { mockAuth.currentUserOrNull() } returns mockUserInfo
+
+        val mockSupabaseClient = mockk<SupabaseClientType>(relaxed = true)
+
+        mockkStatic("io.github.jan.supabase.auth.AuthKt")
+        every { mockSupabaseClient.auth } returns mockAuth
+
+        mockkObject(SupabaseClient)
+        every { SupabaseClient.client } returns mockSupabaseClient
+
+        coEvery { getUserByAuthIdUseCase(any()) } returns Result.success(
+            mockk<User>(relaxed = true) {
+                every { profilePictureUrl } returns null
+            }
+        )
+    }
+
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        unmockkObject(SupabaseClient)
+        unmockkStatic("io.github.jan.supabase.auth.AuthKt")
     }
 
     @Test

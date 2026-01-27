@@ -63,6 +63,7 @@ class SearchViewModelTest {
         coEvery { entityExtractor.initialize() } just runs
         coEvery { entityExtractor.extractLocation(any()) } returns null
 
+        coEvery { searchUsersUseCase(any()) } returns Result.success(emptyList())
         coEvery { searchVacationsUseCase(any()) } returns Result.success(emptyList())
 
         viewModel = SearchViewModel(
@@ -89,6 +90,7 @@ class SearchViewModelTest {
         assertFalse(viewModel.isLoading)
         assertTrue(viewModel.places.isEmpty())
         assertTrue(viewModel.vacations.isEmpty())
+        assertTrue(viewModel.users.isEmpty())
         assertTrue(viewModel.showLocationDialog)
     }
 
@@ -99,6 +101,7 @@ class SearchViewModelTest {
 
         assertTrue(viewModel.places.isEmpty())
         assertTrue(viewModel.vacations.isEmpty())
+        assertTrue(viewModel.users.isEmpty())
         assertNull(viewModel.errorMessage)
     }
 
@@ -131,7 +134,7 @@ class SearchViewModelTest {
         viewModel.search("Paris")
         advanceUntilIdle()
 
-        assertEquals("Limit Error", viewModel.errorMessage)
+        assertNull(viewModel.errorMessage)
         assertTrue(viewModel.places.isEmpty())
         assertEquals(1, viewModel.vacations.size)
     }
@@ -158,6 +161,7 @@ class SearchViewModelTest {
         assertEquals("No results found", viewModel.errorMessage)
         assertTrue(viewModel.places.isEmpty())
         assertTrue(viewModel.vacations.isEmpty())
+        assertTrue(viewModel.users.isEmpty())
     }
 
     @Test

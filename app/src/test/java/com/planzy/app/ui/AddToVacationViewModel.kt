@@ -32,7 +32,7 @@ class AddToVacationViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
 
-        coEvery { getUserVacationsUseCase() } returns Result.success(emptyList())
+        coEvery { getUserVacationsUseCase() } returns Result.success(Pair(emptyList(), emptyList()))
     }
 
     @After
@@ -55,7 +55,7 @@ class AddToVacationViewModelTest {
             mockk<Vacation>(relaxed = true),
             mockk<Vacation>(relaxed = true)
         )
-        coEvery { getUserVacationsUseCase() } returns Result.success(expectedVacations)
+        coEvery { getUserVacationsUseCase() } returns Result.success(Pair(expectedVacations, emptyList()))
 
         createViewModel()
 
@@ -120,8 +120,8 @@ class AddToVacationViewModelTest {
         val reloadedVacations = listOf(mockk<Vacation>(relaxed = true), mockk<Vacation>(relaxed = true))
 
         coEvery { getUserVacationsUseCase() } returnsMany listOf(
-            Result.success(initialVacations),
-            Result.success(reloadedVacations)
+            Result.success(Pair(initialVacations, emptyList())),
+            Result.success(Pair(reloadedVacations, emptyList()))
         )
 
         createViewModel()
@@ -171,7 +171,7 @@ class AddToVacationViewModelTest {
         val mockVacationPlace = mockk<VacationPlace>(relaxed = true)
 
         coEvery { addPlaceToVacationUseCase(vacationId, placeId) } returns Result.success(mockVacationPlace)
-        coEvery { getUserVacationsUseCase() } returns Result.success(emptyList())
+        coEvery { getUserVacationsUseCase() } returns Result.success(Pair(emptyList(), emptyList()))
 
         createViewModel()
 
@@ -194,8 +194,8 @@ class AddToVacationViewModelTest {
         )
 
         coEvery { getUserVacationsUseCase() } returnsMany listOf(
-            Result.success(initialVacations),
-            Result.success(updatedVacations)
+            Result.success(Pair(initialVacations, emptyList())),
+            Result.success(Pair(updatedVacations, emptyList()))
         )
 
         createViewModel()
@@ -217,7 +217,7 @@ class AddToVacationViewModelTest {
             every { id } returns "new"
         }
 
-        coEvery { getUserVacationsUseCase() } returns Result.success(listOf(existingVacation))
+        coEvery { getUserVacationsUseCase() } returns Result.success(Pair(listOf(existingVacation), emptyList()))
         coEvery { createVacationUseCase(any()) } returns Result.success(newVacation)
 
         createViewModel()
