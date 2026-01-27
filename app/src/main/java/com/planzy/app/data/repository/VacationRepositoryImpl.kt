@@ -4,6 +4,7 @@ import android.util.Log
 import com.planzy.app.R
 import com.planzy.app.data.model.*
 import com.planzy.app.data.remote.SupabaseClient
+import com.planzy.app.data.remote.SupabaseClient.currentUserIdFlow
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.model.VacationPlace
@@ -16,6 +17,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import com.planzy.app.domain.model.VacationComment
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Serializable
 data class UserInfo(
@@ -31,8 +35,11 @@ class VacationsRepositoryImpl(
 
     override suspend fun getUserVacations(): Result<List<Vacation>> {
         return try {
-            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             val vacationsResponse = supabaseClient.client.postgrest
                 .from("vacations")
@@ -111,8 +118,9 @@ class VacationsRepositoryImpl(
         return try {
             Log.d(TAG, "Adding place $placeId to vacation $vacationId")
 
-            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-            if (currentUserId == null) {
+            if ( withTimeoutOrNull(2000L) {
+                currentUserIdFlow.filterNotNull().first()
+                } == null ) {
                 Log.e(TAG, "User not logged in")
                 return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
             }
@@ -260,8 +268,11 @@ class VacationsRepositoryImpl(
 
     override suspend fun getVacationWithUser(vacationId: String): Result<Pair<Vacation, String>> {
         return try {
-            val currentUser = supabaseClient.client.auth.currentUserOrNull()
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             val vacationResponse = supabaseClient.client.postgrest
                 .from("vacations")
@@ -274,7 +285,7 @@ class VacationsRepositoryImpl(
 
             val vacationDTO = vacationResponse.decodeSingle<VacationDTO>()
 
-            val username = if (vacationDTO.userId == currentUser.id) {
+            val username = if (vacationDTO.userId == currentUserId) {
                 resourceProvider.getString(R.string.you)
             } else {
                 try {
@@ -350,8 +361,11 @@ class VacationsRepositoryImpl(
 
     override suspend fun removePlaceFromVacation(vacationId: String, placeId: String): Result<Unit> {
         return try {
-            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             val vacationCheck = supabaseClient.client.postgrest
                 .from("vacations")
@@ -447,12 +461,15 @@ class VacationsRepositoryImpl(
         text: String
     ): Result<VacationComment> {
         return try {
-            val currentUser = supabaseClient.client.auth.currentUserOrNull()
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             val commentToInsert = VacationCommentInsertDTO(
                 vacationId = vacationId,
-                userId = currentUser.id,
+                userId = currentUserId,
                 text = text.trim()
             )
 
@@ -469,7 +486,7 @@ class VacationsRepositoryImpl(
                     .from("users")
                     .select(Columns.raw("username")) {
                         filter {
-                            eq("auth_id", currentUser.id)
+                            eq("auth_id", currentUserId)
                         }
                         limit(1)
                     }
@@ -503,8 +520,11 @@ class VacationsRepositoryImpl(
         text: String
     ): Result<Unit> {
         return try {
-            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             supabaseClient.client.postgrest
                 .from("vacation_comments")
@@ -526,8 +546,11 @@ class VacationsRepositoryImpl(
 
     override suspend fun deleteVacationComment(commentId: String): Result<Unit> {
         return try {
-            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             supabaseClient.client.postgrest
                 .from("vacation_comments")
@@ -565,13 +588,16 @@ class VacationsRepositoryImpl(
 
     override suspend fun saveVacation(vacationId: String): Result<Unit> {
         return try {
-            val userId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             supabaseClient.client.from("saved_vacations")
                 .insert(
                     mapOf(
-                        "user_id" to userId,
+                        "user_id" to currentUserId,
                         "vacation_id" to vacationId
                     )
                 )
@@ -584,13 +610,16 @@ class VacationsRepositoryImpl(
 
     override suspend fun unsaveVacation(vacationId: String): Result<Unit> {
         return try {
-            val userId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             supabaseClient.client.from("saved_vacations")
                 .delete {
                     filter {
-                        eq("user_id", userId)
+                        eq("user_id", currentUserId)
                         eq("vacation_id", vacationId)
                     }
                 }
@@ -603,10 +632,11 @@ class VacationsRepositoryImpl(
 
     override suspend fun getSavedVacations(): Result<List<Vacation>> {
         return try {
-            val userId = supabaseClient.client.auth.currentUserOrNull()?.id
-            if (userId == null) {
-                return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
-            }
+            val userId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             val savedVacationDtos = supabaseClient.client.from("saved_vacations")
                 .select {
@@ -686,13 +716,16 @@ class VacationsRepositoryImpl(
 
     override suspend fun isVacationSaved(vacationId: String): Result<Boolean> {
         return try {
-            val userId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             val result = supabaseClient.client.from("saved_vacations")
                 .select {
                     filter {
-                        eq("user_id", userId)
+                        eq("user_id", currentUserId)
                         eq("vacation_id", vacationId)
                     }
                 }
@@ -706,8 +739,11 @@ class VacationsRepositoryImpl(
 
     override suspend fun deleteVacation(vacationId: String): Result<Unit> {
         return try {
-            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             val vacationCheck = supabaseClient.client.postgrest
                 .from("vacations")
@@ -800,8 +836,11 @@ class VacationsRepositoryImpl(
 
     override suspend fun getFollowedUsersVacations(): Result<List<Vacation>> {
         return try {
-            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             Log.d(TAG, "Getting vacations from followed users for user: $currentUserId")
 

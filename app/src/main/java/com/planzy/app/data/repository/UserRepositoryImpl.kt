@@ -5,11 +5,14 @@ import com.planzy.app.data.model.User
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.repository.UserRepository
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import java.io.File
 import com.planzy.app.R
+import com.planzy.app.data.remote.SupabaseClient.currentUserIdFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
 class UserRepositoryImpl(
     private val resourceProvider: ResourceProvider
@@ -81,14 +84,15 @@ class UserRepositoryImpl(
 
     override suspend fun uploadProfilePicture(imageFile: File): Result<String> {
         return try {
-            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
-            val authId = currentUser.id
+            Log.d(TAG, "Uploading profile picture for user: $currentUserId")
 
-            Log.d(TAG, "Uploading profile picture for user: $authId")
-
-            val fileName = "$authId/${System.currentTimeMillis()}.jpg"
+            val fileName = "$currentUserId/${System.currentTimeMillis()}.jpg"
 
             SupabaseClient.client.storage
                 .from(BUCKET_NAME)
@@ -109,19 +113,20 @@ class UserRepositoryImpl(
 
     override suspend fun updateProfilePictureUrl(url: String): Result<Unit> {
         return try {
-            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
-            val authId = currentUser.id
-
-            Log.d(TAG, "Updating profile picture URL for user: $authId")
+            Log.d(TAG, "Updating profile picture URL for user: $currentUserId")
 
             SupabaseClient.client.postgrest["users"]
                 .update({
                     set("profile_picture_url", url)
                 }) {
                     filter {
-                        eq("auth_id", authId)
+                        eq("auth_id", currentUserId)
                     }
                 }
 
@@ -136,12 +141,13 @@ class UserRepositoryImpl(
 
     override suspend fun deleteProfilePicture(pictureUrl: String): Result<Unit> {
         return try {
-            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
-            val authId = currentUser.id
-
-            Log.d(TAG, "Deleting profile picture for user: $authId")
+            Log.d(TAG, "Deleting profile picture for user: $currentUserId")
 
             val fileName = pictureUrl.substringAfter("$BUCKET_NAME/")
 
@@ -155,7 +161,7 @@ class UserRepositoryImpl(
                     set("profile_picture_url", nullUrl)
                 }) {
                     filter {
-                        eq("auth_id", authId)
+                        eq("auth_id", currentUserId)
                     }
                 }
 
@@ -170,8 +176,9 @@ class UserRepositoryImpl(
 
     override suspend fun searchUsers(query: String): Result<List<User>> {
         return try {
-            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
-            val currentUserId = currentUser?.id
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow.filterNotNull().first()
+            }
 
             val response = SupabaseClient.client.postgrest["users"]
                 .select {

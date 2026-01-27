@@ -6,6 +6,10 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.ktor.client.engine.android.Android
 import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 object SupabaseClient {
 
@@ -14,6 +18,17 @@ object SupabaseClient {
 
     lateinit var client: SupabaseClient
         private set
+
+    val sessionFlow: Flow<SessionStatus>
+        get() = client.auth.sessionStatus
+
+    val currentUserIdFlow: Flow<String?>
+        get() = sessionFlow.map { status ->
+            when (status) {
+                is SessionStatus.Authenticated -> status.session.user?.id
+                else -> null
+            }
+        }
 
     private var isInitialized = false
 

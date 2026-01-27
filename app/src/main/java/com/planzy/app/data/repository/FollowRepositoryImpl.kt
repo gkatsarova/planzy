@@ -5,11 +5,14 @@ import com.planzy.app.R
 import com.planzy.app.data.model.Follow
 import com.planzy.app.data.model.User
 import com.planzy.app.data.remote.SupabaseClient
+import com.planzy.app.data.remote.SupabaseClient.currentUserIdFlow
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.FollowStats
 import com.planzy.app.domain.repository.FollowRepository
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
 class FollowRepositoryImpl(
     private val resourceProvider: ResourceProvider
@@ -18,10 +21,13 @@ class FollowRepositoryImpl(
 
     override suspend fun followUser(followingId: String): Result<Unit> {
         return try {
-            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
-            val followerId = currentUser.id
+            val followerId = currentUserId
 
             Log.d(TAG, "Following user: $followingId by user: $followerId")
 
@@ -43,10 +49,13 @@ class FollowRepositoryImpl(
 
     override suspend fun unfollowUser(followingId: String): Result<Unit> {
         return try {
-            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
-            val followerId = currentUser.id
+            val followerId = currentUserId
 
             Log.d(TAG, "Unfollowing user: $followingId by user: $followerId")
 
@@ -68,8 +77,11 @@ class FollowRepositoryImpl(
 
     override suspend fun getFollowStats(userId: String): Result<FollowStats> {
         return try {
-            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
-            val currentUserId = currentUser?.id
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             Log.d(TAG, "Getting follow stats for user: $userId, current user: $currentUserId")
 
@@ -90,7 +102,7 @@ class FollowRepositoryImpl(
             Log.d(TAG, "User found with followers: $followersCount, following: $followingCount")
 
             var isFollowing = false
-            if (currentUserId != null && currentUserId.isNotEmpty() && currentUserId != "null") {
+            if (currentUserId.isNotEmpty() && currentUserId != "null") {
                 try {
                     val isFollowingResponse = SupabaseClient.client.postgrest["follows"]
                         .select {
@@ -127,10 +139,11 @@ class FollowRepositoryImpl(
 
     override suspend fun isFollowing(userId: String): Result<Boolean> {
         return try {
-            val currentUser = SupabaseClient.client.auth.currentUserOrNull()
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
-
-            val currentUserId = currentUser.id
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             val response = SupabaseClient.client.postgrest["follows"]
                 .select {

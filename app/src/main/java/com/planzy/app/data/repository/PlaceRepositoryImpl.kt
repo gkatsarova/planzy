@@ -8,16 +8,19 @@ import com.planzy.app.data.model.UserCommentStatsDTO
 import com.planzy.app.data.model.toDTO
 import com.planzy.app.data.model.toDomainModel
 import com.planzy.app.data.remote.SupabaseClient
+import com.planzy.app.data.remote.SupabaseClient.currentUserIdFlow
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.PlaceReview
 import com.planzy.app.domain.model.UserComment
 import com.planzy.app.domain.repository.PlacesRepository
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerializationException
 
 class PlacesRepositoryImpl(
@@ -118,7 +121,9 @@ class PlacesRepositoryImpl(
 
             val comments = response.decodeList<UserCommentDTO>().map { dto ->
                 dto.toDomainModel(
-                    currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
+                    currentUserId = withTimeoutOrNull(2000L) {
+                    currentUserIdFlow.filterNotNull().first()
+                    }
                 )
             }
 
@@ -138,12 +143,15 @@ class PlacesRepositoryImpl(
         rating: Int
     ): Result<UserComment> {
         return try {
-            val currentUser = supabaseClient.client.auth.currentUserOrNull()
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             val commentToInsert = UserCommentInsertDTO(
                 placeId = placeId,
-                userId = currentUser.id,
+                userId = currentUserId,
                 text = text.trim(),
                 rating = rating
             )
@@ -155,7 +163,7 @@ class PlacesRepositoryImpl(
                 }
 
             val comment = response.decodeSingle<UserCommentDTO>().toDomainModel(
-                currentUserId = currentUser.id
+                currentUserId = currentUserId
             )
 
             Result.success(comment)
@@ -171,8 +179,11 @@ class PlacesRepositoryImpl(
         rating: Int
     ): Result<Unit> {
         return try {
-            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             supabaseClient.client.postgrest
                 .from("user_comments")
@@ -195,8 +206,11 @@ class PlacesRepositoryImpl(
 
     override suspend fun deleteUserComment(commentId: String): Result<Unit> {
         return try {
-            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            val currentUserId = withTimeoutOrNull(1500L) {
+                currentUserIdFlow
+                    .filterNotNull()
+                    .first()
+            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             supabaseClient.client.postgrest
                 .from("user_comments")

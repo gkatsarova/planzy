@@ -10,8 +10,10 @@ import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.repository.VacationPlannerRepository
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 
 class VacationPlannerRepositoryImpl(
@@ -35,11 +37,9 @@ class VacationPlannerRepositoryImpl(
             Log.d(TAG, "Parsed destination: ${intent.destination}")
             Log.d(TAG, "Duration: ${intent.durationDays} days")
 
-            val userId = supabaseClient.client.auth.currentUserOrNull()?.id
-            if (userId == null) {
-                Log.e(TAG, "User not logged in")
-                return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.error_user_not_logged_in)))
-            }
+            val userId = withTimeoutOrNull(2000L) {
+                SupabaseClient.currentUserIdFlow.filterNotNull().first()
+            } ?: return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
             Log.d(TAG, "Searching for location: ${intent.destination}")
             val search = tripadvisorApi.searchLocations(intent.destination).getOrNull()
