@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
@@ -20,14 +21,25 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.planzy.app.R
+import com.planzy.app.data.model.User
 import com.planzy.app.data.util.DateFormatter
 import com.planzy.app.domain.model.Vacation
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.theme.ErrorColor
 import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.MediumBluePurple
@@ -39,8 +51,20 @@ fun VacationCard(
     onCardClick: () -> Unit,
     modifier: Modifier = Modifier,
     showDeleteButton: Boolean = false,
-    onDeleteClick: (() -> Unit)? = null
+    onDeleteClick: (() -> Unit)? = null,
+    getUserByAuthIdUseCase: GetUserByAuthIdUseCase? = null
 ) {
+    var user by remember { mutableStateOf<User?>(null) }
+    var isLoadingUser by remember { mutableStateOf(false) }
+
+    LaunchedEffect(vacation.userId, getUserByAuthIdUseCase) {
+        if (user == null && getUserByAuthIdUseCase != null) {
+            isLoadingUser = true
+            user = getUserByAuthIdUseCase(vacation.userId).getOrNull()
+            isLoadingUser = false
+        }
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -50,22 +74,86 @@ fun VacationCard(
             containerColor = MediumBluePurple
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    if (isLoadingUser) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.user_profile_pic_placeholder),
+                            contentDescription = stringResource(id = R.string.profile_picture),
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape),
+                            tint = Lavender
+                        )
+                    } else if (!user?.profilePictureUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = user?.profilePictureUrl,
+                            contentDescription = stringResource(id = R.string.profile_picture),
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(id = R.drawable.user_profile_pic_placeholder),
+                            contentDescription = stringResource(id = R.string.profile_picture),
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .padding(4.dp),
+                            tint = Lavender
+                        )
+                    }
+
+                    Text(
+                        text = user?.username ?: stringResource(id = R.string.unknown_user),
+                        fontFamily = Raleway,
+                        fontSize = 14.sp,
+                        color = Lavender,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (showDeleteButton && onDeleteClick != null) {
+                    IconButton(
+                        onClick = { onDeleteClick() },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(id = R.string.delete_vacation),
+                            tint = ErrorColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
+
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 Text(
                     text = vacation.title,
                     fontFamily = Raleway,
                     fontSize = 18.sp,
-                    color = Lavender
+                    color = Lavender,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Row(
@@ -119,20 +207,6 @@ fun VacationCard(
                         fontFamily = Raleway,
                         fontSize = 12.sp,
                         color = Lavender
-                    )
-                }
-            }
-
-            if (showDeleteButton && onDeleteClick != null) {
-                IconButton(
-                    onClick = { onDeleteClick() },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = stringResource(id = R.string.delete_vacation),
-                        tint = ErrorColor,
-                        modifier = Modifier.size(24.dp)
                     )
                 }
             }

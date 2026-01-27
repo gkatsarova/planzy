@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.SearchResultsOverlay
 import com.planzy.app.ui.theme.Raleway
@@ -81,6 +82,7 @@ fun ProfileDetailsScreen(
     val getFollowingUseCase = remember { GetFollowingUseCase(followRepository) }
     val followUserUseCase = remember { FollowUserUseCase(followRepository) }
     val unfollowUserUseCase = remember { UnfollowUserUseCase(followRepository) }
+    val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
 
     val viewModel: ProfileDetailsViewModel = viewModel(
         factory = remember {
@@ -290,7 +292,8 @@ fun ProfileDetailsScreen(
                                                 VacationDetails.createRoute(vacation.id)
                                             )
                                         },
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth(),
+                                        getUserByAuthIdUseCase = getUserByAuthIdUseCase
                                     )
                                 }
                             }

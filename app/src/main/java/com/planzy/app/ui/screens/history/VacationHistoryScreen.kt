@@ -53,6 +53,8 @@ import com.planzy.app.ui.theme.ErrorColor
 import com.planzy.app.ui.theme.Raleway
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.planzy.app.data.repository.UserRepositoryImpl
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.screens.components.SearchResultsOverlay
 
 @Composable
@@ -67,8 +69,10 @@ fun VacationHistoryScreen(
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context) }
     val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
+    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
     val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository, resourceProvider) }
     val deleteVacationUseCase = remember { DeleteVacationUseCase(vacationsRepository) }
+    val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
 
     val viewModel: VacationHistoryViewModel = viewModel(
         factory = VacationHistoryViewModel.Factory(
@@ -182,7 +186,8 @@ fun VacationHistoryScreen(
                                                 showDeleteButton = true,
                                                 onDeleteClick = {
                                                     vacationToDelete = vacation
-                                                }
+                                                },
+                                                getUserByAuthIdUseCase = getUserByAuthIdUseCase
                                             )
                                         }
                                     }
@@ -216,7 +221,8 @@ fun VacationHistoryScreen(
                                                     navController.navigate(
                                                         VacationDetails.createRoute(vacation.id)
                                                     )
-                                                }
+                                                },
+                                                getUserByAuthIdUseCase = getUserByAuthIdUseCase
                                             )
                                         }
                                     }

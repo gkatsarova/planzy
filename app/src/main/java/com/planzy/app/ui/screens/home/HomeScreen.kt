@@ -24,6 +24,8 @@ import com.planzy.app.R
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.data.remote.SupabaseClient
+import com.planzy.app.data.repository.UserRepositoryImpl
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.vacation.GetFollowedUsersVacationsUseCase
 import com.planzy.app.ui.navigation.VacationDetails
 import com.planzy.app.ui.screens.SearchViewModel
@@ -42,7 +44,9 @@ fun HomeScreen(
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val resourceProvider = remember { ResourceProviderImpl(context) }
     val vacationsRepository = remember { VacationsRepositoryImpl(supabaseClient = SupabaseClient, resourceProvider = resourceProvider) }
+    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
     val getFollowedUsersVacationsUseCase = remember { GetFollowedUsersVacationsUseCase(vacationsRepository) }
+    val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
 
     val viewModel: HomeViewModel = viewModel(
         factory = HomeViewModel.Factory(
@@ -141,7 +145,8 @@ fun HomeScreen(
                                             VacationDetails.createRoute(vacation.id)
                                         )
                                     },
-                                    showDeleteButton = false
+                                    showDeleteButton = false,
+                                    getUserByAuthIdUseCase = getUserByAuthIdUseCase
                                 )
                             }
                         }
