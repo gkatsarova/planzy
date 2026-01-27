@@ -202,4 +202,5 @@
     <string name="error_loading_followers">Error loading followers</string>
     <string name="error_loading_following">Error loading following</string>
     <string name="error_loading_follow_stats">Error loading follow stats</string>
+    <string name="follow_users_to_see_their_vacations_here">"Follow users to see their vacations here"</string>
 </resources>

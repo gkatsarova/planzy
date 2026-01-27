@@ -797,4 +797,87 @@ class VacationsRepositoryImpl(
             Result.failure(Exception(resourceProvider.getString(R.string.error_loading_vacations)))
         }
     }
+
+    override suspend fun getFollowedUsersVacations(): Result<List<Vacation>> {
+        return try {
+            val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
+                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+
+            Log.d(TAG, "Getting vacations from followed users for user: $currentUserId")
+
+            val followsResponse = supabaseClient.client.postgrest
+                .from("follows")
+                .select(Columns.raw("following_id")) {
+                    filter {
+                        eq("follower_id", currentUserId)
+                    }
+                }
+
+            val follows = followsResponse.decodeList<FollowingIdDTO>()
+            val followedUserIds = follows.map { it.followingId }
+
+            Log.d(TAG, "User follows ${followedUserIds.size} users")
+
+            if (followedUserIds.isEmpty()) {
+                return Result.success(emptyList())
+            }
+
+            val allVacations = mutableListOf<Vacation>()
+
+            for (userId in followedUserIds) {
+                try {
+                    val vacationsResponse = supabaseClient.client.postgrest
+                        .from("vacations")
+                        .select {
+                            filter {
+                                eq("user_id", userId)
+                            }
+                            order("created_at", order = Order.DESCENDING)
+                        }
+
+                    val vacationDTOs = vacationsResponse.decodeList<VacationDTO>()
+
+                    val vacationsWithCount = vacationDTOs.map { vacationDTO ->
+                        val placesCount = try {
+                            val placesResponse = supabaseClient.client.postgrest
+                                .from("vacation_places")
+                                .select(Columns.raw("id")) {
+                                    filter {
+                                        eq("vacation_id", vacationDTO.id)
+                                    }
+                                }
+                            placesResponse.decodeList<VacationIdDTO>().size
+                        } catch (_: Exception) {
+                            0
+                        }
+
+                        val commentsCount = getVacationCommentsCount(vacationDTO.id)
+                            .getOrDefault(0)
+
+                        Vacation(
+                            id = vacationDTO.id,
+                            userId = vacationDTO.userId,
+                            title = vacationDTO.title,
+                            createdAt = vacationDTO.createdAt,
+                            placesCount = placesCount,
+                            commentsCount = commentsCount
+                        )
+                    }
+
+                    allVacations.addAll(vacationsWithCount)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error getting vacations for user $userId: ${e.message}")
+                }
+            }
+
+            val sortedVacations = allVacations.sortedByDescending { it.createdAt }
+
+            Log.d(TAG, "Found ${sortedVacations.size} total vacations from followed users")
+            Result.success(sortedVacations)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting followed users vacations: ${e.message}", e)
+            Result.failure(Exception(resourceProvider.getString(R.string.error_loading_vacations)))
+        }
+    }
 }

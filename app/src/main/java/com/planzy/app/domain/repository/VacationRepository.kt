@@ -69,4 +69,6 @@ interface VacationsRepository {
     suspend fun getUserVacationsById(
         userId: String
     ): Result<List<Vacation>>
+
+    suspend fun getFollowedUsersVacations(): Result<List<Vacation>>
 }
