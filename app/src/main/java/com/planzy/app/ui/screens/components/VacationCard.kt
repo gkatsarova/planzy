@@ -34,12 +34,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.planzy.app.R
 import com.planzy.app.data.model.User
 import com.planzy.app.data.util.DateFormatter
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
+import com.planzy.app.ui.navigation.ProfileDetails
 import com.planzy.app.ui.theme.ErrorColor
 import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.MediumBluePurple
@@ -50,9 +52,10 @@ fun VacationCard(
     vacation: Vacation,
     onCardClick: () -> Unit,
     modifier: Modifier = Modifier,
-    showDeleteButton: Boolean = false,
+    isOwner: Boolean = false,
     onDeleteClick: (() -> Unit)? = null,
-    getUserByAuthIdUseCase: GetUserByAuthIdUseCase? = null
+    getUserByAuthIdUseCase: GetUserByAuthIdUseCase? = null,
+    navController: NavController
 ) {
     var user by remember { mutableStateOf<User?>(null) }
     var isLoadingUser by remember { mutableStateOf(false) }
@@ -125,11 +128,20 @@ fun VacationCard(
                         fontFamily = Raleway,
                         fontSize = 14.sp,
                         color = Lavender,
-                        modifier = Modifier.weight(1f)
+                        modifier = if(!isOwner) {
+                            Modifier
+                                .weight(1f)
+                                .clickable {
+                                    user?.username?.let { username ->
+                                        navController.navigate(ProfileDetails.createRoute(username))
+                                    }
+                                }
+                        } else
+                        Modifier.weight(1f)
                     )
                 }
 
-                if (showDeleteButton && onDeleteClick != null) {
+                if (isOwner && onDeleteClick != null) {
                     IconButton(
                         onClick = { onDeleteClick() },
                         modifier = Modifier.size(40.dp)

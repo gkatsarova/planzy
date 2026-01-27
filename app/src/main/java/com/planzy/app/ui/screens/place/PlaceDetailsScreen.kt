@@ -22,9 +22,11 @@ import com.planzy.app.R
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.PlacesRepositoryImpl
+import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.place.*
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.vacation.*
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.*
@@ -54,6 +56,8 @@ fun PlaceDetailsScreen(
         VacationsRepositoryImpl(SupabaseClient, resourceProvider)
     }
 
+    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
+
     val getPlaceDetailsUseCase = remember { GetPlaceDetailsUseCase(placesRepository) }
     val getPlaceReviewsUseCase = remember { GetPlaceReviewsUseCase(placesRepository) }
     val getUserCommentsUseCase = remember { GetUserCommentsUseCase(placesRepository) }
@@ -64,6 +68,8 @@ fun PlaceDetailsScreen(
     val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository, resourceProvider) }
     val createVacationUseCase = remember { CreateVacationUseCase(vacationsRepository) }
     val addPlaceToVacationUseCase = remember { AddPlaceToVacationUseCase(vacationsRepository, placesRepository) }
+
+    val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
 
     var isEditingAnyComment by remember { mutableStateOf(false) }
     var showAddToVacationDialog by remember { mutableStateOf(false) }
@@ -191,7 +197,9 @@ fun PlaceDetailsScreen(
                                     },
                                     onEditStart = { isEditingAnyComment = true },
                                     onEditCancel = { isEditingAnyComment = false },
-                                    modifier = Modifier.heightIn(max = screenHeight * 0.35f)
+                                    modifier = Modifier.heightIn(max = screenHeight * 0.35f),
+                                    navController = navController,
+                                    getUserByAuthIdUseCase = getUserByAuthIdUseCase
                                 )
                             }
 

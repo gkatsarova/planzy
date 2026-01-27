@@ -1,8 +1,8 @@
 package com.planzy.app.ui.screens.components
 
-import android.os.Build
-import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -10,18 +10,25 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.planzy.app.R
+import com.planzy.app.data.model.User
 import com.planzy.app.data.util.DateFormatter
 import com.planzy.app.domain.model.UserComment
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
+import com.planzy.app.ui.navigation.ProfileDetails
 import com.planzy.app.ui.theme.*
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun UserCommentCard(
     comment: UserComment,
@@ -29,10 +36,22 @@ fun UserCommentCard(
     onEdit: ((commentId: String, text: String, rating: Int) -> Unit),
     onDelete: ((commentId: String) -> Unit),
     onEditStart: () -> Unit = {},
-    onEditCancel: () -> Unit = {}
+    onEditCancel: () -> Unit = {},
+    navController: NavController,
+    getUserByAuthIdUseCase: GetUserByAuthIdUseCase
 ) {
     var isEditing by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    var user by remember { mutableStateOf<User?>(null) }
+    var isLoadingUser by remember { mutableStateOf(false) }
+
+    LaunchedEffect(comment.userId, getUserByAuthIdUseCase) {
+        isLoadingUser = true
+        user = getUserByAuthIdUseCase(comment.userId).getOrNull()
+        isLoadingUser = false
+
+    }
 
     if (isEditing) {
         Card(
@@ -87,12 +106,52 @@ fun UserCommentCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
                 ) {
+                    if (isLoadingUser) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.user_profile_pic_placeholder),
+                            contentDescription = stringResource(id = R.string.profile_picture),
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape),
+                            tint = Lavender
+                        )
+                    } else if (!user?.profilePictureUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = user?.profilePictureUrl,
+                            contentDescription = stringResource(id = R.string.profile_picture),
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(id = R.drawable.user_profile_pic_placeholder),
+                            contentDescription = stringResource(id = R.string.profile_picture),
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .padding(4.dp),
+                            tint = Lavender
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
                     Text(
                         text = comment.userName,
                         fontFamily = Raleway,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Lavender
+                        color = Lavender,
+                        modifier = if (!comment.isOwner)
+                            Modifier
+                                .weight(1f)
+                                .clickable {
+                                comment.userName.let { username ->
+                                    navController.navigate(ProfileDetails.createRoute(username))
+                                }
+                            }
+                        else Modifier.weight(1f)
                     )
 
                     Row(

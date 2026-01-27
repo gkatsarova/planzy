@@ -134,7 +134,8 @@ fun SearchResultsOverlay(
                                             searchViewModel.clearSearch()
                                             navController.navigate(VacationDetails.createRoute(vacation.id))
                                         },
-                                        getUserByAuthIdUseCase = getUserByAuthIdUseCase
+                                        getUserByAuthIdUseCase = getUserByAuthIdUseCase,
+                                        navController = navController
                                     )
                                 }
                             }

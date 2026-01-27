@@ -183,11 +183,12 @@ fun VacationHistoryScreen(
                                                         VacationDetails.createRoute(vacation.id)
                                                     )
                                                 },
-                                                showDeleteButton = true,
+                                                isOwner = true,
                                                 onDeleteClick = {
                                                     vacationToDelete = vacation
                                                 },
-                                                getUserByAuthIdUseCase = getUserByAuthIdUseCase
+                                                getUserByAuthIdUseCase = getUserByAuthIdUseCase,
+                                                navController = navController
                                             )
                                         }
                                     }
@@ -222,7 +223,8 @@ fun VacationHistoryScreen(
                                                         VacationDetails.createRoute(vacation.id)
                                                     )
                                                 },
-                                                getUserByAuthIdUseCase = getUserByAuthIdUseCase
+                                                getUserByAuthIdUseCase = getUserByAuthIdUseCase,
+                                                navController = navController
                                             )
                                         }
                                     }

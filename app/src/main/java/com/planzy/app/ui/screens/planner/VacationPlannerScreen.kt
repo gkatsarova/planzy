@@ -2,7 +2,6 @@ package com.planzy.app.ui.screens.planner
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +15,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -25,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.planzy.app.R
+import com.planzy.app.data.repository.UserRepositoryImpl
+import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.navigation.VacationDetails
 import com.planzy.app.ui.screens.components.*
@@ -48,17 +51,23 @@ fun VacationPlannerScreen(
 
     val listState = rememberLazyListState()
 
+    val resourceProvider = remember { ResourceProviderImpl(context) }
+    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
+    val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
+
     LaunchedEffect(plannerViewModel.messages.size, plannerViewModel.createdVacationId) {
         if (plannerViewModel.messages.isNotEmpty()) {
             listState.animateScrollToItem(listState.layoutInfo.totalItemsCount)
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(1f)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        SearchResultsOverlay(
+            searchViewModel = searchViewModel,
+            navController = navController
         ) {
             LazyColumn(
                 state = listState,
@@ -86,7 +95,8 @@ fun VacationPlannerScreen(
                                 isOwner = true,
                                 getUserRating = { Pair(null, 0) },
                                 showMetadata = false,
-                                modifier = Modifier.padding(top = 8.dp)
+                                modifier = Modifier.padding(top = 8.dp),
+                                navController = navController
                             )
                         }
                     }
@@ -130,7 +140,9 @@ fun VacationPlannerScreen(
                                         navController.navigate(
                                             VacationDetails.createRoute(v.id)
                                         )
-                                    }
+                                    },
+                                    getUserByAuthIdUseCase = getUserByAuthIdUseCase,
+                                    navController = navController
                                 )
                             }
                         }
@@ -164,6 +176,7 @@ fun VacationPlannerScreen(
                 color = Lavender,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
                     .imePadding()
             ) {
                 ChatInputBar(

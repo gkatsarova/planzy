@@ -293,7 +293,8 @@ fun ProfileDetailsScreen(
                                             )
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        getUserByAuthIdUseCase = getUserByAuthIdUseCase
+                                        getUserByAuthIdUseCase = getUserByAuthIdUseCase,
+                                        navController = navController
                                     )
                                 }
                             }

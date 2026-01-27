@@ -1,5 +1,6 @@
 package com.planzy.app.ui.screens.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -12,9 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.planzy.app.R
 import com.planzy.app.data.util.DateFormatter
 import com.planzy.app.domain.model.Place
+import com.planzy.app.ui.navigation.ProfileDetails
 import com.planzy.app.ui.theme.AmaranthPurple
 import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.Raleway
@@ -32,7 +35,8 @@ fun VacationDetailsCard(
     onSaveToggle: (() -> Unit)? = null,
     isSavingInProgress: Boolean = false,
     getUserRating: (String) -> Pair<Double?, Int>,
-    showMetadata: Boolean = true
+    showMetadata: Boolean = true,
+    navController: NavController
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -63,7 +67,15 @@ fun VacationDetailsCard(
                                 text = "Created by $creatorUsername",
                                 fontFamily = Raleway,
                                 fontSize = 14.sp,
-                                color = Lavender
+                                color = Lavender,
+                                modifier = if (!isOwner)
+                                    Modifier
+                                        .clickable {
+                                            creatorUsername.let { username ->
+                                                navController.navigate(ProfileDetails.createRoute(username))
+                                            }
+                                        }
+                                else Modifier
                             )
                             Text(
                                 text = DateFormatter.formatToShort(createdAt),

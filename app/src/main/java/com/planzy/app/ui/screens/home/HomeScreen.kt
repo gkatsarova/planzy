@@ -145,8 +145,9 @@ fun HomeScreen(
                                             VacationDetails.createRoute(vacation.id)
                                         )
                                     },
-                                    showDeleteButton = false,
-                                    getUserByAuthIdUseCase = getUserByAuthIdUseCase
+                                    isOwner = false,
+                                    getUserByAuthIdUseCase = getUserByAuthIdUseCase,
+                                    navController = navController
                                 )
                             }
                         }

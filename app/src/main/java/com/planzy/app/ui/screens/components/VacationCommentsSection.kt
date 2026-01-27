@@ -1,7 +1,5 @@
 package com.planzy.app.ui.screens.components
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,11 +10,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.planzy.app.R
 import com.planzy.app.domain.model.VacationComment
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.theme.*
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun VacationCommentsSection(
     comments: List<VacationComment>,
@@ -27,7 +26,9 @@ fun VacationCommentsSection(
     onDeleteComment: (commentId: String) -> Unit,
     onEditStart: () -> Unit,
     onEditCancel: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    getUserByAuthIdUseCase: GetUserByAuthIdUseCase,
+    navController: NavController
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -77,7 +78,9 @@ fun VacationCommentsSection(
                             onEdit = onEditComment,
                             onDelete = onDeleteComment,
                             onEditStart = onEditStart,
-                            onEditCancel = onEditCancel
+                            onEditCancel = onEditCancel,
+                            getUserByAuthIdUseCase = getUserByAuthIdUseCase,
+                            navController = navController
                         )
                     }
                 }

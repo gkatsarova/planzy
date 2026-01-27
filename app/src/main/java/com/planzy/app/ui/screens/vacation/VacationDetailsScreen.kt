@@ -34,8 +34,10 @@ import com.planzy.app.R
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.PlacesRepositoryImpl
+import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.vacation.AddVacationCommentUseCase
 import com.planzy.app.domain.usecase.vacation.DeleteVacationCommentUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationCommentsUseCase
@@ -72,6 +74,7 @@ fun VacationDetailsScreen(
 
     val placesRepository = remember { PlacesRepositoryImpl(tripadvisorApi, SupabaseClient, resourceProvider) }
     val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
+    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
     val getVacationDetailsUseCase = remember { GetVacationDetailsUseCase(vacationsRepository, placesRepository) }
     val removePlaceFromVacationUseCase = remember { RemovePlaceFromVacationUseCase(vacationsRepository) }
     val getVacationCommentsUseCase = remember { GetVacationCommentsUseCase(vacationsRepository) }
@@ -81,6 +84,7 @@ fun VacationDetailsScreen(
     val saveVacationUseCase = remember { SaveVacationUseCase(vacationsRepository) }
     val unsaveVacationUseCase = remember { UnsaveVacationUseCase(vacationsRepository) }
     val isVacationSavedUseCase = remember { IsVacationSavedUseCase(vacationsRepository) }
+    val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
 
     var isEditingAnyComment by remember { mutableStateOf(false) }
 
@@ -181,7 +185,8 @@ fun VacationDetailsScreen(
                                     isSaved = viewModel.isSaved,
                                     onSaveToggle = { viewModel.toggleSaveVacation() },
                                     isSavingInProgress = viewModel.isSavingInProgress,
-                                    getUserRating = { placeId -> viewModel.getUserRating(placeId) }
+                                    getUserRating = { placeId -> viewModel.getUserRating(placeId) },
+                                    navController = navController
                                 )
                             }
 
@@ -216,7 +221,9 @@ fun VacationDetailsScreen(
                                     },
                                     onEditStart = { isEditingAnyComment = true },
                                     onEditCancel = { isEditingAnyComment = false },
-                                    modifier = Modifier.heightIn(max = screenHeight * 0.35f)
+                                    modifier = Modifier.heightIn(max = screenHeight * 0.35f),
+                                    navController = navController,
+                                    getUserByAuthIdUseCase = getUserByAuthIdUseCase
                                 )
                             }
 
