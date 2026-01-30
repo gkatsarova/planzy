@@ -91,7 +91,8 @@ class ProfileViewModel(
     var followingError by mutableStateOf<String?>(null)
         private set
 
-    private var currentUserAuthId by mutableStateOf("")
+    var currentUserAuthId by mutableStateOf("")
+        private set
 
     init {
         loadUserProfile()

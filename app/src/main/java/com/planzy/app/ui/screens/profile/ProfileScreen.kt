@@ -140,6 +140,7 @@ fun ProfileScreen(
             isLoading = viewModel.isLoadingFollowers,
             errorMessage = viewModel.followersError,
             navController = navController,
+            currentAuthId = viewModel.currentUserAuthId,
             onDismiss = { showFollowersDialog = false }
         )
     }
@@ -151,6 +152,7 @@ fun ProfileScreen(
             isLoading = viewModel.isLoadingFollowing,
             errorMessage = viewModel.followingError,
             navController = navController,
+            currentAuthId = viewModel.currentUserAuthId,
             onDismiss = { showFollowingDialog = false }
         )
     }
@@ -254,7 +256,6 @@ fun ProfileScreen(
                             .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Profile Picture
                         ProfilePictureSection(
                             profilePictureUrl = viewModel.profilePictureUrl,
                             isUploading = viewModel.isUploadingPicture,

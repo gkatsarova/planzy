@@ -44,7 +44,8 @@ fun FollowListDialog(
     isLoading: Boolean,
     errorMessage: String?,
     navController: NavController,
-    onDismiss: () -> Unit
+    currentAuthId: String?,
+    onDismiss: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -134,7 +135,10 @@ fun FollowListDialog(
                                 UserCard(
                                     user = user,
                                     onCardClick = {
-                                        navController.navigate(ProfileDetails.createRoute(user.username))
+                                        if (user.auth_id != currentAuthId) {
+                                            navController.navigate(ProfileDetails.createRoute(user.username))
+                                            onDismiss()
+                                        }
                                     },
                                 )
                             }

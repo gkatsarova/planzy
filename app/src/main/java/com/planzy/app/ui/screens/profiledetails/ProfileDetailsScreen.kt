@@ -58,6 +58,8 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.planzy.app.data.repository.AuthRepositoryImpl
+import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.SearchResultsOverlay
@@ -74,6 +76,7 @@ fun ProfileDetailsScreen(
     val userRepository = remember { UserRepositoryImpl(resourceProvider) }
     val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
     val followRepository = remember { FollowRepositoryImpl(resourceProvider) }
+    val authRepository = remember { AuthRepositoryImpl(resourceProvider) }
 
     val getUserByUsernameUseCase = remember { GetUserByUsernameUseCase(userRepository) }
     val getUserVacationsByIdUseCase = remember { GetUserVacationsByIdUseCase(vacationsRepository) }
@@ -83,6 +86,7 @@ fun ProfileDetailsScreen(
     val followUserUseCase = remember { FollowUserUseCase(followRepository) }
     val unfollowUserUseCase = remember { UnfollowUserUseCase(followRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
+    val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
 
     val viewModel: ProfileDetailsViewModel = viewModel(
         factory = remember {
@@ -94,6 +98,7 @@ fun ProfileDetailsScreen(
                 getFollowingUseCase = getFollowingUseCase,
                 followUserUseCase = followUserUseCase,
                 unfollowUserUseCase = unfollowUserUseCase,
+                getCurrentUserUseCase = getCurrentUserUseCase,
                 resourceProvider = resourceProvider
             )
         }
@@ -128,6 +133,7 @@ fun ProfileDetailsScreen(
             isLoading = viewModel.isLoadingFollowers,
             errorMessage = viewModel.followersError,
             navController = navController,
+            currentAuthId = viewModel.loggedInUserId,
             onDismiss = { showFollowersDialog = false }
         )
     }
@@ -139,6 +145,7 @@ fun ProfileDetailsScreen(
             isLoading = viewModel.isLoadingFollowing,
             errorMessage = viewModel.followingError,
             navController = navController,
+            currentAuthId = viewModel.loggedInUserId,
             onDismiss = { showFollowingDialog = false }
         )
     }

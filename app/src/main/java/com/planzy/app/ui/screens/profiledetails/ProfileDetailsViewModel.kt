@@ -11,6 +11,7 @@ import com.planzy.app.data.model.User
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.FollowStats
 import com.planzy.app.domain.model.Vacation
+import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.follow.FollowUserUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
@@ -34,6 +35,7 @@ class ProfileDetailsViewModel(
     private val getFollowingUseCase: GetFollowingUseCase,
     private val followUserUseCase: FollowUserUseCase,
     private val unfollowUserUseCase: UnfollowUserUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -78,6 +80,19 @@ class ProfileDetailsViewModel(
 
     var followingError by mutableStateOf<String?>(null)
         private set
+
+    var loggedInUserId by mutableStateOf<String?>(null)
+        private set
+
+    init {
+        fetchLoggedInUser()
+    }
+
+    private fun fetchLoggedInUser() {
+        viewModelScope.launch {
+            loggedInUserId = getCurrentUserUseCase()?.id
+        }
+    }
 
     fun loadUserByUsername(username: String) {
         viewModelScope.launch {
@@ -223,6 +238,7 @@ class ProfileDetailsViewModel(
         private val getFollowingUseCase: GetFollowingUseCase,
         private val followUserUseCase: FollowUserUseCase,
         private val unfollowUserUseCase: UnfollowUserUseCase,
+        private val getCurrentUserUseCase: GetCurrentUserUseCase,
         private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -236,6 +252,7 @@ class ProfileDetailsViewModel(
                     getFollowingUseCase,
                     followUserUseCase,
                     unfollowUserUseCase,
+                    getCurrentUserUseCase,
                     resourceProvider
                 ) as T
             }
