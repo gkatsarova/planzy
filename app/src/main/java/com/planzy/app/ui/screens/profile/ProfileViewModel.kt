@@ -18,10 +18,8 @@ import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
-import com.planzy.app.domain.usecase.user.DeleteProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
-import com.planzy.app.domain.usecase.user.UpdateProfilePictureUseCase
-import com.planzy.app.domain.usecase.user.UploadProfilePictureUseCase
+import com.planzy.app.domain.usecase.user.ManageProfilePictureUseCase
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
 import java.io.File
@@ -31,9 +29,7 @@ class ProfileViewModel(
     private val getUserByAuthIdUseCase: GetUserByAuthIdUseCase,
     private val signOutUseCase: SignOutUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase,
-    private val uploadProfilePictureUseCase: UploadProfilePictureUseCase,
-    private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
-    private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
+    private val manageProfilePictureUseCase: ManageProfilePictureUseCase,
     private val getFollowStatsUseCase: GetFollowStatsUseCase,
     private val getFollowersUseCase: GetFollowersUseCase,
     private val getFollowingUseCase: GetFollowingUseCase,
@@ -145,7 +141,7 @@ class ProfileViewModel(
                 .onSuccess { stats ->
                     followStats = stats
                 }
-                .onFailure { exception ->
+                .onFailure { _ ->
                     errorMessage = null
                 }
 
@@ -162,7 +158,7 @@ class ProfileViewModel(
                 .onSuccess { followersList ->
                     followers = followersList
                 }
-                .onFailure { exception ->
+                .onFailure { _ ->
                     followersError = resourceProvider.getString(R.string.error_loading_followers)
                 }
 
@@ -179,7 +175,7 @@ class ProfileViewModel(
                 .onSuccess { followingList ->
                     following = followingList
                 }
-                .onFailure { exception ->
+                .onFailure { _ ->
                     followingError = resourceProvider.getString(R.string.error_loading_following)
                 }
 
@@ -242,18 +238,11 @@ class ProfileViewModel(
             isUploadingPicture = true
             errorMessage = null
 
-            uploadProfilePictureUseCase(imageFile)
+            manageProfilePictureUseCase.uploadPicture(imageFile)
                 .onSuccess { url ->
-                    updateProfilePictureUseCase(url)
-                        .onSuccess {
-                            profilePictureUrl = url
-                            ProfilePictureManager.updateUrl(url)
-                            isUploadingPicture = false
-                        }
-                        .onFailure { exception ->
-                            errorMessage = exception.message
-                            isUploadingPicture = false
-                        }
+                    profilePictureUrl = url
+                    ProfilePictureManager.updateUrl(url)
+                    isUploadingPicture = false
                 }
                 .onFailure { exception ->
                     errorMessage = exception.message
@@ -272,7 +261,7 @@ class ProfileViewModel(
                 return@launch
             }
 
-            deleteProfilePictureUseCase(currentUrl)
+            manageProfilePictureUseCase.deletePicture(currentUrl)
                 .onSuccess {
                     profilePictureUrl = null
                     ProfilePictureManager.updateUrl(null)
@@ -294,9 +283,7 @@ class ProfileViewModel(
         private val getUserByAuthIdUseCase: GetUserByAuthIdUseCase,
         private val signOutUseCase: SignOutUseCase,
         private val deleteAccountUseCase: DeleteAccountUseCase,
-        private val uploadProfilePictureUseCase: UploadProfilePictureUseCase,
-        private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
-        private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
+        private val manageProfilePictureUseCase: ManageProfilePictureUseCase,
         private val getFollowStatsUseCase: GetFollowStatsUseCase,
         private val getFollowersUseCase: GetFollowersUseCase,
         private val getFollowingUseCase: GetFollowingUseCase,
@@ -309,9 +296,7 @@ class ProfileViewModel(
                 getUserByAuthIdUseCase,
                 signOutUseCase,
                 deleteAccountUseCase,
-                uploadProfilePictureUseCase,
-                updateProfilePictureUseCase,
-                deleteProfilePictureUseCase,
+                manageProfilePictureUseCase,
                 getFollowStatsUseCase,
                 getFollowersUseCase,
                 getFollowingUseCase,

@@ -43,10 +43,8 @@ import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
-import com.planzy.app.domain.usecase.user.DeleteProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
-import com.planzy.app.domain.usecase.user.UpdateProfilePictureUseCase
-import com.planzy.app.domain.usecase.user.UploadProfilePictureUseCase
+import com.planzy.app.domain.usecase.user.ManageProfilePictureUseCase
 import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.navigation.Register
 import com.planzy.app.ui.screens.SearchViewModel
@@ -77,9 +75,7 @@ fun ProfileScreen(
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
     val signOutUseCase = remember { SignOutUseCase(authRepository) }
     val deleteAccountUseCase = remember { DeleteAccountUseCase(authRepository) }
-    val uploadProfilePictureUseCase = remember { UploadProfilePictureUseCase(userRepository) }
-    val updateProfilePictureUseCase = remember { UpdateProfilePictureUseCase(userRepository) }
-    val deleteProfilePictureUseCase = remember { DeleteProfilePictureUseCase(userRepository) }
+    val manageProfilePictureUseCase = remember { ManageProfilePictureUseCase(userRepository) }
     val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }
     val getFollowersUseCase = remember { GetFollowersUseCase(followRepository) }
     val getFollowingUseCase = remember { GetFollowingUseCase(followRepository) }
@@ -91,9 +87,7 @@ fun ProfileScreen(
             getUserByAuthIdUseCase = getUserByAuthIdUseCase,
             signOutUseCase = signOutUseCase,
             deleteAccountUseCase = deleteAccountUseCase,
-            uploadProfilePictureUseCase = uploadProfilePictureUseCase,
-            updateProfilePictureUseCase = updateProfilePictureUseCase,
-            deleteProfilePictureUseCase = deleteProfilePictureUseCase,
+            manageProfilePictureUseCase = manageProfilePictureUseCase,
             getFollowStatsUseCase = getFollowStatsUseCase,
             getFollowersUseCase = getFollowersUseCase,
             getFollowingUseCase = getFollowingUseCase,
