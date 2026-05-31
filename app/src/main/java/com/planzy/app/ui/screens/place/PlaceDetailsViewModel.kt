@@ -11,16 +11,12 @@ import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.PlaceReview
 import com.planzy.app.domain.model.UserComment
-import com.planzy.app.domain.usecase.place.GetPlaceDetailsUseCase
-import com.planzy.app.domain.usecase.place.GetPlaceReviewsUseCase
-import com.planzy.app.domain.usecase.place.GetUserCommentsUseCase
+import com.planzy.app.domain.usecase.place.GetPlaceDataUseCase
 import com.planzy.app.domain.usecase.place.ManagePlaceCommentsUseCase
 import kotlinx.coroutines.launch
 
 class PlaceDetailsViewModel(
-    private val getPlaceDetailsUseCase: GetPlaceDetailsUseCase,
-    private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase,
-    private val getUserCommentsUseCase: GetUserCommentsUseCase,
+    private val getPlaceDataUseCase: GetPlaceDataUseCase,
     private val managePlaceCommentsUseCase: ManagePlaceCommentsUseCase,
     private val resourceProvider: ResourceProvider,
     private val locationId: String
@@ -80,7 +76,7 @@ class PlaceDetailsViewModel(
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
-            getPlaceDetailsUseCase(locationId)
+            getPlaceDataUseCase.getPlaceDetails(locationId)
                 .onSuccess { place = it }
                 .onFailure { errorMessage = it.message }
             isLoading = false
@@ -90,7 +86,7 @@ class PlaceDetailsViewModel(
     private fun loadTripadvisorReviews() {
         viewModelScope.launch {
             isLoadingReviews = true
-            getPlaceReviewsUseCase(locationId, limit = 5)
+            getPlaceDataUseCase.getPlaceReviews(locationId, limit = 5)
                 .onSuccess { reviews = it }
             isLoadingReviews = false
         }
@@ -100,7 +96,7 @@ class PlaceDetailsViewModel(
         viewModelScope.launch {
             isLoadingUserComments = true
             userCommentsErrorMessage = null
-            getUserCommentsUseCase(locationId)
+            getPlaceDataUseCase.getUserComments(locationId)
                 .onSuccess {
                     userComments = it
                     isLoadingUserComments = false
@@ -162,9 +158,7 @@ class PlaceDetailsViewModel(
     }
 
     class Factory(
-        private val getPlaceDetailsUseCase: GetPlaceDetailsUseCase,
-        private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase,
-        private val getUserCommentsUseCase: GetUserCommentsUseCase,
+        private val getPlaceDataUseCase: GetPlaceDataUseCase,
         private val managePlaceCommentsUseCase: ManagePlaceCommentsUseCase,
         private val resourceProvider: ResourceProvider,
         private val locationId: String
@@ -172,9 +166,7 @@ class PlaceDetailsViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return PlaceDetailsViewModel(
-                getPlaceDetailsUseCase,
-                getPlaceReviewsUseCase,
-                getUserCommentsUseCase,
+                getPlaceDataUseCase,
                 managePlaceCommentsUseCase,
                 resourceProvider,
                 locationId

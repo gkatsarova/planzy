@@ -18,9 +18,7 @@ import org.junit.Test
 class PlaceDetailsViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
-    private val getPlaceDetailsUseCase: GetPlaceDetailsUseCase = mockk()
-    private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase = mockk()
-    private val getUserCommentsUseCase: GetUserCommentsUseCase = mockk()
+    private val getPlaceDataUseCase: GetPlaceDataUseCase = mockk()
     private val managePlaceCommentsUseCase: ManagePlaceCommentsUseCase = mockk()
     private val resourceProvider: ResourceProvider = mockk()
 
@@ -31,9 +29,9 @@ class PlaceDetailsViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
 
-        coEvery { getPlaceDetailsUseCase(any()) } returns Result.success(mockk(relaxed = true))
-        coEvery { getPlaceReviewsUseCase(any(), any()) } returns Result.success(emptyList())
-        coEvery { getUserCommentsUseCase(any()) } returns Result.success(emptyList())
+        coEvery { getPlaceDataUseCase.getPlaceDetails(any()) } returns Result.success(mockk(relaxed = true))
+        coEvery { getPlaceDataUseCase.getPlaceReviews(any(), any()) } returns Result.success(emptyList())
+        coEvery { getPlaceDataUseCase.getUserComments(any()) } returns Result.success(emptyList())
     }
 
     @After
@@ -43,9 +41,7 @@ class PlaceDetailsViewModelTest {
 
     private fun createViewModel() {
         viewModel = PlaceDetailsViewModel(
-            getPlaceDetailsUseCase,
-            getPlaceReviewsUseCase,
-            getUserCommentsUseCase,
+            getPlaceDataUseCase,
             managePlaceCommentsUseCase,
             resourceProvider,
             locationId
@@ -55,7 +51,7 @@ class PlaceDetailsViewModelTest {
     @Test
     fun `loadPlaceDetails success updates place state`() = runTest {
         val expectedPlace = mockk<Place>()
-        coEvery { getPlaceDetailsUseCase(locationId) } returns Result.success(expectedPlace)
+        coEvery { getPlaceDataUseCase.getPlaceDetails(locationId) } returns Result.success(expectedPlace)
 
         createViewModel()
 
@@ -66,7 +62,7 @@ class PlaceDetailsViewModelTest {
     @Test
     fun `loadPlaceDetails failure updates error message and place is null`() = runTest {
         val errorMsg = "Network Error"
-        coEvery { getPlaceDetailsUseCase(locationId) } returns Result.failure(Exception(errorMsg))
+        coEvery { getPlaceDataUseCase.getPlaceDetails(locationId) } returns Result.failure(Exception(errorMsg))
 
         createViewModel()
 
@@ -90,7 +86,7 @@ class PlaceDetailsViewModelTest {
     fun `deleteUserComment success removes it from list`() = runTest {
         val commentId = "c1"
         val comment = mockk<UserComment> { every { id } returns commentId }
-        coEvery { getUserCommentsUseCase(locationId) } returns Result.success(listOf(comment))
+        coEvery { getPlaceDataUseCase.getUserComments(locationId) } returns Result.success(listOf(comment))
 
         createViewModel()
 
