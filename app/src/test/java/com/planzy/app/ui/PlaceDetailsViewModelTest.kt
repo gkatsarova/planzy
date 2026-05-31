@@ -21,9 +21,7 @@ class PlaceDetailsViewModelTest {
     private val getPlaceDetailsUseCase: GetPlaceDetailsUseCase = mockk()
     private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase = mockk()
     private val getUserCommentsUseCase: GetUserCommentsUseCase = mockk()
-    private val addUserCommentUseCase: AddUserCommentUseCase = mockk()
-    private val updateUserCommentUseCase: UpdateUserCommentUseCase = mockk()
-    private val deleteUserCommentUseCase: DeleteUserCommentUseCase = mockk()
+    private val managePlaceCommentsUseCase: ManagePlaceCommentsUseCase = mockk()
     private val resourceProvider: ResourceProvider = mockk()
 
     private val locationId = "12345"
@@ -48,9 +46,7 @@ class PlaceDetailsViewModelTest {
             getPlaceDetailsUseCase,
             getPlaceReviewsUseCase,
             getUserCommentsUseCase,
-            addUserCommentUseCase,
-            updateUserCommentUseCase,
-            deleteUserCommentUseCase,
+            managePlaceCommentsUseCase,
             resourceProvider,
             locationId
         )
@@ -82,7 +78,7 @@ class PlaceDetailsViewModelTest {
     fun `addUserComment success updates comments list`() = runTest {
         createViewModel()
         val newComment = mockk<UserComment>()
-        coEvery { addUserCommentUseCase(locationId, "Super", 5) } returns Result.success(newComment)
+        coEvery { managePlaceCommentsUseCase.addComment(locationId, "Super", 5) } returns Result.success(newComment)
 
         viewModel.addUserComment("Super", 5)
 
@@ -98,7 +94,7 @@ class PlaceDetailsViewModelTest {
 
         createViewModel()
 
-        coEvery { deleteUserCommentUseCase(commentId) } returns Result.success(Unit)
+        coEvery { managePlaceCommentsUseCase.deleteComment(commentId) } returns Result.success(Unit)
 
         viewModel.deleteUserComment(commentId)
 

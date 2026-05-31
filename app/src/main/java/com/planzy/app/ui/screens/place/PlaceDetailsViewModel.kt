@@ -11,21 +11,17 @@ import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.PlaceReview
 import com.planzy.app.domain.model.UserComment
-import com.planzy.app.domain.usecase.place.AddUserCommentUseCase
-import com.planzy.app.domain.usecase.place.DeleteUserCommentUseCase
 import com.planzy.app.domain.usecase.place.GetPlaceDetailsUseCase
 import com.planzy.app.domain.usecase.place.GetPlaceReviewsUseCase
 import com.planzy.app.domain.usecase.place.GetUserCommentsUseCase
-import com.planzy.app.domain.usecase.place.UpdateUserCommentUseCase
+import com.planzy.app.domain.usecase.place.ManagePlaceCommentsUseCase
 import kotlinx.coroutines.launch
 
 class PlaceDetailsViewModel(
     private val getPlaceDetailsUseCase: GetPlaceDetailsUseCase,
     private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase,
     private val getUserCommentsUseCase: GetUserCommentsUseCase,
-    private val addUserCommentUseCase: AddUserCommentUseCase,
-    private val updateUserCommentUseCase: UpdateUserCommentUseCase,
-    private val deleteUserCommentUseCase: DeleteUserCommentUseCase,
+    private val managePlaceCommentsUseCase: ManagePlaceCommentsUseCase,
     private val resourceProvider: ResourceProvider,
     private val locationId: String
 ) : ViewModel() {
@@ -121,7 +117,7 @@ class PlaceDetailsViewModel(
             isSubmittingComment = true
             commentErrorMessage = null
 
-            addUserCommentUseCase(locationId, text, rating)
+            managePlaceCommentsUseCase.addComment(locationId, text, rating)
                 .onSuccess { newComment ->
                     userComments = listOf(newComment) + userComments
                     isSubmittingComment = false
@@ -138,7 +134,7 @@ class PlaceDetailsViewModel(
             isUpdatingComment = true
             commentErrorMessage = null
 
-            updateUserCommentUseCase(commentId, text, rating)
+            managePlaceCommentsUseCase.updateComment(commentId, text, rating)
                 .onSuccess {
                     loadUserComments()
                     isUpdatingComment = false
@@ -154,7 +150,7 @@ class PlaceDetailsViewModel(
         viewModelScope.launch {
             isDeletingComment = true
 
-            deleteUserCommentUseCase(commentId)
+            managePlaceCommentsUseCase.deleteComment(commentId)
                 .onSuccess {
                     userComments = userComments.filter { it.id != commentId }
                     isDeletingComment = false
@@ -169,9 +165,7 @@ class PlaceDetailsViewModel(
         private val getPlaceDetailsUseCase: GetPlaceDetailsUseCase,
         private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase,
         private val getUserCommentsUseCase: GetUserCommentsUseCase,
-        private val addUserCommentUseCase: AddUserCommentUseCase,
-        private val updateUserCommentUseCase: UpdateUserCommentUseCase,
-        private val deleteUserCommentUseCase: DeleteUserCommentUseCase,
+        private val managePlaceCommentsUseCase: ManagePlaceCommentsUseCase,
         private val resourceProvider: ResourceProvider,
         private val locationId: String
     ) : ViewModelProvider.Factory {
@@ -181,9 +175,7 @@ class PlaceDetailsViewModel(
                 getPlaceDetailsUseCase,
                 getPlaceReviewsUseCase,
                 getUserCommentsUseCase,
-                addUserCommentUseCase,
-                updateUserCommentUseCase,
-                deleteUserCommentUseCase,
+                managePlaceCommentsUseCase,
                 resourceProvider,
                 locationId
             ) as T
