@@ -21,9 +21,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 
 class VacationDetailsViewModel(
-    private val getVacationDetailsUseCase: GetVacationDetailsUseCase,
+    private val getVacationDataUseCase: GetVacationDataUseCase,
     private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase,
-    private val getVacationCommentsUseCase: GetVacationCommentsUseCase,
     private val manageVacationCommentsUseCase: ManageVacationCommentsUseCase,
     private val saveVacationUseCase: SaveVacationUseCase,
     private val unsaveVacationUseCase: UnsaveVacationUseCase,
@@ -97,7 +96,7 @@ class VacationDetailsViewModel(
             isLoading = true
             errorMessage = null
 
-            getVacationDetailsUseCase(vacationId)
+            getVacationDataUseCase.getVacationDetails(vacationId)
                 .onSuccess { details ->
                     vacation = details.vacation
                     creatorUsername = details.creatorUsername
@@ -152,7 +151,7 @@ class VacationDetailsViewModel(
         viewModelScope.launch {
             isLoadingComments = true
             commentsErrorMessage = null
-            getVacationCommentsUseCase(vacationId)
+            getVacationDataUseCase.getVacationComments(vacationId)
                 .onSuccess {
                     vacationComments = it
                     isLoadingComments = false
@@ -254,9 +253,8 @@ class VacationDetailsViewModel(
     }
 
     class Factory(
-        private val getVacationDetailsUseCase: GetVacationDetailsUseCase,
+        private val getVacationDataUseCase: GetVacationDataUseCase,
         private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase,
-        private val getVacationCommentsUseCase: GetVacationCommentsUseCase,
         private val manageVacationCommentsUseCase: ManageVacationCommentsUseCase,
         private val saveVacationUseCase: SaveVacationUseCase,
         private val unsaveVacationUseCase: UnsaveVacationUseCase,
@@ -271,9 +269,8 @@ class VacationDetailsViewModel(
             val authRepository = AuthRepositoryImpl(resourceProvider as ResourceProviderImpl)
             val getCurrentUserUseCase = GetCurrentUserUseCase(authRepository)
             return VacationDetailsViewModel(
-                getVacationDetailsUseCase,
+                getVacationDataUseCase,
                 removePlaceFromVacationUseCase,
-                getVacationCommentsUseCase,
                 manageVacationCommentsUseCase,
                 saveVacationUseCase,
                 unsaveVacationUseCase,

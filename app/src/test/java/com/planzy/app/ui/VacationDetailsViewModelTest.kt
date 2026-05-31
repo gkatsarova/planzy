@@ -21,9 +21,8 @@ import org.junit.Test
 class VacationDetailsViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
-    private val getVacationDetailsUseCase: GetVacationDetailsUseCase = mockk()
+    private val getVacationDataUseCase: GetVacationDataUseCase = mockk()
     private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase = mockk()
-    private val getVacationCommentsUseCase: GetVacationCommentsUseCase = mockk()
     private val manageVacationCommentsUseCase: ManageVacationCommentsUseCase = mockk()
     private val saveVacationUseCase: SaveVacationUseCase = mockk()
     private val unsaveVacationUseCase: UnsaveVacationUseCase = mockk()
@@ -40,14 +39,14 @@ class VacationDetailsViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         coEvery { getCurrentUserUseCase() } returns null
-        coEvery { getVacationDetailsUseCase(any()) } returns Result.success(
+        coEvery { getVacationDataUseCase.getVacationDetails(any()) } returns Result.success(
             VacationDetails(
                 vacation = mockk(relaxed = true),
                 creatorUsername = "testUser",
                 places = emptyList()
             )
         )
-        coEvery { getVacationCommentsUseCase(any()) } returns Result.success(emptyList())
+        coEvery { getVacationDataUseCase.getVacationComments(any()) } returns Result.success(emptyList())
         coEvery { placesRepository.getUserCommentsStats(any()) } returns Result.success(Pair(null, 0))
         coEvery { isVacationSavedUseCase(any()) } returns Result.success(false)
     }
@@ -59,9 +58,8 @@ class VacationDetailsViewModelTest {
 
     private fun createViewModel() {
         viewModel = VacationDetailsViewModel(
-            getVacationDetailsUseCase,
+            getVacationDataUseCase,
             removePlaceFromVacationUseCase,
-            getVacationCommentsUseCase,
             manageVacationCommentsUseCase,
             saveVacationUseCase,
             unsaveVacationUseCase,
@@ -77,7 +75,7 @@ class VacationDetailsViewModelTest {
     fun `loadVacationDetails success updates vacation state`() = runTest {
         val expectedVacation = mockk<Vacation>(relaxed = true)
         val expectedDetails = VacationDetails(expectedVacation, "testUser", emptyList())
-        coEvery { getVacationDetailsUseCase(vacationId) } returns Result.success(expectedDetails)
+        coEvery { getVacationDataUseCase.getVacationDetails(vacationId) } returns Result.success(expectedDetails)
 
         createViewModel()
 
@@ -89,7 +87,7 @@ class VacationDetailsViewModelTest {
     @Test
     fun `loadVacationDetails failure updates error message and vacation is null`() = runTest {
         val errorMsg = "Network Error"
-        coEvery { getVacationDetailsUseCase(vacationId) } returns Result.failure(Exception(errorMsg))
+        coEvery { getVacationDataUseCase.getVacationDetails(vacationId) } returns Result.failure(Exception(errorMsg))
 
         createViewModel()
 
@@ -113,7 +111,7 @@ class VacationDetailsViewModelTest {
 
         val mockDetails = VacationDetails(mockVacation, "testUser", listOf(mockPlace))
 
-        coEvery { getVacationDetailsUseCase(vacationId) } returns Result.success(mockDetails)
+        coEvery { getVacationDataUseCase.getVacationDetails(vacationId) } returns Result.success(mockDetails)
         coEvery { removePlaceFromVacationUseCase(vacationId, placeId) } returns Result.success(Unit)
 
         createViewModel()
@@ -170,7 +168,7 @@ class VacationDetailsViewModelTest {
         val commentId = "c1"
         val updatedComment = mockk<VacationComment>(relaxed = true)
 
-        coEvery { getVacationCommentsUseCase(vacationId) } returnsMany listOf(
+        coEvery { getVacationDataUseCase.getVacationComments(vacationId) } returnsMany listOf(
             Result.success(emptyList()),
             Result.success(listOf(updatedComment))
         )
@@ -203,7 +201,7 @@ class VacationDetailsViewModelTest {
         val comment = mockk<VacationComment>(relaxed = true) {
             every { id } returns commentId
         }
-        coEvery { getVacationCommentsUseCase(vacationId) } returns Result.success(listOf(comment))
+        coEvery { getVacationDataUseCase.getVacationComments(vacationId) } returns Result.success(listOf(comment))
 
         createViewModel()
 
@@ -221,7 +219,7 @@ class VacationDetailsViewModelTest {
 
         viewModel.onRetry()
 
-        coVerify(exactly = 2) { getVacationDetailsUseCase(vacationId) }
-        coVerify(exactly = 2) { getVacationCommentsUseCase(vacationId) }
+        coVerify(exactly = 2) { getVacationDataUseCase.getVacationDetails(vacationId) }
+        coVerify(exactly = 2) { getVacationDataUseCase.getVacationComments(vacationId) }
     }
 }

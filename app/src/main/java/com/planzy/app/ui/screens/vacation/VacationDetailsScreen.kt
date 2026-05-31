@@ -39,8 +39,7 @@ import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.vacation.ManageVacationCommentsUseCase
-import com.planzy.app.domain.usecase.vacation.GetVacationCommentsUseCase
-import com.planzy.app.domain.usecase.vacation.GetVacationDetailsUseCase
+import com.planzy.app.domain.usecase.vacation.GetVacationDataUseCase
 import com.planzy.app.domain.usecase.vacation.IsVacationSavedUseCase
 import com.planzy.app.domain.usecase.vacation.RemovePlaceFromVacationUseCase
 import com.planzy.app.domain.usecase.vacation.SaveVacationUseCase
@@ -73,9 +72,8 @@ fun VacationDetailsScreen(
     val placesRepository = remember { PlacesRepositoryImpl(tripadvisorApi, SupabaseClient, resourceProvider) }
     val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
     val userRepository = remember { UserRepositoryImpl(resourceProvider) }
-    val getVacationDetailsUseCase = remember { GetVacationDetailsUseCase(vacationsRepository, placesRepository) }
+    val getVacationDataUseCase = remember { GetVacationDataUseCase(vacationsRepository, placesRepository) }
     val removePlaceFromVacationUseCase = remember { RemovePlaceFromVacationUseCase(vacationsRepository) }
-    val getVacationCommentsUseCase = remember { GetVacationCommentsUseCase(vacationsRepository) }
     val manageVacationCommentsUseCase = remember { ManageVacationCommentsUseCase(vacationsRepository, resourceProvider) }
     val saveVacationUseCase = remember { SaveVacationUseCase(vacationsRepository) }
     val unsaveVacationUseCase = remember { UnsaveVacationUseCase(vacationsRepository) }
@@ -86,9 +84,8 @@ fun VacationDetailsScreen(
 
     val viewModel: VacationDetailsViewModel = viewModel(
         factory = VacationDetailsViewModel.Factory(
-            getVacationDetailsUseCase = getVacationDetailsUseCase,
+            getVacationDataUseCase = getVacationDataUseCase,
             removePlaceFromVacationUseCase = removePlaceFromVacationUseCase,
-            getVacationCommentsUseCase = getVacationCommentsUseCase,
             manageVacationCommentsUseCase = manageVacationCommentsUseCase,
             saveVacationUseCase = saveVacationUseCase,
             unsaveVacationUseCase = unsaveVacationUseCase,
