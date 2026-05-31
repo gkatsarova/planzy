@@ -13,9 +13,7 @@ import com.planzy.app.domain.model.FollowStats
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.follow.FollowUserUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowDataUseCase
 import com.planzy.app.domain.usecase.follow.UnfollowUserUseCase
 import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
@@ -30,9 +28,7 @@ sealed interface UserState {
 class ProfileDetailsViewModel(
     private val getUserByUsernameUseCase: GetUserByUsernameUseCase,
     private val getUserVacationsByIdUseCase: GetUserVacationsByIdUseCase,
-    private val getFollowStatsUseCase: GetFollowStatsUseCase,
-    private val getFollowersUseCase: GetFollowersUseCase,
-    private val getFollowingUseCase: GetFollowingUseCase,
+    private val getFollowDataUseCase: GetFollowDataUseCase,
     private val followUserUseCase: FollowUserUseCase,
     private val unfollowUserUseCase: UnfollowUserUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
@@ -110,7 +106,7 @@ class ProfileDetailsViewModel(
                         loadFollowStats(loadedUser.auth_id)
                     }
                 }
-                .onFailure { exception ->
+                .onFailure {
                     userState = UserState.Error(
                         resourceProvider.getString(R.string.error_loading_user)
                     )
@@ -127,7 +123,7 @@ class ProfileDetailsViewModel(
                 .onSuccess { userVacations ->
                     vacations = userVacations
                 }
-                .onFailure { exception ->
+                .onFailure {
                     vacationsError = resourceProvider.getString(R.string.error_loading_vacations)
                 }
 
@@ -140,11 +136,11 @@ class ProfileDetailsViewModel(
             isLoadingFollowStats = true
             followError = null
 
-            getFollowStatsUseCase(userId)
+            getFollowDataUseCase.getStats(userId)
                 .onSuccess { stats ->
                     followStats = stats
                 }
-                .onFailure { exception ->
+                .onFailure {
                     followError = resourceProvider.getString(R.string.error_loading_follow_stats)
                 }
 
@@ -157,11 +153,11 @@ class ProfileDetailsViewModel(
             isLoadingFollowers = true
             followersError = null
 
-            getFollowersUseCase(userId)
+            getFollowDataUseCase.getFollowers(userId)
                 .onSuccess { followersList ->
                     followers = followersList
                 }
-                .onFailure { exception ->
+                .onFailure {
                     followersError = resourceProvider.getString(R.string.error_loading_followers)
                 }
 
@@ -174,11 +170,11 @@ class ProfileDetailsViewModel(
             isLoadingFollowing = true
             followingError = null
 
-            getFollowingUseCase(userId)
+            getFollowDataUseCase.getFollowing(userId)
                 .onSuccess { followingList ->
                     following = followingList
                 }
-                .onFailure { exception ->
+                .onFailure {
                     followingError = resourceProvider.getString(R.string.error_loading_following)
                 }
 
@@ -214,7 +210,7 @@ class ProfileDetailsViewModel(
                         }
                     )
                 }
-                .onFailure { exception ->
+                .onFailure {
                     followError = resourceProvider.getString(R.string.error_updating_follow_status)
                 }
 
@@ -233,9 +229,7 @@ class ProfileDetailsViewModel(
     class Factory(
         private val getUserByUsernameUseCase: GetUserByUsernameUseCase,
         private val getUserVacationsByIdUseCase: GetUserVacationsByIdUseCase,
-        private val getFollowStatsUseCase: GetFollowStatsUseCase,
-        private val getFollowersUseCase: GetFollowersUseCase,
-        private val getFollowingUseCase: GetFollowingUseCase,
+        private val getFollowDataUseCase: GetFollowDataUseCase,
         private val followUserUseCase: FollowUserUseCase,
         private val unfollowUserUseCase: UnfollowUserUseCase,
         private val getCurrentUserUseCase: GetCurrentUserUseCase,
@@ -247,9 +241,7 @@ class ProfileDetailsViewModel(
                 return ProfileDetailsViewModel(
                     getUserByUsernameUseCase,
                     getUserVacationsByIdUseCase,
-                    getFollowStatsUseCase,
-                    getFollowersUseCase,
-                    getFollowingUseCase,
+                    getFollowDataUseCase,
                     followUserUseCase,
                     unfollowUserUseCase,
                     getCurrentUserUseCase,

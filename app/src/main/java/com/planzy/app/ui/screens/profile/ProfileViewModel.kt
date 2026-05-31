@@ -15,9 +15,7 @@ import com.planzy.app.domain.model.FollowStats
 import com.planzy.app.domain.usecase.auth.DeleteAccountUseCase
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.auth.SignOutUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowDataUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.user.ManageProfilePictureUseCase
 import io.github.jan.supabase.auth.auth
@@ -30,9 +28,7 @@ class ProfileViewModel(
     private val signOutUseCase: SignOutUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase,
     private val manageProfilePictureUseCase: ManageProfilePictureUseCase,
-    private val getFollowStatsUseCase: GetFollowStatsUseCase,
-    private val getFollowersUseCase: GetFollowersUseCase,
-    private val getFollowingUseCase: GetFollowingUseCase,
+    private val getFollowDataUseCase: GetFollowDataUseCase,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -137,13 +133,11 @@ class ProfileViewModel(
         viewModelScope.launch {
             isLoadingFollowStats = true
 
-            getFollowStatsUseCase(authId)
+            getFollowDataUseCase.getStats(authId)
                 .onSuccess { stats ->
                     followStats = stats
                 }
-                .onFailure { _ ->
-                    errorMessage = null
-                }
+                .onFailure { errorMessage = null }
 
             isLoadingFollowStats = false
         }
@@ -154,13 +148,11 @@ class ProfileViewModel(
             isLoadingFollowers = true
             followersError = null
 
-            getFollowersUseCase(currentUserAuthId)
+            getFollowDataUseCase.getFollowers(currentUserAuthId)
                 .onSuccess { followersList ->
                     followers = followersList
                 }
-                .onFailure { _ ->
-                    followersError = resourceProvider.getString(R.string.error_loading_followers)
-                }
+                .onFailure { followersError = resourceProvider.getString(R.string.error_loading_followers) }
 
             isLoadingFollowers = false
         }
@@ -171,13 +163,11 @@ class ProfileViewModel(
             isLoadingFollowing = true
             followingError = null
 
-            getFollowingUseCase(currentUserAuthId)
+            getFollowDataUseCase.getFollowing(currentUserAuthId)
                 .onSuccess { followingList ->
                     following = followingList
                 }
-                .onFailure { _ ->
-                    followingError = resourceProvider.getString(R.string.error_loading_following)
-                }
+                .onFailure { followingError = resourceProvider.getString(R.string.error_loading_following) }
 
             isLoadingFollowing = false
         }
@@ -284,9 +274,7 @@ class ProfileViewModel(
         private val signOutUseCase: SignOutUseCase,
         private val deleteAccountUseCase: DeleteAccountUseCase,
         private val manageProfilePictureUseCase: ManageProfilePictureUseCase,
-        private val getFollowStatsUseCase: GetFollowStatsUseCase,
-        private val getFollowersUseCase: GetFollowersUseCase,
-        private val getFollowingUseCase: GetFollowingUseCase,
+        private val getFollowDataUseCase: GetFollowDataUseCase,
         private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -297,9 +285,7 @@ class ProfileViewModel(
                 signOutUseCase,
                 deleteAccountUseCase,
                 manageProfilePictureUseCase,
-                getFollowStatsUseCase,
-                getFollowersUseCase,
-                getFollowingUseCase,
+                getFollowDataUseCase,
                 resourceProvider
             ) as T
         }

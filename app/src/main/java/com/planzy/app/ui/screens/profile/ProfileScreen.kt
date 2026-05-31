@@ -40,9 +40,7 @@ import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
-import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowDataUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.user.ManageProfilePictureUseCase
 import com.planzy.app.ui.navigation.Login
@@ -76,9 +74,7 @@ fun ProfileScreen(
     val signOutUseCase = remember { SignOutUseCase(authRepository) }
     val deleteAccountUseCase = remember { DeleteAccountUseCase(authRepository) }
     val manageProfilePictureUseCase = remember { ManageProfilePictureUseCase(userRepository) }
-    val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }
-    val getFollowersUseCase = remember { GetFollowersUseCase(followRepository) }
-    val getFollowingUseCase = remember { GetFollowingUseCase(followRepository) }
+    val getFollowDataUseCase = remember { GetFollowDataUseCase(followRepository) }
 
 
     val viewModel: ProfileViewModel = viewModel(
@@ -88,9 +84,7 @@ fun ProfileScreen(
             signOutUseCase = signOutUseCase,
             deleteAccountUseCase = deleteAccountUseCase,
             manageProfilePictureUseCase = manageProfilePictureUseCase,
-            getFollowStatsUseCase = getFollowStatsUseCase,
-            getFollowersUseCase = getFollowersUseCase,
-            getFollowingUseCase = getFollowingUseCase,
+            getFollowDataUseCase = getFollowDataUseCase,
             resourceProvider = resourceProvider
         )
     )
