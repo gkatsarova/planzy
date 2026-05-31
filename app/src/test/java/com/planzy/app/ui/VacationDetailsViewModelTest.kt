@@ -24,9 +24,7 @@ class VacationDetailsViewModelTest {
     private val getVacationDataUseCase: GetVacationDataUseCase = mockk()
     private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase = mockk()
     private val manageVacationCommentsUseCase: ManageVacationCommentsUseCase = mockk()
-    private val saveVacationUseCase: SaveVacationUseCase = mockk()
-    private val unsaveVacationUseCase: UnsaveVacationUseCase = mockk()
-    private val isVacationSavedUseCase: IsVacationSavedUseCase = mockk()
+    private val manageSavedVacationUseCase: ManageSavedVacationUseCase = mockk()
     private val getCurrentUserUseCase: GetCurrentUserUseCase = mockk()
     private val placesRepository: PlacesRepository = mockk()
     private val resourceProvider: ResourceProvider = mockk()
@@ -48,7 +46,7 @@ class VacationDetailsViewModelTest {
         )
         coEvery { getVacationDataUseCase.getVacationComments(any()) } returns Result.success(emptyList())
         coEvery { placesRepository.getUserCommentsStats(any()) } returns Result.success(Pair(null, 0))
-        coEvery { isVacationSavedUseCase(any()) } returns Result.success(false)
+        coEvery { manageSavedVacationUseCase.isSaved(any()) } returns Result.success(false)
     }
 
     @After
@@ -61,9 +59,7 @@ class VacationDetailsViewModelTest {
             getVacationDataUseCase,
             removePlaceFromVacationUseCase,
             manageVacationCommentsUseCase,
-            saveVacationUseCase,
-            unsaveVacationUseCase,
-            isVacationSavedUseCase,
+            manageSavedVacationUseCase,
             getCurrentUserUseCase,
             placesRepository,
             resourceProvider,

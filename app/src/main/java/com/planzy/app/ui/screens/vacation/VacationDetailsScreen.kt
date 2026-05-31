@@ -38,12 +38,10 @@ import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
+import com.planzy.app.domain.usecase.vacation.ManageSavedVacationUseCase
 import com.planzy.app.domain.usecase.vacation.ManageVacationCommentsUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationDataUseCase
-import com.planzy.app.domain.usecase.vacation.IsVacationSavedUseCase
 import com.planzy.app.domain.usecase.vacation.RemovePlaceFromVacationUseCase
-import com.planzy.app.domain.usecase.vacation.SaveVacationUseCase
-import com.planzy.app.domain.usecase.vacation.UnsaveVacationUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.AddVacationCommentSection
@@ -75,9 +73,7 @@ fun VacationDetailsScreen(
     val getVacationDataUseCase = remember { GetVacationDataUseCase(vacationsRepository, placesRepository) }
     val removePlaceFromVacationUseCase = remember { RemovePlaceFromVacationUseCase(vacationsRepository) }
     val manageVacationCommentsUseCase = remember { ManageVacationCommentsUseCase(vacationsRepository, resourceProvider) }
-    val saveVacationUseCase = remember { SaveVacationUseCase(vacationsRepository) }
-    val unsaveVacationUseCase = remember { UnsaveVacationUseCase(vacationsRepository) }
-    val isVacationSavedUseCase = remember { IsVacationSavedUseCase(vacationsRepository) }
+    val manageSavedVacationUseCase = remember { ManageSavedVacationUseCase(vacationsRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
 
     var isEditingAnyComment by remember { mutableStateOf(false) }
@@ -87,9 +83,7 @@ fun VacationDetailsScreen(
             getVacationDataUseCase = getVacationDataUseCase,
             removePlaceFromVacationUseCase = removePlaceFromVacationUseCase,
             manageVacationCommentsUseCase = manageVacationCommentsUseCase,
-            saveVacationUseCase = saveVacationUseCase,
-            unsaveVacationUseCase = unsaveVacationUseCase,
-            isVacationSavedUseCase = isVacationSavedUseCase,
+            manageSavedVacationUseCase = manageSavedVacationUseCase,
             placesRepository = placesRepository,
             resourceProvider = resourceProvider,
             vacationId = vacationId,

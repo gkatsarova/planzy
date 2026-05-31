@@ -24,9 +24,7 @@ class VacationDetailsViewModel(
     private val getVacationDataUseCase: GetVacationDataUseCase,
     private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase,
     private val manageVacationCommentsUseCase: ManageVacationCommentsUseCase,
-    private val saveVacationUseCase: SaveVacationUseCase,
-    private val unsaveVacationUseCase: UnsaveVacationUseCase,
-    private val isVacationSavedUseCase: IsVacationSavedUseCase,
+    private val manageSavedVacationUseCase: ManageSavedVacationUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val placesRepository: PlacesRepository,
     private val resourceProvider: ResourceProvider,
@@ -216,7 +214,7 @@ class VacationDetailsViewModel(
 
     private fun checkIfVacationIsSaved() {
         viewModelScope.launch {
-            isVacationSavedUseCase(vacationId)
+            manageSavedVacationUseCase.isSaved(vacationId)
                 .onSuccess { isSaved = it }
         }
     }
@@ -226,7 +224,7 @@ class VacationDetailsViewModel(
             isSavingInProgress = true
 
             if (isSaved) {
-                unsaveVacationUseCase(vacationId)
+                manageSavedVacationUseCase.unsave(vacationId)
                     .onSuccess {
                         isSaved = false
                     }
@@ -234,7 +232,7 @@ class VacationDetailsViewModel(
                         errorMessage = resourceProvider.getString(R.string.failed_to_unsave_vacation)
                     }
             } else {
-                saveVacationUseCase(vacationId)
+                manageSavedVacationUseCase.save(vacationId)
                     .onSuccess {
                         isSaved = true
                     }
@@ -256,9 +254,7 @@ class VacationDetailsViewModel(
         private val getVacationDataUseCase: GetVacationDataUseCase,
         private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase,
         private val manageVacationCommentsUseCase: ManageVacationCommentsUseCase,
-        private val saveVacationUseCase: SaveVacationUseCase,
-        private val unsaveVacationUseCase: UnsaveVacationUseCase,
-        private val isVacationSavedUseCase: IsVacationSavedUseCase,
+        private val manageSavedVacationUseCase: ManageSavedVacationUseCase,
         private val placesRepository: PlacesRepository,
         private val resourceProvider: ResourceProvider,
         private val vacationId: String,
@@ -272,9 +268,7 @@ class VacationDetailsViewModel(
                 getVacationDataUseCase,
                 removePlaceFromVacationUseCase,
                 manageVacationCommentsUseCase,
-                saveVacationUseCase,
-                unsaveVacationUseCase,
-                isVacationSavedUseCase,
+                manageSavedVacationUseCase,
                 getCurrentUserUseCase,
                 placesRepository,
                 resourceProvider,
