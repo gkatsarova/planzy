@@ -24,9 +24,7 @@ class VacationDetailsViewModel(
     private val getVacationDetailsUseCase: GetVacationDetailsUseCase,
     private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase,
     private val getVacationCommentsUseCase: GetVacationCommentsUseCase,
-    private val addVacationCommentUseCase: AddVacationCommentUseCase,
-    private val updateVacationCommentUseCase: UpdateVacationCommentUseCase,
-    private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
+    private val manageVacationCommentsUseCase: ManageVacationCommentsUseCase,
     private val saveVacationUseCase: SaveVacationUseCase,
     private val unsaveVacationUseCase: UnsaveVacationUseCase,
     private val isVacationSavedUseCase: IsVacationSavedUseCase,
@@ -171,7 +169,7 @@ class VacationDetailsViewModel(
             isSubmittingComment = true
             commentErrorMessage = null
 
-            addVacationCommentUseCase(vacationId, text)
+            manageVacationCommentsUseCase.addComment(vacationId, text)
                 .onSuccess { newComment ->
                     vacationComments = listOf(newComment) + vacationComments
                     isSubmittingComment = false
@@ -189,7 +187,7 @@ class VacationDetailsViewModel(
             isUpdatingComment = true
             commentErrorMessage = null
 
-            updateVacationCommentUseCase(commentId, text)
+            manageVacationCommentsUseCase.updateComment(commentId, text)
                 .onSuccess {
                     loadVacationComments()
                     isUpdatingComment = false
@@ -205,7 +203,7 @@ class VacationDetailsViewModel(
         viewModelScope.launch {
             isDeletingComment = true
 
-            deleteVacationCommentUseCase(commentId)
+            manageVacationCommentsUseCase.deleteComment(commentId)
                 .onSuccess {
                     vacationComments = vacationComments.filter { it.id != commentId }
                     isDeletingComment = false
@@ -259,9 +257,7 @@ class VacationDetailsViewModel(
         private val getVacationDetailsUseCase: GetVacationDetailsUseCase,
         private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase,
         private val getVacationCommentsUseCase: GetVacationCommentsUseCase,
-        private val addVacationCommentUseCase: AddVacationCommentUseCase,
-        private val updateVacationCommentUseCase: UpdateVacationCommentUseCase,
-        private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
+        private val manageVacationCommentsUseCase: ManageVacationCommentsUseCase,
         private val saveVacationUseCase: SaveVacationUseCase,
         private val unsaveVacationUseCase: UnsaveVacationUseCase,
         private val isVacationSavedUseCase: IsVacationSavedUseCase,
@@ -278,9 +274,7 @@ class VacationDetailsViewModel(
                 getVacationDetailsUseCase,
                 removePlaceFromVacationUseCase,
                 getVacationCommentsUseCase,
-                addVacationCommentUseCase,
-                updateVacationCommentUseCase,
-                deleteVacationCommentUseCase,
+                manageVacationCommentsUseCase,
                 saveVacationUseCase,
                 unsaveVacationUseCase,
                 isVacationSavedUseCase,

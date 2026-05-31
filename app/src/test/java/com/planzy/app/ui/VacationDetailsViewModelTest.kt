@@ -24,9 +24,7 @@ class VacationDetailsViewModelTest {
     private val getVacationDetailsUseCase: GetVacationDetailsUseCase = mockk()
     private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase = mockk()
     private val getVacationCommentsUseCase: GetVacationCommentsUseCase = mockk()
-    private val addVacationCommentUseCase: AddVacationCommentUseCase = mockk()
-    private val updateVacationCommentUseCase: UpdateVacationCommentUseCase = mockk()
-    private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase = mockk()
+    private val manageVacationCommentsUseCase: ManageVacationCommentsUseCase = mockk()
     private val saveVacationUseCase: SaveVacationUseCase = mockk()
     private val unsaveVacationUseCase: UnsaveVacationUseCase = mockk()
     private val isVacationSavedUseCase: IsVacationSavedUseCase = mockk()
@@ -64,9 +62,7 @@ class VacationDetailsViewModelTest {
             getVacationDetailsUseCase,
             removePlaceFromVacationUseCase,
             getVacationCommentsUseCase,
-            addVacationCommentUseCase,
-            updateVacationCommentUseCase,
-            deleteVacationCommentUseCase,
+            manageVacationCommentsUseCase,
             saveVacationUseCase,
             unsaveVacationUseCase,
             isVacationSavedUseCase,
@@ -147,7 +143,7 @@ class VacationDetailsViewModelTest {
         createViewModel()
 
         val newComment = mockk<VacationComment>(relaxed = true)
-        coEvery { addVacationCommentUseCase(vacationId, "Great!") } returns Result.success(newComment)
+        coEvery { manageVacationCommentsUseCase.addComment(vacationId, "Great!") } returns Result.success(newComment)
 
         viewModel.addVacationComment("Great!")
 
@@ -161,7 +157,7 @@ class VacationDetailsViewModelTest {
         createViewModel()
 
         val errorMsg = "Failed to add"
-        coEvery { addVacationCommentUseCase(vacationId, any()) } returns Result.failure(Exception(errorMsg))
+        coEvery { manageVacationCommentsUseCase.addComment(vacationId, any()) } returns Result.failure(Exception(errorMsg))
 
         viewModel.addVacationComment("Test")
 
@@ -178,7 +174,7 @@ class VacationDetailsViewModelTest {
             Result.success(emptyList()),
             Result.success(listOf(updatedComment))
         )
-        coEvery { updateVacationCommentUseCase(commentId, "Updated") } returns Result.success(Unit)
+        coEvery { manageVacationCommentsUseCase.updateComment(commentId, "Updated") } returns Result.success(Unit)
 
         createViewModel()
 
@@ -193,7 +189,7 @@ class VacationDetailsViewModelTest {
         createViewModel()
 
         val errorMsg = "Update failed"
-        coEvery { updateVacationCommentUseCase(any(), any()) } returns Result.failure(Exception(errorMsg))
+        coEvery { manageVacationCommentsUseCase.updateComment(any(), any()) } returns Result.failure(Exception(errorMsg))
 
         viewModel.updateVacationComment("c1", "Updated")
 
@@ -211,7 +207,7 @@ class VacationDetailsViewModelTest {
 
         createViewModel()
 
-        coEvery { deleteVacationCommentUseCase(commentId) } returns Result.success(Unit)
+        coEvery { manageVacationCommentsUseCase.deleteComment(commentId) } returns Result.success(Unit)
 
         viewModel.deleteVacationComment(commentId)
 

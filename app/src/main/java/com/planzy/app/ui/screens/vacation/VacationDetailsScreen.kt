@@ -38,15 +38,13 @@ import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
-import com.planzy.app.domain.usecase.vacation.AddVacationCommentUseCase
-import com.planzy.app.domain.usecase.vacation.DeleteVacationCommentUseCase
+import com.planzy.app.domain.usecase.vacation.ManageVacationCommentsUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationCommentsUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationDetailsUseCase
 import com.planzy.app.domain.usecase.vacation.IsVacationSavedUseCase
 import com.planzy.app.domain.usecase.vacation.RemovePlaceFromVacationUseCase
 import com.planzy.app.domain.usecase.vacation.SaveVacationUseCase
 import com.planzy.app.domain.usecase.vacation.UnsaveVacationUseCase
-import com.planzy.app.domain.usecase.vacation.UpdateVacationCommentUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.AddVacationCommentSection
@@ -78,9 +76,7 @@ fun VacationDetailsScreen(
     val getVacationDetailsUseCase = remember { GetVacationDetailsUseCase(vacationsRepository, placesRepository) }
     val removePlaceFromVacationUseCase = remember { RemovePlaceFromVacationUseCase(vacationsRepository) }
     val getVacationCommentsUseCase = remember { GetVacationCommentsUseCase(vacationsRepository) }
-    val addVacationCommentUseCase = remember { AddVacationCommentUseCase(vacationsRepository, resourceProvider) }
-    val updateVacationCommentUseCase = remember { UpdateVacationCommentUseCase(vacationsRepository, resourceProvider) }
-    val deleteVacationCommentUseCase = remember { DeleteVacationCommentUseCase(vacationsRepository) }
+    val manageVacationCommentsUseCase = remember { ManageVacationCommentsUseCase(vacationsRepository, resourceProvider) }
     val saveVacationUseCase = remember { SaveVacationUseCase(vacationsRepository) }
     val unsaveVacationUseCase = remember { UnsaveVacationUseCase(vacationsRepository) }
     val isVacationSavedUseCase = remember { IsVacationSavedUseCase(vacationsRepository) }
@@ -93,9 +89,7 @@ fun VacationDetailsScreen(
             getVacationDetailsUseCase = getVacationDetailsUseCase,
             removePlaceFromVacationUseCase = removePlaceFromVacationUseCase,
             getVacationCommentsUseCase = getVacationCommentsUseCase,
-            addVacationCommentUseCase = addVacationCommentUseCase,
-            updateVacationCommentUseCase = updateVacationCommentUseCase,
-            deleteVacationCommentUseCase = deleteVacationCommentUseCase,
+            manageVacationCommentsUseCase = manageVacationCommentsUseCase,
             saveVacationUseCase = saveVacationUseCase,
             unsaveVacationUseCase = unsaveVacationUseCase,
             isVacationSavedUseCase = isVacationSavedUseCase,
