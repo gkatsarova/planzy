@@ -10,7 +10,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,8 +41,6 @@ fun PlaceDetailsScreen(
     searchViewModel: SearchViewModel
 ) {
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp.dp
 
     val tripadvisorApi = remember { TripadvisorApi() }
     val resourceProvider = remember { ResourceProviderImpl(context) }
@@ -153,8 +150,7 @@ fun PlaceDetailsScreen(
                             item {
                                 ReviewsSection(
                                     reviews = viewModel.reviews,
-                                    isLoading = viewModel.isLoadingReviews,
-                                    modifier = Modifier.heightIn(max = screenHeight * 0.35f)
+                                    isLoading = viewModel.isLoadingReviews
                                 )
                             }
 
@@ -189,7 +185,6 @@ fun PlaceDetailsScreen(
                                     },
                                     onEditStart = { isEditingAnyComment = true },
                                     onEditCancel = { isEditingAnyComment = false },
-                                    modifier = Modifier.heightIn(max = screenHeight * 0.35f),
                                     navController = navController,
                                     getUserByAuthIdUseCase = getUserByAuthIdUseCase
                                 )
@@ -242,7 +237,7 @@ fun PlaceDetailsScreen(
                 color = Lavender,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .imePadding()
+                    .windowInsetsPadding(WindowInsets.ime)
             ) {
                 AddCommentSection(
                     isSubmitting = viewModel.isSubmittingComment,
