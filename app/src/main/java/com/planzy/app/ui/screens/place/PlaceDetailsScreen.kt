@@ -85,7 +85,8 @@ fun PlaceDetailsScreen(
         )
     )
 
-    val showAddCommentSection = searchViewModel.placesWithStats.isEmpty() &&
+    val showAddCommentSection = !searchViewModel.isSearchBarFocused &&
+            searchViewModel.placesWithStats.isEmpty() &&
             searchViewModel.vacations.isEmpty() &&
             !searchViewModel.isLoading &&
             !isEditingAnyComment

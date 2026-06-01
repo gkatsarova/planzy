@@ -119,7 +119,8 @@ class MainActivity : ComponentActivity() {
                                 profilePictureUrl = plazyTopBarViewModel.profilePictureUrl,
                                 navController = navController,
                                 searchQuery = searchViewModel.searchQuery,
-                                onSearch = { query -> searchViewModel.search(query) }
+                                onSearch = { query -> searchViewModel.search(query) },
+                                onSearchFocusChanged = { isFocused -> searchViewModel.updateSearchBarFocus(isFocused) }
                             )
                         }
                     },
