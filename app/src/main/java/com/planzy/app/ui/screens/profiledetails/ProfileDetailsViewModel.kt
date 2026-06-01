@@ -12,9 +12,8 @@ import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.FollowStats
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
-import com.planzy.app.domain.usecase.follow.FollowUserUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowDataUseCase
-import com.planzy.app.domain.usecase.follow.UnfollowUserUseCase
+import com.planzy.app.domain.usecase.follow.ManageFollowUseCase
 import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
 import kotlinx.coroutines.launch
@@ -29,8 +28,7 @@ class ProfileDetailsViewModel(
     private val getUserByUsernameUseCase: GetUserByUsernameUseCase,
     private val getUserVacationsByIdUseCase: GetUserVacationsByIdUseCase,
     private val getFollowDataUseCase: GetFollowDataUseCase,
-    private val followUserUseCase: FollowUserUseCase,
-    private val unfollowUserUseCase: UnfollowUserUseCase,
+    private val manageFollowUseCase: ManageFollowUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
@@ -193,22 +191,9 @@ class ProfileDetailsViewModel(
             isToggleFollowLoading = true
             followError = null
 
-            val result = if (currentStats.isFollowing) {
-                unfollowUserUseCase(currentUser.auth_id)
-            } else {
-                followUserUseCase(currentUser.auth_id)
-            }
-
-            result
-                .onSuccess {
-                    followStats = followStats?.copy(
-                        isFollowing = !currentStats.isFollowing,
-                        followersCount = if (!currentStats.isFollowing) {
-                            currentStats.followersCount + 1
-                        } else {
-                            currentStats.followersCount - 1
-                        }
-                    )
+            manageFollowUseCase.toggle(currentUser.auth_id, currentStats)
+                .onSuccess { updatedStats ->
+                    followStats = updatedStats
                 }
                 .onFailure {
                     followError = resourceProvider.getString(R.string.error_updating_follow_status)
@@ -230,8 +215,7 @@ class ProfileDetailsViewModel(
         private val getUserByUsernameUseCase: GetUserByUsernameUseCase,
         private val getUserVacationsByIdUseCase: GetUserVacationsByIdUseCase,
         private val getFollowDataUseCase: GetFollowDataUseCase,
-        private val followUserUseCase: FollowUserUseCase,
-        private val unfollowUserUseCase: UnfollowUserUseCase,
+        private val manageFollowUseCase: ManageFollowUseCase,
         private val getCurrentUserUseCase: GetCurrentUserUseCase,
         private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
@@ -242,8 +226,7 @@ class ProfileDetailsViewModel(
                     getUserByUsernameUseCase,
                     getUserVacationsByIdUseCase,
                     getFollowDataUseCase,
-                    followUserUseCase,
-                    unfollowUserUseCase,
+                    manageFollowUseCase,
                     getCurrentUserUseCase,
                     resourceProvider
                 ) as T

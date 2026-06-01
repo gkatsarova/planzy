@@ -40,8 +40,6 @@ import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProviderImpl
-import com.planzy.app.domain.usecase.follow.FollowUserUseCase
-import com.planzy.app.domain.usecase.follow.UnfollowUserUseCase
 import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
 import com.planzy.app.ui.navigation.VacationDetails
@@ -58,6 +56,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.follow.GetFollowDataUseCase
+import com.planzy.app.domain.usecase.follow.ManageFollowUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.SearchResultsOverlay
@@ -79,8 +78,7 @@ fun ProfileDetailsScreen(
     val getUserByUsernameUseCase = remember { GetUserByUsernameUseCase(userRepository) }
     val getUserVacationsByIdUseCase = remember { GetUserVacationsByIdUseCase(vacationsRepository) }
     val getFollowDataUseCase = remember { GetFollowDataUseCase(followRepository) }
-    val followUserUseCase = remember { FollowUserUseCase(followRepository) }
-    val unfollowUserUseCase = remember { UnfollowUserUseCase(followRepository) }
+    val manageFollowUseCase = remember { ManageFollowUseCase(followRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
     val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
 
@@ -90,8 +88,7 @@ fun ProfileDetailsScreen(
                 getUserByUsernameUseCase = getUserByUsernameUseCase,
                 getUserVacationsByIdUseCase = getUserVacationsByIdUseCase,
                 getFollowDataUseCase = getFollowDataUseCase,
-                followUserUseCase = followUserUseCase,
-                unfollowUserUseCase = unfollowUserUseCase,
+                manageFollowUseCase = manageFollowUseCase,
                 getCurrentUserUseCase = getCurrentUserUseCase,
                 resourceProvider = resourceProvider
             )
