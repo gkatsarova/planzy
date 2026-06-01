@@ -64,7 +64,7 @@ fun VacationDetailsCard(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = "Created by $creatorUsername",
+                                text = stringResource(id = R.string.created_by, creatorUsername),
                                 fontFamily = Raleway,
                                 fontSize = 14.sp,
                                 color = Lavender,

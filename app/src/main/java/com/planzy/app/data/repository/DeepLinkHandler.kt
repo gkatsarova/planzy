@@ -70,7 +70,8 @@ class DeepLinkHandler(
                     handleEmailVerification()
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to import session from fragment: ${e.message}", e)
-                    DeepLinkResult.Error("Failed to verify email: ${e.message}")
+                    val baseMessage = resourceProvider.getString(R.string.error_failed_to_verify_email)
+                    DeepLinkResult.Error(String.format(baseMessage, e.message ?: ""))
                 }
             }
             "recovery" -> {

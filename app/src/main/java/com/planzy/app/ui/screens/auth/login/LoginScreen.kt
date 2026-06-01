@@ -247,9 +247,12 @@ fun LoginScreen(
 
                     OutlinedAppButton(
                         text = if (viewModel.canResendEmail) {
-                            "Resend reset email"
+                            stringResource(id = R.string.resend_reset_email)
                         } else {
-                            "Resend in ${viewModel.resendCooldownSeconds}s"
+                            stringResource(
+                                id = R.string.resend_cooldown,
+                                viewModel.resendCooldownSeconds
+                            )
                         },
                         onClick = {
                             viewModel.clearError()
@@ -297,7 +300,10 @@ fun LoginScreen(
                     text = if (viewModel.canResendEmail) {
                         stringResource(id = R.string.forgot_password)
                     } else {
-                        "Resend in ${viewModel.resendCooldownSeconds}s"
+                        stringResource(
+                            id = R.string.resend_cooldown,
+                            viewModel.resendCooldownSeconds
+                        )
                     },
                     onClick = {
                         viewModel.clearError()

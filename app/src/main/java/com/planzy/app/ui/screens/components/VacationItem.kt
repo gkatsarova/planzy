@@ -14,8 +14,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.planzy.app.R
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.MediumBluePurple
@@ -49,7 +51,11 @@ fun VacationItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${vacation.placesCount} places",
+                    text = pluralStringResource(
+                        id = R.plurals.places_count,
+                        count = vacation.placesCount,
+                        vacation.placesCount
+                    ),
                     fontFamily = Raleway,
                     fontSize = 14.sp,
                     color = Lavender

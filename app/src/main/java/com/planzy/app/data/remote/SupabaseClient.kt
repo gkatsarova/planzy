@@ -15,8 +15,8 @@ import com.planzy.app.BuildConfig
 
 object SupabaseClient {
 
-    private val SUPABASE_URL = BuildConfig.SUPABASE_URL
-    private val SUPABASE_KEY = BuildConfig.SUPABASE_KEY
+    private const val SUPABASE_URL = BuildConfig.SUPABASE_URL
+    private const val SUPABASE_KEY = BuildConfig.SUPABASE_KEY
 
     lateinit var client: SupabaseClient
         private set

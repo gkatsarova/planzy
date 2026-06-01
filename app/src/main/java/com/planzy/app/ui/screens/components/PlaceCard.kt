@@ -24,7 +24,7 @@ import com.planzy.app.ui.theme.MediumBluePurple
 import com.planzy.app.R
 import com.planzy.app.ui.theme.Lavender
 import com.planzy.app.ui.theme.Raleway
-import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 @Composable
 fun PlaceCard(
@@ -176,7 +176,7 @@ fun PlaceCard(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "%.1f", userRating),
+                                    text = String.format(LocalLocale.current.platformLocale, "%.1f", userRating),
                                     fontFamily = Raleway,
                                     fontSize = 13.sp,
                                     color = Lavender

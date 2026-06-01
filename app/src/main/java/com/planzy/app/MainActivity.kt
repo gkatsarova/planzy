@@ -14,6 +14,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -106,9 +107,13 @@ class MainActivity : ComponentActivity() {
 
                 val title = when {
                     currentRoute?.startsWith(ProfileDetails.route) == true -> {
-                        navBackStackEntry?.arguments?.getString(ProfileDetails.ARG_USERNAME) ?: "Profile"
+                        navBackStackEntry?.arguments?.getString(ProfileDetails.ARG_USERNAME) ?: stringResource(R.string.title_profile)
                     }
-                    else -> getTitleForRoute(currentRoute)
+                    else -> {
+                        // Взимаме Int от функцията и го превръщаме в String
+                        val titleResId = getTitleForRoute(currentRoute)
+                        stringResource(id = titleResId)
+                    }
                 }
 
                 Scaffold(

@@ -27,13 +27,11 @@ class FollowRepositoryImpl(
                     .first()
             } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
 
-            val followerId = currentUserId
-
-            Log.d(TAG, "Following user: $followingId by user: $followerId")
+            Log.d(TAG, "Following user: $followingId by user: $currentUserId")
 
             SupabaseClient.client.postgrest["follows"].insert(
                 mapOf(
-                    "follower_id" to followerId,
+                    "follower_id" to currentUserId,
                     "following_id" to followingId
                 )
             )

@@ -40,7 +40,10 @@ class VacationPlannerViewModel(
             val user = getCurrentUserUseCase()
             username = user?.userMetadata?.get("username")?.toString()?.removeSurrounding("\"")
                 ?: resourceProvider.getString(R.string.traveller)
-            messages.add(ChatMessage("Hello, $username! ${resourceProvider.getString(R.string.planner_default_text1)}", false))
+            val template = resourceProvider.getString(R.string.welcome_planner_text)
+            val defaultText = resourceProvider.getString(R.string.planner_default_text1)
+            val fullMessage = String.format(template, username, defaultText)
+            messages.add(ChatMessage(fullMessage, false))
             messages.add(ChatMessage(resourceProvider.getString(R.string.planner_default_text2), false))
         }
     }

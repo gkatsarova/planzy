@@ -302,7 +302,7 @@ class VacationsRepositoryImpl(
                     user.username
                 } catch (e: Exception) {
                     Log.e(TAG, "Error getting user info: ${e.message}", e)
-                    "Unknown User"
+                    resourceProvider.getString(R.string.unknown_user)
                 }
             }
 
@@ -495,7 +495,7 @@ class VacationsRepositoryImpl(
                 userInfo.username
             } catch (e: Exception) {
                 Log.e(TAG, "Error fetching username: ${e.message}", e)
-                "Unknown User"
+                resourceProvider.getString(R.string.unknown_user)
             }
 
             val comment = VacationComment(

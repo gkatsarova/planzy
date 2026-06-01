@@ -38,7 +38,7 @@ class HomeViewModel(
                 .onSuccess { vacations ->
                     vacationsState = VacationsState.Success(vacations)
                 }
-                .onFailure { exception ->
+                .onFailure { _ ->
                     vacationsState = VacationsState.Error(
                         resourceProvider.getString(R.string.error_loading_vacations)
                     )
@@ -54,7 +54,7 @@ class HomeViewModel(
                 .onSuccess { vacations ->
                     vacationsState = VacationsState.Success(vacations)
                 }
-                .onFailure { exception ->
+                .onFailure { _ ->
                     vacationsState = VacationsState.Error(
                         resourceProvider.getString(R.string.error_loading_vacations)
                     )

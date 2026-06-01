@@ -102,7 +102,8 @@ class VacationPlannerRepositoryImpl(
             }
 
             val vacationId = UUID.randomUUID().toString()
-            val vacationDTO = VacationDTO(vacationId, userId, "Trip to ${intent.destination}", java.time.Instant.now().toString())
+            val baseTitle = resourceProvider.getString(R.string.trip_to_destination)
+            val vacationDTO = VacationDTO(vacationId, userId, String.format(baseTitle, intent.destination), java.time.Instant.now().toString())
             supabaseClient.client.postgrest["vacations"].insert(vacationDTO)
 
             val links = uniquePlaces.mapIndexed { i, p -> VacationPlaceInsertDTO(vacationId, p.id, i) }

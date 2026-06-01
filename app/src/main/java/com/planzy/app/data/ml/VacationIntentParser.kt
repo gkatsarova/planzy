@@ -145,6 +145,6 @@ class VacationIntentParser(
     private fun loadLearnedData(): LearnedThemeData {
         val prefs = context.getSharedPreferences("ml_prefs", Context.MODE_PRIVATE)
         val raw = prefs.getString("data", null) ?: return LearnedThemeData()
-        return try { json.decodeFromString(LearnedThemeData.serializer(), raw) } catch (e: Exception) { LearnedThemeData() }
+        return try { json.decodeFromString(LearnedThemeData.serializer(), raw) } catch (_: Exception) { LearnedThemeData() }
     }
 }

@@ -16,7 +16,7 @@ class ResendVerificationEmailUseCase(
             } else {
                 Result.failure(Exception(resourceProvider.getString(R.string.error_verification_email_resend)))
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Result.failure(Exception(resourceProvider.getString(R.string.error_verification_email_resend)))
         }
     }
