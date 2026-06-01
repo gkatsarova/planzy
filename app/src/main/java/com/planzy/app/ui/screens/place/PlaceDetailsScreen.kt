@@ -91,7 +91,11 @@ fun PlaceDetailsScreen(
             !searchViewModel.isLoading &&
             !isEditingAnyComment
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    val mainColumnModifier = Modifier.fillMaxSize().let {
+        if (isEditingAnyComment) it.imePadding() else it
+    }
+
+    Column(modifier = mainColumnModifier) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -186,6 +190,7 @@ fun PlaceDetailsScreen(
                                     },
                                     onEditStart = { isEditingAnyComment = true },
                                     onEditCancel = { isEditingAnyComment = false },
+                                    modifier = Modifier.fillParentMaxHeight(0.35f),
                                     navController = navController,
                                     getUserByAuthIdUseCase = getUserByAuthIdUseCase
                                 )

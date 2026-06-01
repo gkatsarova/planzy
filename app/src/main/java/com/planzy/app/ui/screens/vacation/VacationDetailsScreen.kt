@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -99,7 +100,11 @@ fun VacationDetailsScreen(
             !searchViewModel.isLoading &&
             !isEditingAnyComment
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    val mainColumnModifier = Modifier.fillMaxSize().let {
+        if (isEditingAnyComment) it.imePadding() else it
+    }
+
+    Column(modifier = mainColumnModifier) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -205,6 +210,7 @@ fun VacationDetailsScreen(
                                     },
                                     onEditStart = { isEditingAnyComment = true },
                                     onEditCancel = { isEditingAnyComment = false },
+                                    modifier = Modifier.fillParentMaxHeight(0.35f),
                                     navController = navController,
                                     getUserByAuthIdUseCase = getUserByAuthIdUseCase
                                 )

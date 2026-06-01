@@ -68,8 +68,7 @@ fun UserCommentsSection(
             else -> {
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp),
+                        .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(comments) { comment ->
