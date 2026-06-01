@@ -67,37 +67,18 @@ fun LoginScreen(
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
-    val loading by viewModel.loading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val success by viewModel.success.collectAsState()
-    val successMessage by viewModel.successMessage.collectAsState()
-    val fieldErrors by viewModel.fieldErrors.collectAsState()
-    val showResendVerification by viewModel.showResendVerification.collectAsState()
-    val canResendEmail by viewModel.canResendEmail.collectAsState()
-    val resendCooldownSeconds by viewModel.resendCooldownSeconds.collectAsState()
-
-    val deepLinkResult by deepLinkViewModel.deepLinkResult.collectAsState()
-
-    val forgotPasswordLoading by viewModel.forgotPasswordLoading.collectAsState()
-    val forgotPasswordMessage by viewModel.forgotPasswordMessage.collectAsState()
-    val isResetPasswordMode by viewModel.isResetPasswordMode.collectAsState()
-    val resetPasswordLoading by viewModel.resetPasswordLoading.collectAsState()
-    val newPasswordError by viewModel.newPasswordError.collectAsState()
-    val confirmPasswordError by viewModel.confirmPasswordError.collectAsState()
-    val justResetPassword by viewModel.justResetPassword.collectAsState()
-
-    LaunchedEffect(success) {
-        if (success) {
+    LaunchedEffect(viewModel.success) {
+        if (viewModel.success) {
             navController.navigate(Home.route) {
                 popUpTo(0) { inclusive = true }
             }
         }
     }
 
-    LaunchedEffect(deepLinkResult) {
-        when (val result = deepLinkResult) {
+    LaunchedEffect(deepLinkViewModel.deepLinkResult) {
+        when (val result = deepLinkViewModel.deepLinkResult) {
             is DeepLinkResult.Error -> {
-                viewModel.setError(result.message)
+                viewModel.setAuthError(result.message)
                 deepLinkViewModel.clearDeepLinkResult()
             }
             is DeepLinkResult.PasswordReset -> {
@@ -163,9 +144,9 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
                     .height(70.dp),
-                isError = fieldErrors.emailError != null
+                isError = viewModel.fieldErrors.emailError != null
             )
-            fieldErrors.emailError?.let { errorMsg ->
+            viewModel.fieldErrors.emailError?.let { errorMsg ->
                 Text(
                     text = errorMsg,
                     color = ErrorColor,
@@ -178,7 +159,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (isResetPasswordMode || justResetPassword) {
+            if (viewModel.isResetPasswordMode || viewModel.justResetPassword) {
                 PasswordTextField(
                     value = newPassword,
                     label = stringResource(id = R.string.new_password),
@@ -186,13 +167,13 @@ fun LoginScreen(
                         newPassword = it
                         viewModel.validateNewPassword(it)
                     },
-                    isError = newPasswordError != null,
+                    isError = viewModel.newPasswordError != null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                         .height(70.dp)
                 )
-                newPasswordError?.let { errorMsg ->
+                viewModel.newPasswordError?.let { errorMsg ->
                     Text(
                         text = errorMsg,
                         color = ErrorColor,
@@ -212,13 +193,13 @@ fun LoginScreen(
                         confirmPassword = it
                         viewModel.validateConfirmPassword(newPassword, it)
                     },
-                    isError = confirmPasswordError != null,
+                    isError = viewModel.confirmPasswordError != null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                         .height(70.dp)
                 )
-                confirmPasswordError?.let { errorMsg ->
+                viewModel.confirmPasswordError?.let { errorMsg ->
                     Text(
                         text = errorMsg,
                         color = ErrorColor,
@@ -232,13 +213,13 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 AuthButton(
-                    text = if (justResetPassword) {
+                    text = if (viewModel.justResetPassword) {
                         stringResource(id = R.string.redirecting)
                     } else {
                         stringResource(id = R.string.reset_password)
                     },
                     onClick = {
-                        if (!justResetPassword) {
+                        if (!viewModel.justResetPassword) {
                             viewModel.clearError()
                             viewModel.clearSuccess()
                             viewModel.resetPassword(newPassword, confirmPassword)
@@ -248,27 +229,27 @@ fun LoginScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                         .height(60.dp),
-                    enabled = !resetPasswordLoading && !justResetPassword &&
+                    enabled = !viewModel.resetPasswordLoading && !viewModel.justResetPassword &&
                             newPassword.isNotBlank() &&
                             confirmPassword.isNotBlank() &&
-                            newPasswordError == null &&
-                            confirmPasswordError == null,
-                    loading = resetPasswordLoading || justResetPassword,
-                    loadingText = if (justResetPassword) {
+                            viewModel.newPasswordError == null &&
+                            viewModel.confirmPasswordError == null,
+                    loading = viewModel.resetPasswordLoading || viewModel.justResetPassword,
+                    loadingText = if (viewModel.justResetPassword) {
                         stringResource(id = R.string.redirecting)
                     } else {
                         stringResource(id = R.string.resetting)
                     }
                 )
 
-                if (!justResetPassword) {
+                if (!viewModel.justResetPassword) {
                     Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedAppButton(
-                        text = if (canResendEmail) {
+                        text = if (viewModel.canResendEmail) {
                             "Resend reset email"
                         } else {
-                            "Resend in ${resendCooldownSeconds}s"
+                            "Resend in ${viewModel.resendCooldownSeconds}s"
                         },
                         onClick = {
                             viewModel.clearError()
@@ -279,8 +260,8 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
                             .height(50.dp),
-                        enabled = email.isNotBlank() && !forgotPasswordLoading && canResendEmail,
-                        loading = forgotPasswordLoading,
+                        enabled = email.isNotBlank() && !viewModel.forgotPasswordLoading && viewModel.canResendEmail,
+                        loading = viewModel.forgotPasswordLoading,
                         loadingText = stringResource(id = R.string.sending),
                         fontSize = 16.sp
                     )
@@ -293,13 +274,13 @@ fun LoginScreen(
                         password = it
                         viewModel.validatePassword(it)
                     },
-                    isError = fieldErrors.passwordError != null,
+                    isError = viewModel.fieldErrors.passwordError != null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                         .height(70.dp)
                 )
-                fieldErrors.passwordError?.let { errorMsg ->
+                viewModel.fieldErrors.passwordError?.let { errorMsg ->
                     Text(
                         text = errorMsg,
                         color = ErrorColor,
@@ -313,10 +294,10 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedAppButton(
-                    text = if (canResendEmail) {
+                    text = if (viewModel.canResendEmail) {
                         stringResource(id = R.string.forgot_password)
                     } else {
-                        "Resend in ${resendCooldownSeconds}s"
+                        "Resend in ${viewModel.resendCooldownSeconds}s"
                     },
                     onClick = {
                         viewModel.clearError()
@@ -327,8 +308,8 @@ fun LoginScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                         .height(50.dp),
-                    enabled = email.isNotBlank() && !forgotPasswordLoading && canResendEmail,
-                    loading = forgotPasswordLoading,
+                    enabled = email.isNotBlank() && !viewModel.forgotPasswordLoading && viewModel.canResendEmail,
+                    loading = viewModel.forgotPasswordLoading,
                     loadingText = stringResource(id = R.string.sending),
                     fontSize = 16.sp
                 )
@@ -346,19 +327,19 @@ fun LoginScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                         .height(60.dp),
-                    enabled = !loading &&
+                    enabled = !viewModel.loading &&
                             email.isNotBlank() &&
                             password.isNotBlank() &&
-                            fieldErrors.emailError == null &&
-                            fieldErrors.passwordError == null,
-                    loading = loading,
+                            viewModel.fieldErrors.emailError == null &&
+                            viewModel.fieldErrors.passwordError == null,
+                    loading = viewModel.loading,
                     loadingText = stringResource(id = R.string.logging_in)
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            error?.let { errorMessage ->
+            viewModel.error?.let { errorMessage ->
                 MessageCard(
                     message = errorMessage,
                     type = MessageType.ERROR,
@@ -367,7 +348,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            forgotPasswordMessage?.let { message ->
+            viewModel.forgotPasswordMessage?.let { message ->
                 MessageCard(
                     message = message,
                     type = MessageType.SUCCESS,
@@ -376,8 +357,8 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            if (success) {
-                successMessage?.let { message ->
+            if (viewModel.success) {
+                viewModel.successMessage?.let { message ->
                     MessageCard(
                         message = message,
                         type = MessageType.SUCCESS,
@@ -389,17 +370,17 @@ fun LoginScreen(
                 }
             }
 
-            if (showResendVerification && !isResetPasswordMode && !justResetPassword) {
+            if (viewModel.showResendVerification && viewModel.isResetPasswordMode && !viewModel.justResetPassword) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                 ) {
                     OutlinedAppButton(
-                        text = if (canResendEmail) {
+                        text = if (viewModel.canResendEmail) {
                             stringResource(id = R.string.resend_verification_email)
                         } else {
-                            "Resend in ${resendCooldownSeconds}s"
+                            "Resend in ${viewModel.resendCooldownSeconds}s"
                         },
                         onClick = {
                             viewModel.clearError()
@@ -408,8 +389,8 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                        enabled = canResendEmail,
-                        loading = loading,
+                        enabled = viewModel.canResendEmail,
+                        loading = viewModel.loading,
                         loadingText = stringResource(id = R.string.sending),
                         fontSize = 20.sp
                     )

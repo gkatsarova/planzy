@@ -1,44 +1,45 @@
 package com.planzy.app.ui.screens.auth.registration
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.planzy.app.data.repository.DeepLinkResult
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 
 class DeepLinkViewModel : ViewModel() {
 
-    private val _deepLinkResult = MutableStateFlow<DeepLinkResult>(DeepLinkResult.NoDeepLink)
-    val deepLinkResult: StateFlow<DeepLinkResult> = _deepLinkResult
+    var deepLinkResult by mutableStateOf<DeepLinkResult>(DeepLinkResult.NoDeepLink)
+        private set
 
-    private val _lastRoute = MutableStateFlow<String?>(null)
+    private var lastRoute by mutableStateOf<String?>(null)
 
-    private val _pendingEmail = MutableStateFlow<String?>(null)
+    private var pendingEmail by mutableStateOf<String?>(null)
 
-    private val _pendingPassword = MutableStateFlow<String?>(null)
+    private var pendingPassword by mutableStateOf<String?>(null)
 
     fun handleDeepLinkResult(result: DeepLinkResult) {
-        _deepLinkResult.value = result
+        deepLinkResult = result
     }
 
     fun clearDeepLinkResult() {
-        _deepLinkResult.value = DeepLinkResult.NoDeepLink
+        deepLinkResult = DeepLinkResult.NoDeepLink
     }
 
     fun saveLastRoute(route: String) {
-        _lastRoute.value = route
+        lastRoute = route
     }
 
     fun savePendingCredentials(email: String, password: String) {
-        _pendingEmail.value = email
-        _pendingPassword.value = password
+        pendingEmail = email
+        pendingPassword = password
     }
 
     fun getPendingCredentials(): Pair<String?, String?> {
-        return Pair(_pendingEmail.value, _pendingPassword.value)
+        return Pair(pendingEmail, pendingPassword)
     }
 
     fun clearPendingCredentials() {
-        _pendingEmail.value = null
-        _pendingPassword.value = null
+        pendingEmail = null
+        pendingPassword = null
     }
 }

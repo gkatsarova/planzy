@@ -89,8 +89,8 @@ class RegisterViewModelTest {
         viewModel.signUp("test@example.com", "Password123!", "testuser")
         advanceUntilIdle()
 
-        Assert.assertTrue(viewModel.success.value)
-        Assert.assertNotNull(viewModel.successMessage.value)
+        Assert.assertTrue(viewModel.success)
+        Assert.assertNotNull(viewModel.successMessage)
     }
 
     @Test
@@ -102,8 +102,8 @@ class RegisterViewModelTest {
         viewModel.signUp("test@example.com", "Password123!", "testuser")
         advanceUntilIdle()
 
-        Assert.assertFalse(viewModel.success.value)
-        Assert.assertEquals(errorMessage, viewModel.error.value)
+        Assert.assertFalse(viewModel.success)
+        Assert.assertEquals(errorMessage, viewModel.error)
     }
 
     @Test
@@ -111,7 +111,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername("TestUser")
         advanceUntilIdle()
 
-        Assert.assertNotNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNotNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -121,7 +121,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername("validuser")
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -133,7 +133,7 @@ class RegisterViewModelTest {
 
         Assert.assertEquals(
             "This username already exists",
-            viewModel.fieldErrors.value.usernameError
+            viewModel.fieldErrors.usernameError
         )
     }
 
@@ -144,7 +144,7 @@ class RegisterViewModelTest {
         viewModel.validateEmail("test@example.com")
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.emailError)
+        Assert.assertNull(viewModel.fieldErrors.emailError)
     }
 
     @Test
@@ -156,7 +156,7 @@ class RegisterViewModelTest {
         viewModel.validateEmail("existing@example.com")
         advanceUntilIdle()
 
-        Assert.assertNotNull(viewModel.fieldErrors.value.emailError)
+        Assert.assertNotNull(viewModel.fieldErrors.emailError)
     }
 
     @Test
@@ -167,8 +167,8 @@ class RegisterViewModelTest {
         viewModel.resendVerificationEmail("test@example.com")
         advanceUntilIdle()
 
-        Assert.assertNotNull(viewModel.successMessage.value)
-        Assert.assertFalse(viewModel.loading.value)
+        Assert.assertNotNull(viewModel.successMessage)
+        Assert.assertFalse(viewModel.loading)
     }
 
     @Test
@@ -179,7 +179,7 @@ class RegisterViewModelTest {
         viewModel.resendVerificationEmail("test@example.com")
         advanceUntilIdle()
 
-        Assert.assertNotNull(viewModel.error.value)
+        Assert.assertNotNull(viewModel.error)
     }
 
     @Test
@@ -187,7 +187,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername("")
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -197,7 +197,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername("abc")
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -208,7 +208,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername(longUsername)
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -216,7 +216,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername("a".repeat(21))
         advanceUntilIdle()
 
-        Assert.assertNotNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNotNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -226,6 +226,6 @@ class RegisterViewModelTest {
         viewModel.validateUsername("user.name_123")
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNull(viewModel.fieldErrors.usernameError)
     }
 }

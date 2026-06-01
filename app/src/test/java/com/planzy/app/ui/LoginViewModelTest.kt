@@ -122,9 +122,9 @@ class LoginViewModelTest {
         viewModel.login("test@example.com", "Password123!")
         advanceUntilIdle()
 
-        Assert.assertTrue(viewModel.success.value)
-        Assert.assertNull(viewModel.error.value)
-        Assert.assertFalse(viewModel.loading.value)
+        Assert.assertTrue(viewModel.success)
+        Assert.assertNull(viewModel.error)
+        Assert.assertFalse(viewModel.loading)
     }
 
     @Test
@@ -136,8 +136,8 @@ class LoginViewModelTest {
         viewModel.login("test@example.com", "WrongPass!")
         advanceUntilIdle()
 
-        Assert.assertFalse(viewModel.success.value)
-        Assert.assertEquals(errorMessage, viewModel.error.value)
+        Assert.assertFalse(viewModel.success)
+        Assert.assertEquals(errorMessage, viewModel.error)
     }
 
     @Test
@@ -150,9 +150,9 @@ class LoginViewModelTest {
         viewModel.sendPasswordResetEmail("test@example.com")
         advanceUntilIdle()
 
-        Assert.assertTrue(viewModel.forgotPasswordSuccess.value)
-        Assert.assertNotNull(viewModel.forgotPasswordMessage.value)
-        Assert.assertFalse(viewModel.forgotPasswordLoading.value)
+        Assert.assertTrue(viewModel.forgotPasswordSuccess)
+        Assert.assertNotNull(viewModel.forgotPasswordMessage)
+        Assert.assertFalse(viewModel.forgotPasswordLoading)
     }
 
     @Test
@@ -163,8 +163,8 @@ class LoginViewModelTest {
         viewModel.sendPasswordResetEmail("nonexistent@example.com")
         advanceUntilIdle()
 
-        Assert.assertFalse(viewModel.forgotPasswordSuccess.value)
-        Assert.assertEquals("Email not found", viewModel.error.value)
+        Assert.assertFalse(viewModel.forgotPasswordSuccess)
+        Assert.assertEquals("Email not found", viewModel.error)
     }
 
     @Test
@@ -177,24 +177,24 @@ class LoginViewModelTest {
         viewModel.sendPasswordResetEmail("test@example.com")
         advanceUntilIdle()
 
-        Assert.assertFalse(viewModel.forgotPasswordSuccess.value)
-        Assert.assertNotNull(viewModel.error.value)
+        Assert.assertFalse(viewModel.forgotPasswordSuccess)
+        Assert.assertNotNull(viewModel.error)
     }
 
     @Test
     fun `clearForgotPassword resets state`() {
         viewModel.clearForgotPassword()
 
-        Assert.assertFalse(viewModel.forgotPasswordLoading.value)
-        Assert.assertFalse(viewModel.forgotPasswordSuccess.value)
-        Assert.assertNull(viewModel.forgotPasswordMessage.value)
+        Assert.assertFalse(viewModel.forgotPasswordLoading)
+        Assert.assertFalse(viewModel.forgotPasswordSuccess)
+        Assert.assertNull(viewModel.forgotPasswordMessage)
     }
 
     @Test
     fun `enableResetPasswordMode activates reset mode`() {
         viewModel.enableResetPasswordMode()
 
-        Assert.assertTrue(viewModel.isResetPasswordMode.value)
+        Assert.assertTrue(viewModel.isResetPasswordMode)
     }
 
     @Test
@@ -205,8 +205,8 @@ class LoginViewModelTest {
         viewModel.resetPassword("NewPassword123!", "NewPassword123!")
         advanceUntilIdle()
 
-        Assert.assertTrue(viewModel.success.value)
-        Assert.assertFalse(viewModel.resetPasswordLoading.value)
+        Assert.assertTrue(viewModel.success)
+        Assert.assertFalse(viewModel.resetPasswordLoading)
     }
 
     @Test
@@ -214,8 +214,8 @@ class LoginViewModelTest {
         viewModel.resetPassword("NewPassword123!", "DifferentPass123!")
         advanceUntilIdle()
 
-        Assert.assertFalse(viewModel.success.value)
-        Assert.assertEquals("Passwords don't match", viewModel.error.value)
+        Assert.assertFalse(viewModel.success)
+        Assert.assertEquals("Passwords don't match", viewModel.error)
     }
 
     @Test
@@ -223,8 +223,8 @@ class LoginViewModelTest {
         viewModel.resetPassword("weak", "weak")
         advanceUntilIdle()
 
-        Assert.assertFalse(viewModel.success.value)
-        Assert.assertNotNull(viewModel.error.value)
+        Assert.assertFalse(viewModel.success)
+        Assert.assertNotNull(viewModel.error)
     }
 
     @Test
@@ -235,25 +235,25 @@ class LoginViewModelTest {
         viewModel.resetPassword("NewPassword123!", "NewPassword123!")
         advanceUntilIdle()
 
-        Assert.assertFalse(viewModel.success.value)
-        Assert.assertEquals("Update failed", viewModel.error.value)
+        Assert.assertFalse(viewModel.success)
+        Assert.assertEquals("Update failed", viewModel.error)
     }
 
     @Test
     fun `validateNewPassword updates field error state`() {
         viewModel.validateNewPassword("weak")
-        Assert.assertNotNull(viewModel.newPasswordError.value)
+        Assert.assertNotNull(viewModel.newPasswordError)
 
         viewModel.validateNewPassword("StrongPass123!")
-        Assert.assertNull(viewModel.newPasswordError.value)
+        Assert.assertNull(viewModel.newPasswordError)
     }
 
     @Test
     fun `validateConfirmPassword updates field error state`() {
         viewModel.validateConfirmPassword("Password123!", "DifferentPass123!")
-        Assert.assertNotNull(viewModel.confirmPasswordError.value)
+        Assert.assertNotNull(viewModel.confirmPasswordError)
 
         viewModel.validateConfirmPassword("Password123!", "Password123!")
-        Assert.assertNull(viewModel.confirmPasswordError.value)
+        Assert.assertNull(viewModel.confirmPasswordError)
     }
 }

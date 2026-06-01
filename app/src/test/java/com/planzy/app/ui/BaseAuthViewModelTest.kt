@@ -99,27 +99,27 @@ class BaseAuthViewModelTest {
 
     @Test
     fun `clearError resets error state`() {
-        viewModel.setError("Test error")
+        viewModel.setAuthError("Test error")
 
         viewModel.clearError()
 
-        Assert.assertNull(viewModel.error.value)
+        Assert.assertNull(viewModel.error)
     }
 
     @Test
     fun `clearSuccess resets success message`() = runTest {
         viewModel.clearSuccess()
 
-        Assert.assertNull(viewModel.successMessage.value)
+        Assert.assertNull(viewModel.successMessage)
     }
 
     @Test
-    fun `setError updates error and clears success states`() {
-        viewModel.setError("Test error")
+    fun `setAuthError updates error and clears success states`() {
+        viewModel.setAuthError("Test error")
 
-        Assert.assertEquals("Test error", viewModel.error.value)
-        Assert.assertFalse(viewModel.success.value)
-        Assert.assertNull(viewModel.successMessage.value)
+        Assert.assertEquals("Test error", viewModel.error)
+        Assert.assertFalse(viewModel.success)
+        Assert.assertNull(viewModel.successMessage)
     }
 
     @Test
@@ -128,8 +128,8 @@ class BaseAuthViewModelTest {
 
         val newViewModel = TestAuthViewModel(resourceProvider, cooldownManager)
 
-        Assert.assertFalse(newViewModel.canResendEmail.value)
-        Assert.assertEquals(30, newViewModel.resendCooldownSeconds.value)
+        Assert.assertFalse(newViewModel.canResendEmail)
+        Assert.assertEquals(30, newViewModel.resendCooldownSeconds)
     }
 
     @Test
@@ -138,37 +138,37 @@ class BaseAuthViewModelTest {
 
         val newViewModel = TestAuthViewModel(resourceProvider, cooldownManager)
 
-        Assert.assertTrue(newViewModel.canResendEmail.value)
-        Assert.assertEquals(0, newViewModel.resendCooldownSeconds.value)
+        Assert.assertTrue(newViewModel.canResendEmail)
+        Assert.assertEquals(0, newViewModel.resendCooldownSeconds)
     }
 
     @Test
     fun `loading state starts as false`() {
-        Assert.assertFalse(viewModel.loading.value)
+        Assert.assertFalse(viewModel.loading)
     }
 
     @Test
     fun `error state starts as null`() {
-        Assert.assertNull(viewModel.error.value)
+        Assert.assertNull(viewModel.error)
     }
 
     @Test
     fun `success message state starts as null`() {
-        Assert.assertNull(viewModel.successMessage.value)
+        Assert.assertNull(viewModel.successMessage)
     }
 
     @Test
     fun `success state starts as false`() {
-        Assert.assertFalse(viewModel.success.value)
+        Assert.assertFalse(viewModel.success)
     }
 
     @Test
     fun `canResendEmail state starts as true`() {
-        Assert.assertTrue(viewModel.canResendEmail.value)
+        Assert.assertTrue(viewModel.canResendEmail)
     }
 
     @Test
     fun `resendCooldownSeconds state starts as zero`() {
-        Assert.assertEquals(0, viewModel.resendCooldownSeconds.value)
+        Assert.assertEquals(0, viewModel.resendCooldownSeconds)
     }
 }
