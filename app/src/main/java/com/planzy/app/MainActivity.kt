@@ -124,7 +124,8 @@ class MainActivity : ComponentActivity() {
                                 navController = navController,
                                 searchQuery = searchViewModel.searchQuery,
                                 onQueryChange = { query -> searchViewModel.updateQuery(query) },
-                                onSearch = { searchViewModel.submitSearch() }
+                                onSearch = { searchViewModel.submitSearch() },
+                                onSearchFocusChanged = { focused -> searchViewModel.updateSearchBarFocus(focused) }
                             )
                         }
                     },

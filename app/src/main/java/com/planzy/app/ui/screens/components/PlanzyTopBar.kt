@@ -38,7 +38,7 @@ fun PlanzyTopAppBar(
     searchQuery: String,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
-    onSearchFocusChanged: (Boolean) -> Unit = {}
+    onSearchFocusChanged: (Boolean) -> Unit
 ) {
     var isSearchActive by remember { mutableStateOf(false) }
 

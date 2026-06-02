@@ -12,24 +12,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.planzy.app.R
-import com.planzy.app.data.repository.UserRepositoryImpl
-import com.planzy.app.data.util.ResourceProviderImpl
-import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
-import com.planzy.app.ui.navigation.VacationDetails
 import com.planzy.app.ui.screens.components.*
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.theme.*
@@ -50,10 +41,6 @@ fun VacationPlannerScreen(
             searchViewModel.isSearchBarFocused
 
     val listState = rememberLazyListState()
-
-    val resourceProvider = remember { ResourceProviderImpl(context) }
-    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
-    val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
 
     LaunchedEffect(plannerViewModel.messages.size, plannerViewModel.createdVacationId) {
         if (plannerViewModel.messages.isNotEmpty()) {
@@ -110,60 +97,6 @@ fun VacationPlannerScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 CircularProgressIndicator(color = AmaranthPurple)
-                            }
-                        }
-                    }
-                } else {
-                    if (searchViewModel.isLoading) {
-                        item {
-                            Box(
-                                Modifier.fillParentMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(color = AmaranthPurple)
-                            }
-                        }
-                    } else {
-                        if (searchViewModel.vacations.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = stringResource(R.string.vacations),
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(vertical = 8.dp)
-                                )
-                            }
-                            items(searchViewModel.vacations) { v ->
-                                VacationCard(
-                                    v,
-                                    onCardClick = {
-                                        searchViewModel.clearSearch()
-                                        navController.navigate(
-                                            VacationDetails.createRoute(v.id)
-                                        )
-                                    },
-                                    getUserByAuthIdUseCase = getUserByAuthIdUseCase,
-                                    navController = navController
-                                )
-                            }
-                        }
-                        if (searchViewModel.placesWithStats.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = stringResource(R.string.places),
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(vertical = 8.dp)
-                                )
-                            }
-                            items(searchViewModel.placesWithStats) { p ->
-                                PlaceCard(
-                                    place = p.place,
-                                    onCardClick = {
-                                        searchViewModel.clearSearch()
-                                        navController.navigate(PlaceDetails.createRoute(p.place.id))
-                                    },
-                                    userRating = p.userRating,
-                                    userReviewsCount = p.userReviewsCount
-                                )
                             }
                         }
                     }
