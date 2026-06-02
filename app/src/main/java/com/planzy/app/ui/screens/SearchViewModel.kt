@@ -15,8 +15,9 @@ import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
-import com.planzy.app.domain.usecase.search.SearchAllOutcome
-import com.planzy.app.domain.usecase.search.SearchAllParams
+import com.planzy.app.domain.model.SearchAllOutcome
+import com.planzy.app.domain.model.SearchAllParams
+import com.planzy.app.domain.model.SearchAllResult
 import com.planzy.app.domain.usecase.search.SearchAllUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationCommentsCountUseCase
 import kotlinx.coroutines.launch
@@ -159,7 +160,7 @@ class SearchViewModel(
         updateQuery(query)
         if (query.isNotBlank()) submitSearch()
     }
-    private suspend fun applyResult(result: com.planzy.app.domain.usecase.search.SearchAllResult) {
+    private suspend fun applyResult(result: SearchAllResult) {
         users = result.users
         vacations = enrichVacationsWithComments(result.vacations)
         val enriched = enrichPlacesWithStats(result.places)

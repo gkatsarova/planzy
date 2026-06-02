@@ -56,7 +56,9 @@ fun PlaceDetailsScreen(
     val userRepository = remember { UserRepositoryImpl(resourceProvider) }
 
     val getPlaceDataUseCase = remember { GetPlaceDataUseCase(placesRepository) }
-    val managePlaceCommentsUseCase = remember { ManagePlaceCommentsUseCase(placesRepository, resourceProvider) }
+    val addUserCommentUseCase = remember { AddUserCommentUseCase(placesRepository, resourceProvider) }
+    val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(placesRepository, resourceProvider) }
+    val deleteUserCommentUseCase = remember { DeleteUserCommentUseCase(placesRepository) }
 
     val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository, resourceProvider) }
     val createVacationUseCase = remember { CreateVacationUseCase(vacationsRepository) }
@@ -70,7 +72,9 @@ fun PlaceDetailsScreen(
     val viewModel: PlaceDetailsViewModel = viewModel(
         factory = PlaceDetailsViewModel.Factory(
             getPlaceDataUseCase = getPlaceDataUseCase,
-            managePlaceCommentsUseCase = managePlaceCommentsUseCase,
+            addCommentUseCase = addUserCommentUseCase,
+            updateUserCommentUseCase = updateUserCommentUseCase,
+            deleteUserCommentUseCase = deleteUserCommentUseCase,
             resourceProvider = resourceProvider,
             locationId = placeId
         )

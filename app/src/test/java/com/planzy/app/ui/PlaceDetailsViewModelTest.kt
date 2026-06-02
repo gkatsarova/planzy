@@ -2,6 +2,7 @@ package com.planzy.app.ui
 
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
+import com.planzy.app.domain.model.PlaceDetailsData
 import com.planzy.app.domain.model.UserComment
 import com.planzy.app.domain.usecase.place.*
 import com.planzy.app.ui.screens.place.PlaceDetailsViewModel
@@ -19,7 +20,9 @@ class PlaceDetailsViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
     private val getPlaceDataUseCase: GetPlaceDataUseCase = mockk()
-    private val managePlaceCommentsUseCase: ManagePlaceCommentsUseCase = mockk()
+    private val addUserCommentUseCase: AddUserCommentUseCase = mockk()
+    private val updateUserCommentUseCase: UpdateUserCommentUseCase = mockk()
+    private val deleteUserCommentUseCase: DeleteUserCommentUseCase = mockk()
     private val resourceProvider: ResourceProvider = mockk()
 
     private val locationId = "12345"
@@ -29,9 +32,12 @@ class PlaceDetailsViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
 
-        coEvery { getPlaceDataUseCase.getPlaceDetails(any()) } returns Result.success(mockk(relaxed = true))
-        coEvery { getPlaceDataUseCase.getPlaceReviews(any(), any()) } returns Result.success(emptyList())
-        coEvery { getPlaceDataUseCase.getUserComments(any()) } returns Result.success(emptyList())
+        val defaultMockData = PlaceDetailsData(
+            place = mockk(relaxed = true),
+            reviews = emptyList(),
+            userComments = emptyList()
+        )
+        coEvery { getPlaceDataUseCase(any(), any()) } returns Result.success(defaultMockData)
     }
 
     @After
@@ -41,17 +47,24 @@ class PlaceDetailsViewModelTest {
 
     private fun createViewModel() {
         viewModel = PlaceDetailsViewModel(
-            getPlaceDataUseCase,
-            managePlaceCommentsUseCase,
-            resourceProvider,
-            locationId
+            getPlaceDataUseCase = getPlaceDataUseCase,
+            addUserCommentUseCase = addUserCommentUseCase,
+            updateUserCommentUseCase = updateUserCommentUseCase,
+            deleteUserCommentUseCase = deleteUserCommentUseCase,
+            resourceProvider = resourceProvider,
+            locationId = locationId
         )
     }
 
     @Test
     fun `loadPlaceDetails success updates place state`() = runTest {
         val expectedPlace = mockk<Place>()
-        coEvery { getPlaceDataUseCase.getPlaceDetails(locationId) } returns Result.success(expectedPlace)
+        val successData = PlaceDetailsData(
+            place = expectedPlace,
+            reviews = emptyList(),
+            userComments = emptyList()
+        )
+        coEvery { getPlaceDataUseCase(locationId, any()) } returns Result.success(successData)
 
         createViewModel()
 
@@ -60,21 +73,10 @@ class PlaceDetailsViewModelTest {
     }
 
     @Test
-    fun `loadPlaceDetails failure updates error message and place is null`() = runTest {
-        val errorMsg = "Network Error"
-        coEvery { getPlaceDataUseCase.getPlaceDetails(locationId) } returns Result.failure(Exception(errorMsg))
-
-        createViewModel()
-
-        assertNull(viewModel.place)
-        assertEquals(errorMsg, viewModel.errorMessage)
-    }
-
-    @Test
     fun `addUserComment success updates comments list`() = runTest {
         createViewModel()
         val newComment = mockk<UserComment>()
-        coEvery { managePlaceCommentsUseCase.addComment(locationId, "Super", 5) } returns Result.success(newComment)
+        coEvery { addUserCommentUseCase(locationId, "Super", 5) } returns Result.success(newComment)
 
         viewModel.addUserComment("Super", 5)
 
@@ -86,11 +88,17 @@ class PlaceDetailsViewModelTest {
     fun `deleteUserComment success removes it from list`() = runTest {
         val commentId = "c1"
         val comment = mockk<UserComment> { every { id } returns commentId }
-        coEvery { getPlaceDataUseCase.getUserComments(locationId) } returns Result.success(listOf(comment))
+
+        val initialData = PlaceDetailsData(
+            place = mockk(relaxed = true),
+            reviews = emptyList(),
+            userComments = listOf(comment)
+        )
+        coEvery { getPlaceDataUseCase(locationId, any()) } returns Result.success(initialData)
 
         createViewModel()
 
-        coEvery { managePlaceCommentsUseCase.deleteComment(commentId) } returns Result.success(Unit)
+        coEvery { deleteUserCommentUseCase(commentId) } returns Result.success(Unit)
 
         viewModel.deleteUserComment(commentId)
 

@@ -17,3 +17,10 @@ data class VacationPlace(
     val orderIndex: Int,
     val createdAt: String
 )
+
+data class VacationDetails(
+    val vacation: Vacation,
+    val creatorUsername: String,
+    val places: List<Place>,
+    val vacationComments: List<VacationComment>
+)

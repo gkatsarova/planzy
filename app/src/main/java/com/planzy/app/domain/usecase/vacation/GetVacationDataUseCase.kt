@@ -1,66 +1,42 @@
 package com.planzy.app.domain.usecase.vacation
 
-import com.planzy.app.domain.model.Place
-import com.planzy.app.domain.model.Vacation
-import com.planzy.app.domain.model.VacationComment
 import com.planzy.app.domain.repository.PlacesRepository
 import com.planzy.app.domain.repository.VacationsRepository
-
-data class VacationDetails(
-    val vacation: Vacation,
-    val creatorUsername: String,
-    val places: List<Place>
-)
+import com.planzy.app.domain.model.VacationDetails
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 class GetVacationDataUseCase(
     private val vacationsRepository: VacationsRepository,
     private val placesRepository: PlacesRepository
 ) {
-    suspend fun getVacationDetails(vacationId: String): Result<VacationDetails> {
-        return try {
-            val vacationResult = vacationsRepository.getVacationWithUser(vacationId)
+    suspend operator fun invoke(vacationId: String): Result<VacationDetails> = coroutineScope {
+        val vacationWithUserDeferred = async { vacationsRepository.getVacationWithUser(vacationId) }
+        val placeIdsDeferred = async { vacationsRepository.getVacationPlaceIds(vacationId) }
+        val commentsDeferred = async { vacationsRepository.getVacationComments(vacationId) }
 
-            vacationResult.fold(
-                onSuccess = { (vacation, username) ->
-                    val placeIdsResult = vacationsRepository.getVacationPlaceIds(vacationId)
+        try {
+            val (vacation, username) = vacationWithUserDeferred.await().getOrThrow()
+            val comments = commentsDeferred.await().getOrThrow()
+            val placeIds = placeIdsDeferred.await().getOrThrow()
 
-                    placeIdsResult.fold(
-                        onSuccess = { placeIds ->
-                             val places = placeIds.mapIndexedNotNull { _, placeId ->
-                                val placeResult = placesRepository.getPlaceDetails(placeId)
-                                placeResult.fold(
-                                    onSuccess = { place ->
-                                        place
-                                    },
-                                    onFailure = { _ ->
-                                        null
-                                    }
-                                )
-                            }
-
-                            Result.success(
-                                VacationDetails(
-                                    vacation = vacation,
-                                    creatorUsername = username,
-                                    places = places
-                                )
-                            )
-                        },
-                        onFailure = { exception ->
-                            Result.failure(exception)
-                        }
-                    )
-                },
-                onFailure = { exception ->
-                    Result.failure(exception)
+            val places = placeIds.map { placeId ->
+                async {
+                    placesRepository.getPlaceDetails(placeId).getOrNull()
                 }
+            }.awaitAll().filterNotNull()
+
+            Result.success(
+                VacationDetails(
+                    vacation = vacation,
+                    creatorUsername = username,
+                    places = places,
+                    vacationComments = comments
+                )
             )
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-
-    suspend fun getVacationComments(vacationId: String): Result<List<VacationComment>> {
-        return vacationsRepository.getVacationComments(vacationId)
     }
 }

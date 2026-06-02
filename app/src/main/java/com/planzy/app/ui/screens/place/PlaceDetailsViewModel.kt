@@ -11,13 +11,17 @@ import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.PlaceReview
 import com.planzy.app.domain.model.UserComment
+import com.planzy.app.domain.usecase.place.AddUserCommentUseCase
+import com.planzy.app.domain.usecase.place.DeleteUserCommentUseCase
 import com.planzy.app.domain.usecase.place.GetPlaceDataUseCase
-import com.planzy.app.domain.usecase.place.ManagePlaceCommentsUseCase
+import com.planzy.app.domain.usecase.place.UpdateUserCommentUseCase
 import kotlinx.coroutines.launch
 
 class PlaceDetailsViewModel(
     private val getPlaceDataUseCase: GetPlaceDataUseCase,
-    private val managePlaceCommentsUseCase: ManagePlaceCommentsUseCase,
+    private val addUserCommentUseCase: AddUserCommentUseCase,
+    private val updateUserCommentUseCase: UpdateUserCommentUseCase,
+    private val deleteUserCommentUseCase: DeleteUserCommentUseCase,
     private val resourceProvider: ResourceProvider,
     private val locationId: String
 ) : ViewModel() {
@@ -28,19 +32,19 @@ class PlaceDetailsViewModel(
     var reviews by mutableStateOf<List<PlaceReview>>(emptyList())
         private set
 
+    var userComments by mutableStateOf<List<UserComment>>(emptyList())
+        private set
+
     var isLoading by mutableStateOf(false)
         private set
 
     var isLoadingReviews by mutableStateOf(false)
         private set
 
-    var errorMessage by mutableStateOf<String?>(null)
-        private set
-
-    var userComments by mutableStateOf<List<UserComment>>(emptyList())
-        private set
-
     var isLoadingUserComments by mutableStateOf(false)
+        private set
+
+    var errorMessage by mutableStateOf<String?>(null)
         private set
 
     var userCommentsErrorMessage by mutableStateOf<String?>(null)
@@ -67,45 +71,32 @@ class PlaceDetailsViewModel(
     }
 
     private fun loadAllData() {
-        loadPlaceDetails()
-        loadTripadvisorReviews()
-        loadUserComments()
-    }
-
-    private fun loadPlaceDetails() {
         viewModelScope.launch {
             isLoading = true
-            errorMessage = null
-            getPlaceDataUseCase.getPlaceDetails(locationId)
-                .onSuccess { place = it }
-                .onFailure { errorMessage = it.message }
-            isLoading = false
-        }
-    }
-
-    private fun loadTripadvisorReviews() {
-        viewModelScope.launch {
             isLoadingReviews = true
-            getPlaceDataUseCase.getPlaceReviews(locationId, limit = 5)
-                .onSuccess { reviews = it }
+            isLoadingUserComments = true
+            errorMessage = null
+            userCommentsErrorMessage = null
+
+            getPlaceDataUseCase(locationId)
+                .onSuccess { data ->
+                    place = data.place
+                    reviews = data.reviews
+                    userComments = data.userComments
+                }
+                .onFailure { error ->
+                    errorMessage = error.message
+                    userCommentsErrorMessage = resourceProvider.getString(R.string.error_loading_community_comments)
+                }
+
+            isLoading = false
             isLoadingReviews = false
+            isLoadingUserComments = false
         }
     }
 
     fun loadUserComments() {
-        viewModelScope.launch {
-            isLoadingUserComments = true
-            userCommentsErrorMessage = null
-            getPlaceDataUseCase.getUserComments(locationId)
-                .onSuccess {
-                    userComments = it
-                    isLoadingUserComments = false
-                }
-                .onFailure {
-                    userCommentsErrorMessage = resourceProvider.getString(R.string.error_loading_community_comments)
-                    isLoadingUserComments = false
-                }
-        }
+        loadAllData()
     }
 
     fun addUserComment(text: String, rating: Int) {
@@ -113,7 +104,7 @@ class PlaceDetailsViewModel(
             isSubmittingComment = true
             commentErrorMessage = null
 
-            managePlaceCommentsUseCase.addComment(locationId, text, rating)
+            addUserCommentUseCase(locationId, text, rating)
                 .onSuccess { newComment ->
                     userComments = listOf(newComment) + userComments
                     isSubmittingComment = false
@@ -130,7 +121,7 @@ class PlaceDetailsViewModel(
             isUpdatingComment = true
             commentErrorMessage = null
 
-            managePlaceCommentsUseCase.updateComment(commentId, text, rating)
+            updateUserCommentUseCase(commentId, text, rating)
                 .onSuccess {
                     loadUserComments()
                     isUpdatingComment = false
@@ -146,7 +137,7 @@ class PlaceDetailsViewModel(
         viewModelScope.launch {
             isDeletingComment = true
 
-            managePlaceCommentsUseCase.deleteComment(commentId)
+            deleteUserCommentUseCase(commentId)
                 .onSuccess {
                     userComments = userComments.filter { it.id != commentId }
                     isDeletingComment = false
@@ -159,7 +150,9 @@ class PlaceDetailsViewModel(
 
     class Factory(
         private val getPlaceDataUseCase: GetPlaceDataUseCase,
-        private val managePlaceCommentsUseCase: ManagePlaceCommentsUseCase,
+        private val addCommentUseCase: AddUserCommentUseCase,
+        private val updateUserCommentUseCase: UpdateUserCommentUseCase,
+        private val deleteUserCommentUseCase: DeleteUserCommentUseCase,
         private val resourceProvider: ResourceProvider,
         private val locationId: String
     ) : ViewModelProvider.Factory {
@@ -167,7 +160,9 @@ class PlaceDetailsViewModel(
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return PlaceDetailsViewModel(
                 getPlaceDataUseCase,
-                managePlaceCommentsUseCase,
+                addCommentUseCase,
+                updateUserCommentUseCase,
+                deleteUserCommentUseCase,
                 resourceProvider,
                 locationId
             ) as T

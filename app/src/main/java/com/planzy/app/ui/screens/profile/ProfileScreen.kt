@@ -41,8 +41,9 @@ import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.follow.GetFollowDataUseCase
+import com.planzy.app.domain.usecase.user.DeleteProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
-import com.planzy.app.domain.usecase.user.ManageProfilePictureUseCase
+import com.planzy.app.domain.usecase.user.UploadProfilePictureUseCase
 import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.navigation.Register
 import com.planzy.app.ui.screens.SearchViewModel
@@ -73,7 +74,8 @@ fun ProfileScreen(
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
     val signOutUseCase = remember { SignOutUseCase(authRepository) }
     val deleteAccountUseCase = remember { DeleteAccountUseCase(authRepository) }
-    val manageProfilePictureUseCase = remember { ManageProfilePictureUseCase(userRepository) }
+    val uploadProfilePictureUseCase = remember { UploadProfilePictureUseCase(userRepository) }
+    val deleteProfilePictureUseCase = remember { DeleteProfilePictureUseCase(userRepository) }
     val getFollowDataUseCase = remember { GetFollowDataUseCase(followRepository) }
 
 
@@ -83,7 +85,8 @@ fun ProfileScreen(
             getUserByAuthIdUseCase = getUserByAuthIdUseCase,
             signOutUseCase = signOutUseCase,
             deleteAccountUseCase = deleteAccountUseCase,
-            manageProfilePictureUseCase = manageProfilePictureUseCase,
+            uploadProfilePictureUseCase = uploadProfilePictureUseCase,
+            deleteProfilePictureUseCase = deleteProfilePictureUseCase,
             getFollowDataUseCase = getFollowDataUseCase,
             resourceProvider = resourceProvider
         )

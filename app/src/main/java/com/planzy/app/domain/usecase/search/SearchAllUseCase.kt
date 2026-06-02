@@ -8,6 +8,9 @@ import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.data.util.HttpStatusCodes
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
+import com.planzy.app.domain.model.SearchAllParams
+import com.planzy.app.domain.model.SearchAllOutcome
+import com.planzy.app.domain.model.SearchAllResult
 import com.planzy.app.domain.repository.PlacesRepository
 import com.planzy.app.domain.repository.UserRepository
 import com.planzy.app.domain.repository.VacationsRepository
@@ -16,27 +19,6 @@ import com.google.mlkit.nl.entityextraction.Entity
 private const val MIN_WORD_LENGTH = 4
 private const val DEFAULT_SEARCH_RADIUS = 25
 private const val NETWORK_ERROR_HOST = "Unable to resolve host"
-
-data class SearchAllParams(
-    val query: String,
-    val userLocation: Pair<Double, Double>? = null,
-    val locationPermissionGranted: Boolean = false
-)
-
-data class SearchAllResult(
-    val places: List<Place> = emptyList(),
-    val vacations: List<Vacation> = emptyList(),
-    val users: List<User> = emptyList()
-)
-
-sealed class SearchAllOutcome {
-    data class Success(val result: SearchAllResult) : SearchAllOutcome()
-    data class Empty(val message: String) : SearchAllOutcome()
-    data class PlacesError(
-        val message: String,
-        val partialResult: SearchAllResult
-    ) : SearchAllOutcome()
-}
 
 class SearchAllUseCase(
     private val placesRepository: PlacesRepository,
@@ -116,6 +98,7 @@ class SearchAllUseCase(
     }
 
     fun clearCache() = cache.clear()
+
     private suspend fun searchUsers(query: String): List<User> =
         userRepository.searchUsers(query).getOrElse {
             Log.e(TAG, "User search error: ${it.message}")

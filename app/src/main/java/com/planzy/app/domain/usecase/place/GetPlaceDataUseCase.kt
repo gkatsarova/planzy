@@ -1,22 +1,28 @@
 package com.planzy.app.domain.usecase.place
 
-import com.planzy.app.domain.model.Place
-import com.planzy.app.domain.model.PlaceReview
-import com.planzy.app.domain.model.UserComment
+import com.planzy.app.domain.model.PlaceDetailsData
 import com.planzy.app.domain.repository.PlacesRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 class GetPlaceDataUseCase(
     private val repository: PlacesRepository
 ) {
-    suspend fun getPlaceDetails(locationId: String): Result<Place> {
-        return repository.getPlaceDetails(locationId)
-    }
+    suspend operator fun invoke(locationId: String, reviewLimit: Int = 5): Result<PlaceDetailsData> = coroutineScope {
+        val detailsDeferred = async { repository.getPlaceDetails(locationId) }
+        val reviewsDeferred = async { repository.getPlaceReviews(locationId, reviewLimit) }
+        val commentsDeferred = async { repository.getUserComments(locationId) }
 
-    suspend fun getPlaceReviews(locationId: String, limit: Int): Result<List<PlaceReview>> {
-        return repository.getPlaceReviews(locationId, limit)
-    }
-
-    suspend fun getUserComments(locationId: String): Result<List<UserComment>> {
-        return repository.getUserComments(locationId)
+        try {
+            Result.success(
+                PlaceDetailsData(
+                    place = detailsDeferred.await().getOrThrow(),
+                    reviews = reviewsDeferred.await().getOrThrow(),
+                    userComments = commentsDeferred.await().getOrThrow()
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

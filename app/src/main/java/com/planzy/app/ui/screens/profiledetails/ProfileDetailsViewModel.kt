@@ -18,10 +18,10 @@ import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
 import kotlinx.coroutines.launch
 
-sealed interface UserState {
-    data object Loading : UserState
-    data class Success(val user: User) : UserState
-    data class Error(val message: String) : UserState
+sealed class UserState {
+    object Loading : UserState()
+    data class Success(val user: User) : UserState()
+    data class Error(val message: String) : UserState()
 }
 
 class ProfileDetailsViewModel(
@@ -36,13 +36,7 @@ class ProfileDetailsViewModel(
     var userState by mutableStateOf<UserState>(UserState.Loading)
         private set
 
-    var vacations by mutableStateOf<List<Vacation>>(emptyList())
-        private set
-
-    var isLoadingVacations by mutableStateOf(false)
-        private set
-
-    var vacationsError by mutableStateOf<String?>(null)
+    var loggedInUserId by mutableStateOf("")
         private set
 
     var followStats by mutableStateOf<FollowStats?>(null)
@@ -52,9 +46,6 @@ class ProfileDetailsViewModel(
         private set
 
     var isToggleFollowLoading by mutableStateOf(false)
-        private set
-
-    var followError by mutableStateOf<String?>(null)
         private set
 
     var followers by mutableStateOf<List<User>>(emptyList())
@@ -75,16 +66,25 @@ class ProfileDetailsViewModel(
     var followingError by mutableStateOf<String?>(null)
         private set
 
-    var loggedInUserId by mutableStateOf<String?>(null)
+    var vacations by mutableStateOf<List<Vacation>>(emptyList())
+        private set
+
+    var isLoadingVacations by mutableStateOf(false)
+        private set
+
+    var vacationsError by mutableStateOf<String?>(null)
         private set
 
     init {
-        fetchLoggedInUser()
+        loadLoggedInUser()
     }
 
-    private fun fetchLoggedInUser() {
+    private fun loadLoggedInUser() {
         viewModelScope.launch {
-            loggedInUserId = getCurrentUserUseCase()?.id
+            val currentUser = getCurrentUserUseCase()
+            if (currentUser != null) {
+                loggedInUserId = currentUser.id
+            }
         }
     }
 
@@ -93,122 +93,91 @@ class ProfileDetailsViewModel(
             userState = UserState.Loading
 
             getUserByUsernameUseCase(username)
-                .onSuccess { loadedUser ->
-                    if (loadedUser == null) {
-                        userState = UserState.Error(
-                            resourceProvider.getString(R.string.user_not_found)
-                        )
+                .onSuccess { user ->
+                    if (user != null) {
+                        userState = UserState.Success(user)
+                        loadVacations(user.auth_id)
+                        loadFollowData(user.auth_id)
                     } else {
-                        userState = UserState.Success(loadedUser)
-                        loadUserVacations(loadedUser.auth_id)
-                        loadFollowStats(loadedUser.auth_id)
+                        userState = UserState.Error(resourceProvider.getString(R.string.error_unknown))
                     }
                 }
                 .onFailure {
-                    userState = UserState.Error(
-                        resourceProvider.getString(R.string.error_loading_user)
-                    )
+                    userState = UserState.Error(it.message ?: resourceProvider.getString(R.string.error_unknown))
                 }
         }
     }
 
-    private fun loadUserVacations(userId: String) {
-        viewModelScope.launch {
-            isLoadingVacations = true
-            vacationsError = null
-
-            getUserVacationsByIdUseCase(userId)
-                .onSuccess { userVacations ->
-                    vacations = userVacations
-                }
-                .onFailure {
-                    vacationsError = resourceProvider.getString(R.string.error_loading_vacations)
-                }
-
-            isLoadingVacations = false
-        }
-    }
-
-    private fun loadFollowStats(userId: String) {
+    private fun loadFollowData(authId: String) {
         viewModelScope.launch {
             isLoadingFollowStats = true
-            followError = null
-
-            getFollowDataUseCase.getStats(userId)
-                .onSuccess { stats ->
-                    followStats = stats
-                }
-                .onFailure {
-                    followError = resourceProvider.getString(R.string.error_loading_follow_stats)
-                }
-
-            isLoadingFollowStats = false
-        }
-    }
-
-    fun loadFollowers(userId: String) {
-        viewModelScope.launch {
             isLoadingFollowers = true
+            isLoadingFollowing = true
             followersError = null
+            followingError = null
 
-            getFollowDataUseCase.getFollowers(userId)
-                .onSuccess { followersList ->
-                    followers = followersList
+            getFollowDataUseCase(authId)
+                .onSuccess { data ->
+                    followStats = FollowStats(
+                        isFollowing = data.isFollowing,
+                        followersCount = data.followersCount,
+                        followingCount = data.followingCount
+                    )
+                    followers = data.followers
+                    following = data.following
                 }
                 .onFailure {
                     followersError = resourceProvider.getString(R.string.error_loading_followers)
-                }
-
-            isLoadingFollowers = false
-        }
-    }
-
-    fun loadFollowing(userId: String) {
-        viewModelScope.launch {
-            isLoadingFollowing = true
-            followingError = null
-
-            getFollowDataUseCase.getFollowing(userId)
-                .onSuccess { followingList ->
-                    following = followingList
-                }
-                .onFailure {
                     followingError = resourceProvider.getString(R.string.error_loading_following)
                 }
 
+            isLoadingFollowStats = false
+            isLoadingFollowers = false
             isLoadingFollowing = false
         }
     }
 
-    fun toggleFollow() {
-        val currentUser = when (val state = userState) {
-            is UserState.Success -> state.user
-            else -> return
-        }
-        val currentStats = followStats ?: return
-
+    private fun loadVacations(userId: String) {
         viewModelScope.launch {
-            isToggleFollowLoading = true
-            followError = null
-
-            manageFollowUseCase.toggle(currentUser.auth_id, currentStats)
-                .onSuccess { updatedStats ->
-                    followStats = updatedStats
+            isLoadingVacations = true
+            vacationsError = null
+            getUserVacationsByIdUseCase(userId)
+                .onSuccess { vacationsList ->
+                    vacations = vacationsList
                 }
                 .onFailure {
-                    followError = resourceProvider.getString(R.string.error_updating_follow_status)
+                    vacationsError = it.message
                 }
-
-            isToggleFollowLoading = false
+            isLoadingVacations = false
         }
     }
 
     fun refreshFollowStats() {
-        val userId = when (val state = userState) {
-            is UserState.Success -> state.user.auth_id
-            else -> return
+        val successState = userState as? UserState.Success ?: return
+        loadFollowData(successState.user.auth_id)
+    }
+
+    fun loadFollowers(authId: String) {
+        loadFollowData(authId)
+    }
+
+    fun loadFollowing(authId: String) {
+        loadFollowData(authId)
+    }
+
+    fun toggleFollow() {
+        val successState = userState as? UserState.Success ?: return
+        val currentStats = followStats ?: return
+
+        viewModelScope.launch {
+            isToggleFollowLoading = true
+            manageFollowUseCase(successState.user.auth_id, currentStats)
+                .onSuccess { updatedStats ->
+                    followStats = updatedStats
+                    loadFollowData(successState.user.auth_id)
+                }
+            isToggleFollowLoading = false
         }
-        loadFollowStats(userId)
     }
 
     class Factory(
@@ -221,17 +190,14 @@ class ProfileDetailsViewModel(
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(ProfileDetailsViewModel::class.java)) {
-                return ProfileDetailsViewModel(
-                    getUserByUsernameUseCase,
-                    getUserVacationsByIdUseCase,
-                    getFollowDataUseCase,
-                    manageFollowUseCase,
-                    getCurrentUserUseCase,
-                    resourceProvider
-                ) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
+            return ProfileDetailsViewModel(
+                getUserByUsernameUseCase,
+                getUserVacationsByIdUseCase,
+                getFollowDataUseCase,
+                manageFollowUseCase,
+                getCurrentUserUseCase,
+                resourceProvider
+            ) as T
         }
     }
 }

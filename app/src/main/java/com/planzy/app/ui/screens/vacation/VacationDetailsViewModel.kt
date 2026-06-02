@@ -13,8 +13,8 @@ import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.model.VacationComment
-import com.planzy.app.domain.repository.PlacesRepository
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
 import com.planzy.app.domain.usecase.vacation.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -23,10 +23,13 @@ import kotlinx.coroutines.launch
 class VacationDetailsViewModel(
     private val getVacationDataUseCase: GetVacationDataUseCase,
     private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase,
-    private val manageVacationCommentsUseCase: ManageVacationCommentsUseCase,
+    private val addVacationCommentUseCase: AddVacationCommentUseCase,
+    private val updateVacationCommentUseCase: UpdateVacationCommentUseCase,
+    private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
     private val manageSavedVacationUseCase: ManageSavedVacationUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val placesRepository: PlacesRepository,
+    private val getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase,
+    private val isVacationSavedUseCase: IsVacationSavedUseCase,
     private val resourceProvider: ResourceProvider,
     private val vacationId: String,
     private val onCommentsChanged: () -> Unit = {}
@@ -84,7 +87,6 @@ class VacationDetailsViewModel(
         viewModelScope.launch {
             currentUserId = getCurrentUserUseCase()?.id
             loadVacationDetails()
-            loadVacationComments()
             checkIfVacationIsSaved()
         }
     }
@@ -92,23 +94,29 @@ class VacationDetailsViewModel(
     fun loadVacationDetails() {
         viewModelScope.launch {
             isLoading = true
+            isLoadingComments = true
             errorMessage = null
+            commentsErrorMessage = null
 
-            getVacationDataUseCase.getVacationDetails(vacationId)
+            getVacationDataUseCase(vacationId)
                 .onSuccess { details ->
                     vacation = details.vacation
                     creatorUsername = details.creatorUsername
                     places = details.places
+                    vacationComments = details.vacationComments
 
                     isOwner = currentUserId != null && currentUserId == details.vacation.userId
 
                     loadUserRatingsForPlaces(details.places)
 
                     isLoading = false
+                    isLoadingComments = false
                 }
                 .onFailure { exception ->
                     errorMessage = exception.message ?: resourceProvider.getString(R.string.unknown_error)
+                    commentsErrorMessage = resourceProvider.getString(R.string.error_loading_community_comments)
                     isLoading = false
+                    isLoadingComments = false
                 }
         }
     }
@@ -116,7 +124,7 @@ class VacationDetailsViewModel(
     private suspend fun loadUserRatingsForPlaces(places: List<Place>) {
         places.map { place ->
             viewModelScope.async {
-                placesRepository.getUserCommentsStats(place.id)
+                getUserCommentsStatsUseCase(place.id)
                     .onSuccess { (rating, count) ->
                         userRatingsCache[place.id] = Pair(rating, count)
                     }
@@ -146,19 +154,7 @@ class VacationDetailsViewModel(
     }
 
     fun loadVacationComments() {
-        viewModelScope.launch {
-            isLoadingComments = true
-            commentsErrorMessage = null
-            getVacationDataUseCase.getVacationComments(vacationId)
-                .onSuccess {
-                    vacationComments = it
-                    isLoadingComments = false
-                }
-                .onFailure {
-                    commentsErrorMessage = resourceProvider.getString(R.string.error_loading_community_comments)
-                    isLoadingComments = false
-                }
-        }
+        loadVacationDetails()
     }
 
     fun addVacationComment(text: String) {
@@ -166,7 +162,7 @@ class VacationDetailsViewModel(
             isSubmittingComment = true
             commentErrorMessage = null
 
-            manageVacationCommentsUseCase.addComment(vacationId, text)
+            addVacationCommentUseCase(vacationId, text)
                 .onSuccess { newComment ->
                     vacationComments = listOf(newComment) + vacationComments
                     isSubmittingComment = false
@@ -184,7 +180,7 @@ class VacationDetailsViewModel(
             isUpdatingComment = true
             commentErrorMessage = null
 
-            manageVacationCommentsUseCase.updateComment(commentId, text)
+            updateVacationCommentUseCase(commentId, text)
                 .onSuccess {
                     loadVacationComments()
                     isUpdatingComment = false
@@ -200,7 +196,7 @@ class VacationDetailsViewModel(
         viewModelScope.launch {
             isDeletingComment = true
 
-            manageVacationCommentsUseCase.deleteComment(commentId)
+            deleteVacationCommentUseCase(commentId)
                 .onSuccess {
                     vacationComments = vacationComments.filter { it.id != commentId }
                     isDeletingComment = false
@@ -214,8 +210,10 @@ class VacationDetailsViewModel(
 
     private fun checkIfVacationIsSaved() {
         viewModelScope.launch {
-            manageSavedVacationUseCase.isSaved(vacationId)
-                .onSuccess { isSaved = it }
+            isVacationSavedUseCase(vacationId)
+                .onSuccess { saved ->
+                    isSaved = saved
+                }
         }
     }
 
@@ -223,23 +221,13 @@ class VacationDetailsViewModel(
         viewModelScope.launch {
             isSavingInProgress = true
 
-            if (isSaved) {
-                manageSavedVacationUseCase.unsave(vacationId)
-                    .onSuccess {
-                        isSaved = false
-                    }
-                    .onFailure {
-                        errorMessage = resourceProvider.getString(R.string.failed_to_unsave_vacation)
-                    }
-            } else {
-                manageSavedVacationUseCase.save(vacationId)
-                    .onSuccess {
-                        isSaved = true
-                    }
-                    .onFailure {
-                        errorMessage = resourceProvider.getString(R.string.failed_to_save_vacation)
-                    }
-            }
+            manageSavedVacationUseCase(vacationId)
+                .onSuccess { nextSavedState ->
+                    isSaved = nextSavedState
+                }
+                .onFailure { exception ->
+                    errorMessage = exception.message ?: resourceProvider.getString(R.string.unknown_error)
+                }
 
             isSavingInProgress = false
         }
@@ -247,15 +235,17 @@ class VacationDetailsViewModel(
 
     fun onRetry() {
         loadVacationDetails()
-        loadVacationComments()
     }
 
     class Factory(
         private val getVacationDataUseCase: GetVacationDataUseCase,
         private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase,
-        private val manageVacationCommentsUseCase: ManageVacationCommentsUseCase,
+        private val addVacationCommentUseCase: AddVacationCommentUseCase,
+        private val updateVacationCommentUseCase: UpdateVacationCommentUseCase,
+        private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase,
         private val manageSavedVacationUseCase: ManageSavedVacationUseCase,
-        private val placesRepository: PlacesRepository,
+        private val getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase,
+        private val isVacationSavedUseCase: IsVacationSavedUseCase,
         private val resourceProvider: ResourceProvider,
         private val vacationId: String,
         private val onCommentsChanged: () -> Unit = {}
@@ -267,10 +257,13 @@ class VacationDetailsViewModel(
             return VacationDetailsViewModel(
                 getVacationDataUseCase,
                 removePlaceFromVacationUseCase,
-                manageVacationCommentsUseCase,
+                addVacationCommentUseCase,
+                updateVacationCommentUseCase,
+                deleteVacationCommentUseCase,
                 manageSavedVacationUseCase,
                 getCurrentUserUseCase,
-                placesRepository,
+                getUserCommentsStatsUseCase,
+                isVacationSavedUseCase,
                 resourceProvider,
                 vacationId,
                 onCommentsChanged

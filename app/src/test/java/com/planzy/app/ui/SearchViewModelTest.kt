@@ -7,9 +7,9 @@ import com.planzy.app.data.util.LocationEntityExtractor
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
-import com.planzy.app.domain.usecase.search.SearchAllOutcome
-import com.planzy.app.domain.usecase.search.SearchAllParams
-import com.planzy.app.domain.usecase.search.SearchAllResult
+import com.planzy.app.domain.model.SearchAllOutcome
+import com.planzy.app.domain.model.SearchAllParams
+import com.planzy.app.domain.model.SearchAllResult
 import com.planzy.app.domain.usecase.search.SearchAllUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationCommentsCountUseCase
 import com.planzy.app.ui.screens.SearchViewModel

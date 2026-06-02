@@ -10,8 +10,8 @@ import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.repository.PlacesRepository
 import com.planzy.app.domain.repository.UserRepository
 import com.planzy.app.domain.repository.VacationsRepository
-import com.planzy.app.domain.usecase.search.SearchAllOutcome
-import com.planzy.app.domain.usecase.search.SearchAllParams
+import com.planzy.app.domain.model.SearchAllOutcome
+import com.planzy.app.domain.model.SearchAllParams
 import com.planzy.app.domain.usecase.search.SearchAllUseCase
 import com.google.mlkit.nl.entityextraction.Entity
 import com.google.mlkit.nl.entityextraction.EntityAnnotation

@@ -6,11 +6,7 @@ import com.planzy.app.domain.repository.FollowRepository
 class ManageFollowUseCase(
     private val followRepository: FollowRepository
 ) {
-
-    suspend fun follow(userId: String): Result<Unit> =
-        followRepository.followUser(userId)
-
-    suspend fun toggle(userId: String, currentStats: FollowStats): Result<FollowStats> {
+    suspend operator fun invoke(userId: String, currentStats: FollowStats): Result<FollowStats> {
         val result = if (currentStats.isFollowing) {
             followRepository.unfollowUser(userId)
         } else {

@@ -66,15 +66,17 @@ class GetVacationDataUseCaseTest {
     fun tearDown() = clearAllMocks()
 
     @Test
-    fun `getVacationDetails successful fetch returns vacation details with all places`() = runTest {
-        coEvery { vacationsRepository.getVacationWithUser("vacation123") } returns
-                Result.success(Pair(mockVacation, "john_doe"))
-        coEvery { vacationsRepository.getVacationPlaceIds("vacation123") } returns
-                Result.success(listOf("place1", "place2"))
+    fun `invoke successful fetch returns full vacation details with places and comments`() = runTest {
+        val mockComments = listOf(mockk<VacationComment>(relaxed = true), mockk<VacationComment>(relaxed = true))
+
+        coEvery { vacationsRepository.getVacationWithUser("vacation123") } returns Result.success(Pair(mockVacation, "john_doe"))
+        coEvery { vacationsRepository.getVacationPlaceIds("vacation123") } returns Result.success(listOf("place1", "place2"))
+        coEvery { vacationsRepository.getVacationComments("vacation123") } returns Result.success(mockComments)
+
         coEvery { placesRepository.getPlaceDetails("place1") } returns Result.success(mockPlace1)
         coEvery { placesRepository.getPlaceDetails("place2") } returns Result.success(mockPlace2)
 
-        val result = useCase.getVacationDetails("vacation123")
+        val result = useCase("vacation123")
 
         assertTrue(result.isSuccess)
         val details = result.getOrNull()!!
@@ -83,44 +85,58 @@ class GetVacationDataUseCaseTest {
         assertEquals(2, details.places.size)
         assertEquals(mockPlace1, details.places[0])
         assertEquals(mockPlace2, details.places[1])
+        assertEquals(mockComments, details.vacationComments)
     }
 
     @Test
-    fun `getVacationDetails vacation with no places returns empty list`() = runTest {
-        coEvery { vacationsRepository.getVacationWithUser("vacation123") } returns
-                Result.success(Pair(mockVacation, "john_doe"))
-        coEvery { vacationsRepository.getVacationPlaceIds("vacation123") } returns
-                Result.success(emptyList())
+    fun `invoke vacation with no places returns empty places list but loads comments`() = runTest {
+        val mockComments = listOf(mockk<VacationComment>(relaxed = true))
+        coEvery { vacationsRepository.getVacationWithUser("vacation123") } returns Result.success(Pair(mockVacation, "john_doe"))
+        coEvery { vacationsRepository.getVacationPlaceIds("vacation123") } returns Result.success(emptyList())
+        coEvery { vacationsRepository.getVacationComments("vacation123") } returns Result.success(mockComments)
 
-        val result = useCase.getVacationDetails("vacation123")
+        val result = useCase("vacation123")
 
         assertTrue(result.isSuccess)
         val details = result.getOrNull()!!
-        assertEquals(0, details.places.size)
+        assertTrue(details.places.isEmpty())
         assertEquals("john_doe", details.creatorUsername)
+        assertEquals(mockComments, details.vacationComments)
     }
 
     @Test
-    fun `getVacationDetails exception during execution returns failure`() = runTest {
-        coEvery { vacationsRepository.getVacationWithUser("vacation123") } throws
-                RuntimeException("Network error")
+    fun `invoke failure in core vacation fetching returns failure`() = runTest {
+        coEvery { vacationsRepository.getVacationWithUser("vacation123") } returns Result.failure(RuntimeException("Network error"))
+        coEvery { vacationsRepository.getVacationPlaceIds("vacation123") } returns Result.success(emptyList())
+        coEvery { vacationsRepository.getVacationComments("vacation123") } returns Result.success(emptyList())
 
-        val result = useCase.getVacationDetails("vacation123")
+        val result = useCase("vacation123")
 
         assertTrue(result.isFailure)
         assertEquals("Network error", result.exceptionOrNull()?.message)
     }
 
     @Test
-    fun `getVacationDetails preserves place order from vacation place ids`() = runTest {
-        coEvery { vacationsRepository.getVacationWithUser("vacation123") } returns
-                Result.success(Pair(mockVacation, "alice"))
-        coEvery { vacationsRepository.getVacationPlaceIds("vacation123") } returns
-                Result.success(listOf("place2", "place1"))
+    fun `invoke failure in comments fetching returns failure`() = runTest {
+        coEvery { vacationsRepository.getVacationWithUser("vacation123") } returns Result.success(Pair(mockVacation, "john_doe"))
+        coEvery { vacationsRepository.getVacationPlaceIds("vacation123") } returns Result.success(emptyList())
+        coEvery { vacationsRepository.getVacationComments("vacation123") } returns Result.failure(RuntimeException("Comments DB error"))
+
+        val result = useCase("vacation123")
+
+        assertTrue(result.isFailure)
+        assertEquals("Comments DB error", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `invoke preserves place order from vacation place ids`() = runTest {
+        coEvery { vacationsRepository.getVacationWithUser("vacation123") } returns Result.success(Pair(mockVacation, "alice"))
+        coEvery { vacationsRepository.getVacationPlaceIds("vacation123") } returns Result.success(listOf("place2", "place1"))
+        coEvery { vacationsRepository.getVacationComments("vacation123") } returns Result.success(emptyList())
         coEvery { placesRepository.getPlaceDetails("place1") } returns Result.success(mockPlace1)
         coEvery { placesRepository.getPlaceDetails("place2") } returns Result.success(mockPlace2)
 
-        val result = useCase.getVacationDetails("vacation123")
+        val result = useCase("vacation123")
 
         assertTrue(result.isSuccess)
         val details = result.getOrNull()!!
@@ -129,39 +145,20 @@ class GetVacationDataUseCaseTest {
     }
 
     @Test
-    fun `getVacationComments success returns list of comments`() = runTest {
-        val mockComment1 = mockk<VacationComment>(relaxed = true)
-        val mockComment2 = mockk<VacationComment>(relaxed = true)
+    fun `invoke ignores individual place detail failures gracefully`() = runTest {
+        coEvery { vacationsRepository.getVacationWithUser("vacation123") } returns Result.success(Pair(mockVacation, "john_doe"))
+        coEvery { vacationsRepository.getVacationPlaceIds("vacation123") } returns Result.success(listOf("place1", "place2"))
+        coEvery { vacationsRepository.getVacationComments("vacation123") } returns Result.success(emptyList())
 
-        coEvery { vacationsRepository.getVacationComments("vacation123") } returns
-                Result.success(listOf(mockComment1, mockComment2))
+        coEvery { placesRepository.getPlaceDetails("place1") } returns Result.failure(Exception("Place offline"))
+        coEvery { placesRepository.getPlaceDetails("place2") } returns Result.success(mockPlace2)
 
-        val result = useCase.getVacationComments("vacation123")
-
-        assertTrue(result.isSuccess)
-        assertEquals(2, result.getOrNull()!!.size)
-    }
-
-    @Test
-    fun `getVacationComments returns empty list when there are no comments`() = runTest {
-        coEvery { vacationsRepository.getVacationComments("vacation123") } returns
-                Result.success(emptyList())
-
-        val result = useCase.getVacationComments("vacation123")
+        val result = useCase("vacation123")
 
         assertTrue(result.isSuccess)
-        assertTrue(result.getOrNull()!!.isEmpty())
-    }
+        val details = result.getOrNull()!!
 
-    @Test
-    fun `getVacationComments failure returns failure`() = runTest {
-        val exception = Exception("Comments not available")
-        coEvery { vacationsRepository.getVacationComments("vacation123") } returns
-                Result.failure(exception)
-
-        val result = useCase.getVacationComments("vacation123")
-
-        assertTrue(result.isFailure)
-        assertEquals("Comments not available", result.exceptionOrNull()?.message)
+        assertEquals(1, details.places.size)
+        assertEquals(mockPlace2, details.places[0])
     }
 }
