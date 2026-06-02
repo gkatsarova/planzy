@@ -6,10 +6,11 @@ import com.planzy.app.R
 import com.planzy.app.data.util.LocationEntityExtractor
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Vacation
-import com.planzy.app.domain.usecase.place.SearchPlacesUseCase
 import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
-import com.planzy.app.domain.usecase.user.SearchUsersUseCase
-import com.planzy.app.domain.usecase.vacation.SearchVacationsUseCase
+import com.planzy.app.domain.usecase.search.SearchAllOutcome
+import com.planzy.app.domain.usecase.search.SearchAllParams
+import com.planzy.app.domain.usecase.search.SearchAllResult
+import com.planzy.app.domain.usecase.search.SearchAllUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationCommentsCountUseCase
 import com.planzy.app.ui.screens.SearchViewModel
 import io.mockk.*
@@ -25,17 +26,14 @@ import org.junit.Test
 class SearchViewModelTest {
 
     private lateinit var viewModel: SearchViewModel
-    private lateinit var searchPlacesUseCase: SearchPlacesUseCase
-    private lateinit var searchVacationsUseCase: SearchVacationsUseCase
+    private lateinit var searchAllUseCase: SearchAllUseCase
+    private lateinit var getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase
     private lateinit var getVacationCommentsCountUseCase: GetVacationCommentsCountUseCase
     private lateinit var entityExtractor: LocationEntityExtractor
     private lateinit var resourceProvider: ResourceProvider
     private lateinit var context: Context
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var editor: SharedPreferences.Editor
-    private lateinit var getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase
-    private lateinit var searchUsersUseCase: SearchUsersUseCase
-
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -43,16 +41,14 @@ class SearchViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
 
-        searchPlacesUseCase = mockk()
-        searchVacationsUseCase = mockk()
+        searchAllUseCase = mockk()
+        getUserCommentsStatsUseCase = mockk()
         getVacationCommentsCountUseCase = mockk()
         entityExtractor = mockk()
         resourceProvider = mockk(relaxed = true)
         context = mockk()
         sharedPreferences = mockk()
         editor = mockk()
-        getUserCommentsStatsUseCase = mockk()
-        searchUsersUseCase = mockk()
 
         every { context.getSharedPreferences("planzy_prefs", Context.MODE_PRIVATE) } returns sharedPreferences
         every { sharedPreferences.getBoolean("perm_granted", false) } returns false
@@ -61,20 +57,13 @@ class SearchViewModelTest {
         every { editor.apply() } returns Unit
 
         coEvery { entityExtractor.initialize() } just runs
-        coEvery { entityExtractor.extractLocation(any()) } returns null
-
-        coEvery { searchUsersUseCase(any()) } returns Result.success(emptyList())
-        coEvery { searchVacationsUseCase(any()) } returns Result.success(emptyList())
 
         viewModel = SearchViewModel(
-            searchPlacesUseCase,
-            getUserCommentsStatsUseCase,
-            searchVacationsUseCase,
-            getVacationCommentsCountUseCase,
-            searchUsersUseCase,
-            entityExtractor,
-            resourceProvider,
-            context
+            searchAllUseCase = searchAllUseCase,
+            getUserCommentsStatsUseCase = getUserCommentsStatsUseCase,
+            getVacationCommentsCountUseCase = getVacationCommentsCountUseCase,
+            entityExtractor = entityExtractor,
+            context = context
         )
     }
 
@@ -95,10 +84,11 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun `searchForPlaces with blank query does nothing`() = runTest {
+    fun `search with blank query resets all state without calling use case`() = runTest {
         viewModel.search("   ")
         advanceUntilIdle()
 
+        coVerify(exactly = 0) { searchAllUseCase(any()) }
         assertTrue(viewModel.places.isEmpty())
         assertTrue(viewModel.vacations.isEmpty())
         assertTrue(viewModel.users.isEmpty())
@@ -106,185 +96,135 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun `searchForPlaces shows API error when places fail but vacations succeed`() = runTest {
-        every { resourceProvider.getString(R.string.error_api_limit) } returns "Limit Error"
-
-        val mockVacation = Vacation(
-            id = "vacation1",
-            userId = "user1",
+    fun `successful search populates places, vacations, and users`() = runTest {
+        val vacation = Vacation(
+            id = "v1",
+            userId = "u1",
             title = "Paris Trip",
             createdAt = "2025-01-01",
-            placesCount = 3,
+            placesCount = 2,
             commentsCount = 0
         )
 
-        coEvery {
-            searchPlacesUseCase(
-                destination = any(),
-                minRating = any(),
-                maxResults = any(),
-                latLong = any(),
-                radius = any()
-            )
-        } returns Result.failure(Exception("429"))
-
-        coEvery { searchVacationsUseCase("Paris") } returns Result.success(listOf(mockVacation))
-        coEvery { getVacationCommentsCountUseCase("vacation1") } returns Result.success(0)
+        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.Success(
+            SearchAllResult(vacations = listOf(vacation))
+        )
+        coEvery { getVacationCommentsCountUseCase("v1") } returns Result.success(3)
+        coEvery { getUserCommentsStatsUseCase(any()) } returns Result.success(Pair(null, 0))
 
         viewModel.search("Paris")
         advanceUntilIdle()
 
-        assertNull(viewModel.errorMessage)
-        assertTrue(viewModel.places.isEmpty())
         assertEquals(1, viewModel.vacations.size)
+        assertEquals(3, viewModel.vacations[0].commentsCount)
+        assertNull(viewModel.errorMessage)
+        assertFalse(viewModel.isLoading)
     }
 
     @Test
-    fun `searchForPlaces shows no results message when both fail with empty results`() = runTest {
-        every { resourceProvider.getString(R.string.error_no_results_found) } returns "No results found"
-
-        coEvery {
-            searchPlacesUseCase(
-                destination = any(),
-                minRating = any(),
-                maxResults = any(),
-                latLong = any(),
-                radius = any()
-            )
-        } returns Result.success(emptyList())
-
-        coEvery { searchVacationsUseCase("Paris") } returns Result.success(emptyList())
-
-        viewModel.search("Paris")
-        advanceUntilIdle()
-
-        assertEquals("No results found", viewModel.errorMessage)
-        assertTrue(viewModel.places.isEmpty())
-        assertTrue(viewModel.vacations.isEmpty())
-        assertTrue(viewModel.users.isEmpty())
-    }
-
-    @Test
-    fun `searchForPlaces handles empty results message`() = runTest {
+    fun `empty outcome sets error message and clears results`() = runTest {
         every { resourceProvider.getString(R.string.error_no_results_found) } returns "No results"
-        coEvery {
-            searchPlacesUseCase(
-                destination = any(),
-                minRating = any(),
-                maxResults = any(),
-                latLong = any(),
-                radius = any()
-            )
-        } returns Result.success(emptyList())
-        coEvery { searchVacationsUseCase(any()) } returns Result.success(emptyList())
 
-        viewModel.search("EmptyPlace")
+        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.Empty("No results")
+
+        viewModel.search("Nowhere")
         advanceUntilIdle()
 
         assertEquals("No results", viewModel.errorMessage)
+        assertTrue(viewModel.places.isEmpty())
+        assertTrue(viewModel.vacations.isEmpty())
+        assertTrue(viewModel.users.isEmpty())
     }
 
     @Test
-    fun `searchForPlaces successfully loads places and vacations with comments`() = runTest {
-        val mockVacation = Vacation(
-            id = "vacation1",
-            userId = "user1",
-            title = "Summer Trip",
+    fun `partial result outcome still populates available data`() = runTest {
+        val vacation = Vacation(
+            id = "v1",
+            userId = "u1",
+            title = "Rome Trip",
             createdAt = "2025-01-01",
-            placesCount = 3,
+            placesCount = 1,
             commentsCount = 0
         )
 
-        coEvery {
-            searchPlacesUseCase(
-                destination = any(),
-                minRating = any(),
-                maxResults = any(),
-                latLong = any(),
-                radius = any()
-            )
-        } returns Result.success(emptyList())
-        coEvery { searchVacationsUseCase("Paris") } returns Result.success(listOf(mockVacation))
-        coEvery { getVacationCommentsCountUseCase("vacation1") } returns Result.success(5)
-        coEvery { getUserCommentsStatsUseCase(any()) } returns Result.success(Pair(null, 0))
+        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.PlacesError(
+            message = "API limit",
+            partialResult = SearchAllResult(vacations = listOf(vacation))
+        )
+        coEvery { getVacationCommentsCountUseCase("v1") } returns Result.success(0)
 
-        viewModel.search("Paris")
+        viewModel.search("Rome")
         advanceUntilIdle()
 
         assertEquals(1, viewModel.vacations.size)
-        assertEquals(5, viewModel.vacations[0].commentsCount)
         assertNull(viewModel.errorMessage)
     }
 
     @Test
-    fun `searchForPlaces uses GPS when no city is detected in query and permission granted`() = runTest {
+    fun `search passes correct location params when permission granted and location set`() = runTest {
         viewModel.setLocationPermission(true)
-        viewModel.setUserLocation(42.0, 23.0)
+        viewModel.setUserLocation(48.8, 2.3)
 
-        coEvery { entityExtractor.extractLocation("bar") } returns null
-        coEvery {
-            searchPlacesUseCase(
-                destination = any(),
-                minRating = any(),
-                maxResults = any(),
-                latLong = any(),
-                radius = any()
-            )
-        } returns Result.success(emptyList())
-        coEvery { getUserCommentsStatsUseCase(any()) } returns Result.success(Pair(null, 0))
+        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.Empty("No results")
 
-        viewModel.search("bar")
+        viewModel.search("coffee")
         advanceUntilIdle()
 
         coVerify {
-            searchPlacesUseCase(
-                destination = any(),
-                minRating = any(),
-                maxResults = any(),
-                latLong = "42.0,23.0",
-                radius = 25
+            searchAllUseCase(
+                SearchAllParams(
+                    query = "coffee",
+                    userLocation = Pair(48.8, 2.3),
+                    locationPermissionGranted = true
+                )
             )
         }
     }
 
     @Test
-    fun `searchForPlaces bypasses GPS when city is detected in query`() = runTest {
-        viewModel.setLocationPermission(true)
-        viewModel.setUserLocation(42.0, 23.0)
+    fun `search without location permission passes null location`() = runTest {
+        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.Empty("No results")
 
-        val mockAnnotation = mockk<com.google.mlkit.nl.entityextraction.EntityAnnotation>()
-        val mockEntity = mockk<com.google.mlkit.nl.entityextraction.Entity>()
-        every { mockEntity.type } returns com.google.mlkit.nl.entityextraction.Entity.TYPE_ADDRESS
-        every { mockAnnotation.entities } returns listOf(mockEntity)
-
-        coEvery { entityExtractor.extractLocation("Sofia") } returns mockAnnotation
-        coEvery {
-            searchPlacesUseCase(
-                destination = any(),
-                minRating = any(),
-                maxResults = any(),
-                latLong = any(),
-                radius = any()
-            )
-        } returns Result.success(emptyList())
-        coEvery { getUserCommentsStatsUseCase(any()) } returns Result.success(Pair(null, 0))
-
-        viewModel.search("bars in Sofia")
+        viewModel.search("pizza")
         advanceUntilIdle()
 
         coVerify {
-            searchPlacesUseCase(
-                destination = any(),
-                minRating = any(),
-                maxResults = any(),
-                latLong = null,
-                radius = null
+            searchAllUseCase(
+                SearchAllParams(
+                    query = "pizza",
+                    userLocation = null,
+                    locationPermissionGranted = false
+                )
             )
         }
     }
 
     @Test
-    fun `setLocationPermission updates preferences and hides dialog`() {
+    fun `clearSearch resets all state`() = runTest {
+        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.Success(
+            SearchAllResult(
+                vacations = listOf(
+                    Vacation("v1", "u1", "Trip", "2025-01-01", 1, 0)
+                )
+            )
+        )
+        coEvery { getVacationCommentsCountUseCase(any()) } returns Result.success(0)
+        viewModel.search("something")
+        advanceUntilIdle()
+
+        viewModel.clearSearch()
+
+        assertEquals("", viewModel.searchQuery)
+        assertTrue(viewModel.places.isEmpty())
+        assertTrue(viewModel.placesWithStats.isEmpty())
+        assertTrue(viewModel.vacations.isEmpty())
+        assertTrue(viewModel.users.isEmpty())
+        assertNull(viewModel.errorMessage)
+        assertFalse(viewModel.isSearchBarFocused)
+    }
+
+    @Test
+    fun `setLocationPermission true saves preference and hides dialog`() {
         viewModel.setLocationPermission(true)
 
         assertTrue(viewModel.locationPermissionGranted)
@@ -294,14 +234,16 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun `dismissLocationDialog hides dialog without changing permissions`() {
+    fun `dismissLocationDialog hides dialog without changing permission`() {
         viewModel.dismissLocationDialog()
+
         assertFalse(viewModel.showLocationDialog)
+        assertFalse(viewModel.locationPermissionGranted)
     }
 
 
     @Test
-    fun `updateSearchBarFocus updates focus state`() {
+    fun `updateSearchBarFocus updates state`() {
         viewModel.updateSearchBarFocus(true)
         assertTrue(viewModel.isSearchBarFocused)
 

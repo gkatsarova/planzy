@@ -110,7 +110,6 @@ class MainActivity : ComponentActivity() {
                         navBackStackEntry?.arguments?.getString(ProfileDetails.ARG_USERNAME) ?: stringResource(R.string.title_profile)
                     }
                     else -> {
-                        // Взимаме Int от функцията и го превръщаме в String
                         val titleResId = getTitleForRoute(currentRoute)
                         stringResource(id = titleResId)
                     }
@@ -124,8 +123,8 @@ class MainActivity : ComponentActivity() {
                                 profilePictureUrl = plazyTopBarViewModel.profilePictureUrl,
                                 navController = navController,
                                 searchQuery = searchViewModel.searchQuery,
-                                onSearch = { query -> searchViewModel.search(query) },
-                                onSearchFocusChanged = { isFocused -> searchViewModel.updateSearchBarFocus(isFocused) }
+                                onQueryChange = { query -> searchViewModel.updateQuery(query) },
+                                onSearch = { searchViewModel.submitSearch() }
                             )
                         }
                     },

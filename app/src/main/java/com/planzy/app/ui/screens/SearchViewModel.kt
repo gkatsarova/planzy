@@ -6,25 +6,21 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.planzy.app.R
+import com.planzy.app.data.model.User
 import com.planzy.app.data.repository.PlacesRepositoryImpl
+import com.planzy.app.data.repository.UserRepositoryImpl
+import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.LocationEntityExtractor
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Place
+import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
-import com.planzy.app.domain.usecase.place.SearchPlacesUseCase
+import com.planzy.app.domain.usecase.search.SearchAllOutcome
+import com.planzy.app.domain.usecase.search.SearchAllParams
+import com.planzy.app.domain.usecase.search.SearchAllUseCase
+import com.planzy.app.domain.usecase.vacation.GetVacationCommentsCountUseCase
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
-import com.google.mlkit.nl.entityextraction.Entity
-import com.planzy.app.data.model.User
-import com.planzy.app.data.repository.UserRepositoryImpl
-import com.planzy.app.data.repository.VacationsRepositoryImpl
-import com.planzy.app.data.util.HttpStatusCodes.TOO_MANY_REQUESTS
-import com.planzy.app.data.util.HttpStatusCodes.UNAUTHORIZED
-import com.planzy.app.domain.model.Vacation
-import com.planzy.app.domain.usecase.user.SearchUsersUseCase
-import com.planzy.app.domain.usecase.vacation.GetVacationCommentsCountUseCase
-import com.planzy.app.domain.usecase.vacation.SearchVacationsUseCase
 
 data class PlaceWithStats(
     val place: Place,
@@ -32,32 +28,19 @@ data class PlaceWithStats(
     val userReviewsCount: Int
 )
 
-data class SearchResults(
-    val placesWithStats: List<PlaceWithStats>,
-    val vacations: List<Vacation>,
-    val users: List<User>
-)
-
 class SearchViewModel(
-    private val searchPlacesUseCase: SearchPlacesUseCase,
+    private val searchAllUseCase: SearchAllUseCase,
     private val getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase,
-    private val searchVacationsUseCase: SearchVacationsUseCase,
     private val getVacationCommentsCountUseCase: GetVacationCommentsCountUseCase,
-    private val searchUsersUseCase: SearchUsersUseCase,
     private val entityExtractor: LocationEntityExtractor,
-    private val resourceProvider: ResourceProvider,
     context: Context
 ) : ViewModel() {
 
     companion object {
         private val TAG = SearchViewModel::class.java.simpleName
-        private const val MIN_WORD_LENGTH = 4
-        private const val DEFAULT_SEARCH_RADIUS = 25
-        private const val NETWORK_ERROR_HOST = "Unable to resolve host"
     }
 
     private val prefs = context.getSharedPreferences("planzy_prefs", Context.MODE_PRIVATE)
-    private val searchCache = mutableMapOf<String, SearchResults>()
 
     var searchQuery by mutableStateOf("")
         private set
@@ -107,6 +90,7 @@ class SearchViewModel(
         users = emptyList()
         errorMessage = null
         isSearchBarFocused = false
+        searchJob?.cancel()
     }
 
     fun setUserLocation(lat: Double, lon: Double) {
@@ -123,151 +107,78 @@ class SearchViewModel(
         showLocationDialog = false
     }
 
-    private suspend fun detectLocationInQuery(query: String): Boolean {
-        val words = query.split(" ").filter { it.isNotBlank() }
-
-        for (word in words) {
-            val testWord = word.lowercase().replaceFirstChar { it.uppercase() }
-            val annotation = entityExtractor.extractLocation(testWord)
-            val isMlAddress = annotation?.entities?.any { it.type == Entity.TYPE_ADDRESS } ?: false
-
-            if (isMlAddress || (word.length >= MIN_WORD_LENGTH && words.size > 1)) {
-                return true
-            }
-        }
-        return false
-    }
-
-    private fun buildSearchParameters(foundLocationInText: Boolean): Pair<String?, Int?> {
-        val shouldUseGPS = locationPermissionGranted && userLocation != null && !foundLocationInText
-
-        val latLong = if (shouldUseGPS) "${userLocation!!.first},${userLocation!!.second}" else null
-        val radius = if (shouldUseGPS) DEFAULT_SEARCH_RADIUS else null
-
-        return Pair(latLong, radius)
-    }
-
-    private fun mapExceptionToErrorResource(exception: Throwable): Int {
-        val msg = exception.message ?: ""
-        return when {
-            msg.contains(TOO_MANY_REQUESTS.toString()) -> R.string.error_api_limit
-            msg.contains(UNAUTHORIZED.toString()) -> R.string.error_unauthorized
-            msg.contains(NETWORK_ERROR_HOST) -> R.string.error_no_internet
-            else -> R.string.error_unknown
-        }
-    }
-
-    fun search(query: String) {
+    fun updateQuery(query: String) {
         searchQuery = query
-
-        val cleanQuery = query.trim()
-        if (cleanQuery.isBlank()) {
+        if (query.isBlank()) {
             places = emptyList()
             placesWithStats = emptyList()
             vacations = emptyList()
             users = emptyList()
             errorMessage = null
             searchJob?.cancel()
-            return
         }
-
-        if (searchCache.containsKey(cleanQuery)) {
-            val cached = searchCache[cleanQuery]!!
-            placesWithStats = cached.placesWithStats
-            places = cached.placesWithStats.map { it.place }
-            vacations = cached.vacations
-            users = cached.users
-            errorMessage = null
-            searchJob?.cancel()
-            return
-        }
+    }
+    fun submitSearch() {
+        val cleanQuery = searchQuery.trim()
+        if (cleanQuery.isBlank()) return
 
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            kotlinx.coroutines.delay(500)
-
             isLoading = true
             errorMessage = null
-
             Log.d(TAG, "Starting search for: $cleanQuery")
 
-            val usersResult = searchUsersUseCase(cleanQuery)
-            var hasUsers = false
-            var usersList = emptyList<User>()
-            usersResult.onSuccess { list ->
-                Log.d(TAG, "Found ${list.size} users")
-                hasUsers = list.isNotEmpty()
-                users = list
-                usersList = list
-            }.onFailure { exception ->
-                Log.e(TAG, "Error searching users: ${exception.message}", exception)
-            }
+            val params = SearchAllParams(
+                query = cleanQuery,
+                userLocation = userLocation,
+                locationPermissionGranted = locationPermissionGranted
+            )
 
-            Log.d(TAG, "Searching vacations...")
-            val vacationsResult = searchVacationsUseCase(cleanQuery)
+            when (val outcome = searchAllUseCase(params)) {
+                is SearchAllOutcome.Success -> applyResult(outcome.result)
 
-            var hasVacations = false
-            var vacationsList = emptyList<Vacation>()
-            vacationsResult.onSuccess { list ->
-                Log.d(TAG, "Found ${list.size} vacations")
-                hasVacations = list.isNotEmpty()
-
-                val vacationsWithComments = list.map { vacation ->
-                    val commentsCount = getVacationCommentsCountUseCase(vacation.id)
-                        .getOrDefault(0)
-
-                    vacation.copy(commentsCount = commentsCount)
+                is SearchAllOutcome.PlacesError -> {
+                    Log.w(TAG, "Partial result: ${outcome.message}")
+                    applyResult(outcome.partialResult)
                 }
 
-                vacations = vacationsWithComments
-                vacationsList = vacationsWithComments
-            }.onFailure { exception ->
-                Log.e(TAG, "Error searching vacations: ${exception.message}", exception)
-            }
-
-            val foundLocationInText = detectLocationInQuery(cleanQuery)
-            val (latLong, radius) = buildSearchParameters(foundLocationInText)
-
-            Log.d(TAG, "Query: $cleanQuery  Location Detected: $foundLocationInText GPS Active: ${latLong != null}")
-
-            val placesResult = searchPlacesUseCase(cleanQuery, latLong = latLong, radius = radius)
-
-            var hasPlaces = false
-            var placeStatsList = emptyList<PlaceWithStats>()
-            placesResult.onSuccess { list ->
-                places = list
-                hasPlaces = list.isNotEmpty()
-                Log.d(TAG, "Found ${list.size} places")
-
-                val stats = list.map { place ->
-                    val (rating, count) = getUserCommentsStatsUseCase(place.id).getOrNull()
-                        ?: Pair(null, 0)
-                    PlaceWithStats(place, rating, count)
+                is SearchAllOutcome.Empty -> {
+                    places = emptyList()
+                    placesWithStats = emptyList()
+                    vacations = emptyList()
+                    users = emptyList()
+                    errorMessage = outcome.message
                 }
-
-                placesWithStats = stats
-                placeStatsList = stats
-            }.onFailure { exception ->
-                if (!hasVacations) {
-                    errorMessage = resourceProvider.getString(mapExceptionToErrorResource(exception))
-                }
-            }
-
-            if (hasPlaces || hasVacations || hasUsers) {
-                searchCache[cleanQuery] = SearchResults(
-                    placesWithStats = placeStatsList,
-                    vacations = vacationsList,
-                    users = usersList
-                )
-            }
-
-            if (!hasPlaces && !hasVacations && !hasUsers) {
-                errorMessage = resourceProvider.getString(R.string.error_no_results_found)
             }
 
             isLoading = false
         }
     }
+
+    fun search(query: String) {
+        updateQuery(query)
+        if (query.isNotBlank()) submitSearch()
+    }
+    private suspend fun applyResult(result: com.planzy.app.domain.usecase.search.SearchAllResult) {
+        users = result.users
+        vacations = enrichVacationsWithComments(result.vacations)
+        val enriched = enrichPlacesWithStats(result.places)
+        placesWithStats = enriched
+        places = enriched.map { it.place }
+    }
+
+    private suspend fun enrichVacationsWithComments(list: List<Vacation>): List<Vacation> =
+        list.map { vacation ->
+            val count = getVacationCommentsCountUseCase(vacation.id).getOrDefault(0)
+            vacation.copy(commentsCount = count)
+        }
+
+    private suspend fun enrichPlacesWithStats(list: List<Place>): List<PlaceWithStats> =
+        list.map { place ->
+            val (rating, count) = getUserCommentsStatsUseCase(place.id).getOrNull()
+                ?: Pair(null, 0)
+            PlaceWithStats(place, rating, count)
+        }
 
     class Factory(
         private val context: Context,
@@ -281,14 +192,19 @@ class SearchViewModel(
             if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
                 return SearchViewModel(
-                    SearchPlacesUseCase(repository),
-                    GetUserCommentsStatsUseCase(repository),
-                    SearchVacationsUseCase(vacationsRepository),
-                    GetVacationCommentsCountUseCase(vacationsRepository),
-                    SearchUsersUseCase(userRepository),
-                    entityExtractor,
-                    resourceProvider,
-                    context.applicationContext
+                    searchAllUseCase = SearchAllUseCase(
+                        placesRepository = repository,
+                        vacationsRepository = vacationsRepository,
+                        userRepository = userRepository,
+                        entityExtractor = entityExtractor,
+                        resourceProvider = resourceProvider
+                    ),
+                    getUserCommentsStatsUseCase = GetUserCommentsStatsUseCase(repository),
+                    getVacationCommentsCountUseCase = GetVacationCommentsCountUseCase(
+                        vacationsRepository
+                    ),
+                    entityExtractor = entityExtractor,
+                    context = context.applicationContext
                 ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
