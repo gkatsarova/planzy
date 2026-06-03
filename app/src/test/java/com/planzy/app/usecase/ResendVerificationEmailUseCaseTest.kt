@@ -1,12 +1,11 @@
 package com.planzy.app.usecase
 
-import com.planzy.app.R
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.repository.AuthRepository
 import com.planzy.app.domain.usecase.auth.ResendVerificationEmailUseCase
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -17,19 +16,12 @@ import org.junit.Test
 class ResendVerificationEmailUseCaseTest {
 
     private lateinit var authRepository: AuthRepository
-    private lateinit var resourceProvider: ResourceProvider
     private lateinit var useCase: ResendVerificationEmailUseCase
 
     @Before
     fun setup() {
         authRepository = mockk()
-        resourceProvider = mockk()
-        useCase = ResendVerificationEmailUseCase(authRepository, resourceProvider)
-
-        every { resourceProvider.getString(R.string.success_resend_verification_email) } returns
-                "Verification email sent"
-        every { resourceProvider.getString(R.string.error_verification_email_resend) } returns
-                "Failed to resend email"
+        useCase = ResendVerificationEmailUseCase(authRepository)
     }
 
     @After
@@ -45,17 +37,20 @@ class ResendVerificationEmailUseCaseTest {
         val result = useCase("user@example.com")
 
         Assert.assertTrue(result.isSuccess)
-        Assert.assertEquals("Verification email sent", result.getOrNull())
+        Assert.assertEquals(Unit, result.getOrNull())
     }
 
     @Test
     fun `failed resend returns error message`() = runTest {
         coEvery { authRepository.resendVerificationEmail(any()) } returns
-                Result.failure(Exception())
+                Result.failure(AppException(AppError.ERROR_VERIFICATION_EMAIL_RESEND))
 
         val result = useCase("user@example.com")
 
         Assert.assertTrue(result.isFailure)
-        Assert.assertEquals("Failed to resend email", result.exceptionOrNull()?.message)
+        Assert.assertEquals(
+            AppError.ERROR_VERIFICATION_EMAIL_RESEND,
+            (result.exceptionOrNull() as? AppException)?.error
+        )
     }
 }

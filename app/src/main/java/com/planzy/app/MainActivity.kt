@@ -46,10 +46,11 @@ import com.planzy.app.ui.theme.PlanzyTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private val deepLinkViewModel: DeepLinkViewModel by viewModels()
-    private val resourceProvider by lazy { ResourceProviderImpl(this) }
+    private val deepLinkViewModel: DeepLinkViewModel by viewModels {
+        DeepLinkViewModel.Factory(ResourceProviderImpl(this))
+    }
     private val recoverySessionManager by lazy { RecoverySessionManager(this) }
-    private val deepLinkHandler by lazy { DeepLinkHandler(resourceProvider, recoverySessionManager) }
+    private val deepLinkHandler by lazy { DeepLinkHandler(recoverySessionManager) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,8 +66,8 @@ class MainActivity : ComponentActivity() {
 
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
-                val authRepository = remember { AuthRepositoryImpl(resourceProvider) }
-                val userRepository = remember { UserRepositoryImpl(resourceProvider) }
+                val authRepository = remember { AuthRepositoryImpl() }
+                val userRepository = remember { UserRepositoryImpl() }
                 val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
                 val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
 
@@ -91,15 +92,14 @@ class MainActivity : ComponentActivity() {
                             context = this@MainActivity,
                             repository = PlacesRepositoryImpl(
                                 TripadvisorApi(),
-                                SupabaseClient,
-                                ResourceProviderImpl(this@MainActivity)
+                                SupabaseClient
                             ),
                             entityExtractor = LocationEntityExtractor(),
                             resourceProvider = ResourceProviderImpl(this@MainActivity),
                             vacationsRepository = VacationsRepositoryImpl(
                                 supabaseClient =SupabaseClient
                             ),
-                            userRepository = UserRepositoryImpl(ResourceProviderImpl(this@MainActivity))
+                            userRepository = UserRepositoryImpl()
                         )
                     }
                 )

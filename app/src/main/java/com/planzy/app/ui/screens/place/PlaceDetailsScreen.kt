@@ -46,18 +46,18 @@ fun PlaceDetailsScreen(
     val resourceProvider = remember { ResourceProviderImpl(context) }
 
     val placesRepository = remember {
-        PlacesRepositoryImpl(tripadvisorApi, SupabaseClient, resourceProvider)
+        PlacesRepositoryImpl(tripadvisorApi, SupabaseClient)
     }
 
     val vacationsRepository = remember {
         VacationsRepositoryImpl(SupabaseClient)
     }
 
-    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
+    val userRepository = remember { UserRepositoryImpl() }
 
     val getPlaceDataUseCase = remember { GetPlaceDataUseCase(placesRepository) }
-    val addUserCommentUseCase = remember { AddUserCommentUseCase(placesRepository, resourceProvider) }
-    val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(placesRepository, resourceProvider) }
+    val addUserCommentUseCase = remember { AddUserCommentUseCase(placesRepository) }
+    val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(placesRepository) }
     val deleteUserCommentUseCase = remember { DeleteUserCommentUseCase(placesRepository) }
 
     val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository) }

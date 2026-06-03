@@ -1,12 +1,12 @@
 package com.planzy.app.data.repository
 
 import android.util.Log
-import com.planzy.app.R
 import com.planzy.app.data.model.Follow
 import com.planzy.app.data.model.User
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.SupabaseClient.currentUserIdFlow
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.model.FollowStats
 import com.planzy.app.domain.repository.FollowRepository
 import io.github.jan.supabase.postgrest.postgrest
@@ -14,9 +14,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
-class FollowRepositoryImpl(
-    private val resourceProvider: ResourceProvider
-) : FollowRepository {
+class FollowRepositoryImpl() : FollowRepository {
     private val TAG = FollowRepositoryImpl::class.java.simpleName
 
     override suspend fun followUser(followingId: String): Result<Unit> {
@@ -25,7 +23,7 @@ class FollowRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             Log.d(TAG, "Following user: $followingId by user: $currentUserId")
 
@@ -41,7 +39,7 @@ class FollowRepositoryImpl(
 
         } catch (e: Exception) {
             Log.e(TAG, "Error following user: ${e.message}", e)
-            Result.failure(e)
+            Result.failure(AppException(AppError.UNKNOWN_ERROR))
         }
     }
 
@@ -51,7 +49,7 @@ class FollowRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             val followerId = currentUserId
 
@@ -69,7 +67,7 @@ class FollowRepositoryImpl(
 
         } catch (e: Exception) {
             Log.e(TAG, "Error unfollowing user: ${e.message}", e)
-            Result.failure(e)
+            Result.failure(AppException(AppError.UNKNOWN_ERROR))
         }
     }
 
@@ -79,7 +77,7 @@ class FollowRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             Log.d(TAG, "Getting follow stats for user: $userId, current user: $currentUserId")
 
@@ -92,7 +90,7 @@ class FollowRepositoryImpl(
 
             val users = response.decodeList<User>()
             val user = users.firstOrNull()
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.user_not_found)))
+                ?: return Result.failure(AppException(AppError.ERROR_USER_NOT_FOUND))
 
             val followersCount = user.followersCount
             val followingCount = user.followingCount
@@ -131,7 +129,7 @@ class FollowRepositoryImpl(
 
         } catch (e: Exception) {
             Log.e(TAG, "Error getting follow stats: ${e.message}", e)
-            Result.failure(e)
+            Result.failure(AppException(AppError.UNKNOWN_ERROR))
         }
     }
 
@@ -141,7 +139,7 @@ class FollowRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             val response = SupabaseClient.client.postgrest["follows"]
                 .select {
@@ -156,7 +154,7 @@ class FollowRepositoryImpl(
 
         } catch (e: Exception) {
             Log.e(TAG, "Error checking if following: ${e.message}", e)
-            Result.failure(e)
+            Result.failure(AppException(AppError.UNKNOWN_ERROR))
         }
     }
 
@@ -200,7 +198,7 @@ class FollowRepositoryImpl(
 
         } catch (e: Exception) {
             Log.e(TAG, "Error getting followers: ${e.message}", e)
-            Result.failure(e)
+            Result.failure(AppException(AppError.UNKNOWN_ERROR))
         }
     }
 
@@ -244,7 +242,7 @@ class FollowRepositoryImpl(
 
         } catch (e: Exception) {
             Log.e(TAG, "Error getting following: ${e.message}", e)
-            Result.failure(e)
+            Result.failure(AppException(AppError.UNKNOWN_ERROR))
         }
     }
 }

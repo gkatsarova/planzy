@@ -11,6 +11,8 @@ import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.manager.ProfilePictureManager
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.repository.AuthRepository
 import com.planzy.app.domain.repository.UserRepository
 import com.planzy.app.domain.usecase.auth.LoginUseCase
@@ -90,17 +92,18 @@ class LoginViewModel(
                     }
                 }
                 success = true
+                successMessage = resourceProvider.getString(R.string.success_login)
             } else {
-                val errorMessage = result.exceptionOrNull()?.message
-                error = errorMessage
+                val appError = (result.exceptionOrNull() as? AppException)?.error ?: AppError.ERROR_LOGIN_FAILED
 
-                if (errorMessage?.contains(
-                        resourceProvider.getString(R.string.error_email_not_verified),
-                        ignoreCase = true
-                    ) == true ||
-                    errorMessage?.contains("verify", ignoreCase = true) == true ||
-                    errorMessage?.contains("verification", ignoreCase = true) == true
-                ) {
+                error = when (appError) {
+                    AppError.ERROR_INVALID_CREDENTIALS -> resourceProvider.getString(R.string.error_invalid_credentials)
+                    AppError.ERROR_EMAIL_NOT_VERIFIED -> resourceProvider.getString(R.string.error_email_not_verified)
+                    AppError.ERROR_NO_INTERNET -> resourceProvider.getString(R.string.error_no_internet)
+                    else -> resourceProvider.getString(R.string.error_login_failed)
+                }
+
+                if (appError == AppError.ERROR_EMAIL_NOT_VERIFIED) {
                     showResendVerification = true
                 }
             }
@@ -132,10 +135,14 @@ class LoginViewModel(
 
             loading = false
             if (result.isSuccess) {
-                successMessage = result.getOrNull()
+                successMessage = resourceProvider.getString(R.string.success_resend_verification_email)
                 startResendCooldown()
             } else {
-                error = result.exceptionOrNull()?.message
+                val appError = (result.exceptionOrNull() as? AppException)?.error ?: AppError.ERROR_VERIFICATION_EMAIL_RESEND
+                error = when (appError) {
+                    AppError.ERROR_NO_INTERNET -> resourceProvider.getString(R.string.error_no_internet)
+                    else -> resourceProvider.getString(R.string.error_verification_email_resend)
+                }
             }
         }
     }
@@ -154,11 +161,15 @@ class LoginViewModel(
                 forgotPasswordLoading = false
                 if (result.isSuccess) {
                     forgotPasswordSuccess = true
-                    forgotPasswordMessage = result.getOrNull()
+                    forgotPasswordMessage = resourceProvider.getString(R.string.password_reset_email_sent)
                     startResendCooldown()
                 } else {
                     forgotPasswordSuccess = false
-                    error = result.exceptionOrNull()?.message
+                    val appError = (result.exceptionOrNull() as? AppException)?.error ?: AppError.ERROR_PASSWORD_RESET_EMAIL_FAILED
+                    error = when (appError) {
+                        AppError.ERROR_NO_INTERNET -> resourceProvider.getString(R.string.error_no_internet)
+                        else -> resourceProvider.getString(R.string.error_password_reset_email_failed)
+                    }
                 }
             } else {
                 forgotPasswordLoading = false
@@ -240,10 +251,10 @@ class LoginViewModel(
             if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
                 return LoginViewModel(
-                    LoginUseCase(authRepository, resourceProvider),
-                    ResendVerificationEmailUseCase(authRepository, resourceProvider),
-                    SendPasswordResetEmailUseCase(authRepository, resourceProvider),
-                    UpdatePasswordUseCase(authRepository, resourceProvider),
+                    LoginUseCase(authRepository),
+                    ResendVerificationEmailUseCase(authRepository),
+                    SendPasswordResetEmailUseCase(authRepository),
+                    UpdatePasswordUseCase(authRepository),
                     GetUserByAuthIdUseCase(userRepository),
                     authRepository,
                     resourceProvider,

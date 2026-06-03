@@ -22,7 +22,7 @@ class CheckEmailAvailabilityUseCaseTest {
     fun setup() {
         authRepository = mockk()
         resourceProvider = mockk()
-        useCase = CheckEmailAvailabilityUseCase(authRepository, resourceProvider)
+        useCase = CheckEmailAvailabilityUseCase(authRepository)
     }
 
     @After

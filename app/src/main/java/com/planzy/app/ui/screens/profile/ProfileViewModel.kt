@@ -8,7 +8,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
 import com.planzy.app.data.model.User
-import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.manager.ProfilePictureManager
 import com.planzy.app.domain.model.FollowStats
@@ -19,7 +18,7 @@ import com.planzy.app.domain.usecase.follow.GetFollowDataUseCase
 import com.planzy.app.domain.usecase.user.DeleteProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.user.UploadProfilePictureUseCase
-import io.github.jan.supabase.auth.auth
+import com.planzy.app.ui.util.toUserMessage
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -98,7 +97,6 @@ class ProfileViewModel(
             errorMessage = null
 
             try {
-                SupabaseClient.client.auth.refreshCurrentSession()
                 val currentUser = getCurrentUserUseCase()
 
                 if (currentUser != null) {
@@ -117,7 +115,7 @@ class ProfileViewModel(
                             isLoading = false
                         }
                         .onFailure { exception ->
-                            errorMessage = exception.message
+                            errorMessage = exception.toUserMessage(resourceProvider)
                             isLoading = false
                         }
                 } else {
@@ -125,7 +123,7 @@ class ProfileViewModel(
                     isLoading = false
                 }
             } catch (e: Exception) {
-                errorMessage = e.message
+                errorMessage = e.toUserMessage(resourceProvider)
                 isLoading = false
             }
         }
@@ -149,9 +147,10 @@ class ProfileViewModel(
                     followers = data.followers
                     following = data.following
                 }
-                .onFailure {
-                    followersError = resourceProvider.getString(R.string.error_loading_followers)
-                    followingError = resourceProvider.getString(R.string.error_loading_following)
+                .onFailure { exception ->
+                    val message = exception.toUserMessage(resourceProvider)
+                    followersError = message
+                    followingError = message
                 }
 
             isLoadingFollowStats = false
@@ -169,8 +168,9 @@ class ProfileViewModel(
     }
 
     fun refreshFollowStats() {
-        val currentAuthId = SupabaseClient.client.auth.currentUserOrNull()?.id ?: return
-        loadFollowData(currentAuthId)
+        if (currentUserAuthId.isNotEmpty()) {
+            loadFollowData(currentUserAuthId)
+        }
     }
 
     fun signOut() {
@@ -185,7 +185,7 @@ class ProfileViewModel(
                     isLogoutSuccessful = true
                 }
                 .onFailure { exception ->
-                    errorMessage = exception.message
+                    errorMessage = exception.toUserMessage(resourceProvider)
                     isLoading = false
                 }
         }
@@ -212,7 +212,7 @@ class ProfileViewModel(
                     isDeleteSuccessful = true
                 }
                 .onFailure { exception ->
-                    errorMessage = exception.message
+                    errorMessage = exception.toUserMessage(resourceProvider)
                     isLoading = false
                 }
         }
@@ -230,7 +230,7 @@ class ProfileViewModel(
                     isUploadingPicture = false
                 }
                 .onFailure { exception ->
-                    errorMessage = exception.message
+                    errorMessage = exception.toUserMessage(resourceProvider)
                     isUploadingPicture = false
                 }
         }
@@ -253,7 +253,7 @@ class ProfileViewModel(
                     isUploadingPicture = false
                 }
                 .onFailure { exception ->
-                    errorMessage = exception.message
+                    errorMessage = exception.toUserMessage(resourceProvider)
                     isUploadingPicture = false
                 }
         }

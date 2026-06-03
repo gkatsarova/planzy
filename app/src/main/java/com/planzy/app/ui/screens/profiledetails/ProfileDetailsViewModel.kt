@@ -103,8 +103,8 @@ class ProfileDetailsViewModel(
                         userState = UserState.Error(resourceProvider.getString(R.string.error_unknown))
                     }
                 }
-                .onFailure {
-                    userState = UserState.Error(it.message ?: resourceProvider.getString(R.string.error_unknown))
+                .onFailure { exception ->
+                    userState = UserState.Error(exception.toUserMessage(resourceProvider))
                 }
         }
     }
@@ -127,9 +127,10 @@ class ProfileDetailsViewModel(
                     followers = data.followers
                     following = data.following
                 }
-                .onFailure {
-                    followersError = resourceProvider.getString(R.string.error_loading_followers)
-                    followingError = resourceProvider.getString(R.string.error_loading_following)
+                .onFailure { exception ->
+                    val message = exception.toUserMessage(resourceProvider)
+                    followersError = message
+                    followingError = message
                 }
 
             isLoadingFollowStats = false
@@ -172,10 +173,14 @@ class ProfileDetailsViewModel(
 
         viewModelScope.launch {
             isToggleFollowLoading = true
+            followersError = null
             manageFollowUseCase(successState.user.auth_id, currentStats)
                 .onSuccess { updatedStats ->
                     followStats = updatedStats
                     loadFollowData(successState.user.auth_id)
+                }
+                .onFailure { error ->
+                    followersError = error.toUserMessage(resourceProvider)
                 }
             isToggleFollowLoading = false
         }

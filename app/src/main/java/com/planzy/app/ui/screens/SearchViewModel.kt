@@ -18,10 +18,12 @@ import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
 import com.planzy.app.domain.model.SearchAllOutcome
 import com.planzy.app.domain.model.SearchAllParams
 import com.planzy.app.domain.model.SearchAllResult
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.usecase.search.SearchAllUseCase
 import com.planzy.app.domain.usecase.vacation.GetVacationCommentsCountUseCase
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
+import com.planzy.app.ui.util.toUserMessage
 
 data class PlaceWithStats(
     val place: Place,
@@ -34,6 +36,7 @@ class SearchViewModel(
     private val getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase,
     private val getVacationCommentsCountUseCase: GetVacationCommentsCountUseCase,
     private val entityExtractor: LocationEntityExtractor,
+    private val resourceProvider: ResourceProvider,
     context: Context
 ) : ViewModel() {
 
@@ -139,7 +142,8 @@ class SearchViewModel(
                 is SearchAllOutcome.Success -> applyResult(outcome.result)
 
                 is SearchAllOutcome.PlacesError -> {
-                    Log.w(TAG, "Partial result: ${outcome.message}")
+                    val errorMsg = AppException(outcome.error).toUserMessage(resourceProvider)
+                    Log.w(TAG, "Partial result error: $errorMsg")
                     applyResult(outcome.partialResult)
                 }
 
@@ -148,7 +152,7 @@ class SearchViewModel(
                     placesWithStats = emptyList()
                     vacations = emptyList()
                     users = emptyList()
-                    errorMessage = outcome.message
+                    errorMessage = AppException(outcome.error).toUserMessage(resourceProvider)
                 }
             }
 
@@ -197,14 +201,14 @@ class SearchViewModel(
                         placesRepository = repository,
                         vacationsRepository = vacationsRepository,
                         userRepository = userRepository,
-                        entityExtractor = entityExtractor,
-                        resourceProvider = resourceProvider
+                        entityExtractor = entityExtractor
                     ),
                     getUserCommentsStatsUseCase = GetUserCommentsStatsUseCase(repository),
                     getVacationCommentsCountUseCase = GetVacationCommentsCountUseCase(
                         vacationsRepository
                     ),
                     entityExtractor = entityExtractor,
+                    resourceProvider = resourceProvider,
                     context = context.applicationContext
                 ) as T
             }

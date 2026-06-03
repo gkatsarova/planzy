@@ -1,13 +1,12 @@
 package com.planzy.app.usecase
 
-import com.planzy.app.R
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.repository.PlacesRepository
 import com.planzy.app.domain.usecase.place.UpdateUserCommentUseCase
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -18,17 +17,12 @@ import org.junit.Test
 class UpdateUserCommentUseCaseTest {
 
     private lateinit var repository: PlacesRepository
-    private lateinit var resourceProvider: ResourceProvider
     private lateinit var useCase: UpdateUserCommentUseCase
 
     @Before
     fun setup() {
         repository = mockk()
-        resourceProvider = mockk()
-        useCase = UpdateUserCommentUseCase(repository, resourceProvider)
-
-        every { resourceProvider.getString(R.string.empty_comment_text) } returns "Empty text"
-        every { resourceProvider.getString(R.string.rating_error) } returns "Invalid rating"
+        useCase = UpdateUserCommentUseCase(repository)
     }
 
     @After
@@ -48,7 +42,10 @@ class UpdateUserCommentUseCaseTest {
         val result = useCase("id", "   ", 5)
 
         Assert.assertTrue(result.isFailure)
-        Assert.assertEquals("Empty text", result.exceptionOrNull()?.message)
+        Assert.assertEquals(
+            AppError.EMPTY_COMMENT_TEXT,
+            (result.exceptionOrNull() as? AppException)?.error
+        )
         coVerify(exactly = 0) { repository.updateUserComment(any(), any(), any()) }
     }
 
@@ -57,7 +54,10 @@ class UpdateUserCommentUseCaseTest {
         val result = useCase("id", "Good", 0)
 
         Assert.assertTrue(result.isFailure)
-        Assert.assertEquals("Invalid rating", result.exceptionOrNull()?.message)
+        Assert.assertEquals(
+            AppError.RATING_ERROR,
+            (result.exceptionOrNull() as? AppException)?.error
+        )
         coVerify(exactly = 0) { repository.updateUserComment(any(), any(), any()) }
     }
 }

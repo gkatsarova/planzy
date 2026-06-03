@@ -70,10 +70,10 @@ fun ProfileDetailsScreen(
 ) {
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context) }
-    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
+    val userRepository = remember { UserRepositoryImpl() }
     val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient) }
-    val followRepository = remember { FollowRepositoryImpl(resourceProvider) }
-    val authRepository = remember { AuthRepositoryImpl(resourceProvider) }
+    val followRepository = remember { FollowRepositoryImpl() }
+    val authRepository = remember { AuthRepositoryImpl() }
 
     val getUserByUsernameUseCase = remember { GetUserByUsernameUseCase(userRepository) }
     val getUserVacationsByIdUseCase = remember { GetUserVacationsByIdUseCase(vacationsRepository) }

@@ -10,7 +10,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
 import com.planzy.app.data.ml.VacationIntentParser
-import com.planzy.app.data.model.VacationPlannerResponse
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
 import com.planzy.app.data.repository.*
@@ -58,18 +57,16 @@ class VacationPlannerViewModel(
 
         viewModelScope.launch {
             createVacationFromTextUseCase(userMessage)
-                .onSuccess { response ->
-                    if (response is VacationPlannerResponse.Success) {
-                        messages.add(ChatMessage(response.message, false))
-                        messages.add(ChatMessage(response.vacation.title, false))
-                        createdVacationId = response.vacation.id
-                        lastCreatedVacationPlaces.addAll(response.places)
-                    } else if (response is VacationPlannerResponse.Error) {
-                        messages.add(ChatMessage(response.message, false))
-                    }
+                .onSuccess { result ->
+                    val successMsg = resourceProvider.getString(R.string.success_vacation_created)
+                    messages.add(ChatMessage(successMsg, false))
+                    messages.add(ChatMessage(result.vacation.title, false))
+
+                    createdVacationId = result.vacation.id
+                    lastCreatedVacationPlaces.addAll(result.places)
                 }
                 .onFailure { error ->
-                    messages.add(ChatMessage("Error: ${error.message}", false))
+                    messages.add(ChatMessage(error.toUserMessage(resourceProvider), false))
                 }
             isProcessing = false
         }
@@ -95,20 +92,18 @@ class VacationPlannerViewModel(
             val supabaseClient = SupabaseClient
             val tripadvisorApi = TripadvisorApi()
             val vacationIntentParser = VacationIntentParser(
-                context,
-                resourceProvider
+                context
             )
             val vacationPlannerRepository = VacationPlannerRepositoryImpl(
                 vacationIntentParser,
                 tripadvisorApi,
-                supabaseClient,
-                resourceProvider)
-            val vacationRepository = VacationsRepositoryImpl(
-                supabaseClient)
+                supabaseClient
+            )
+            val vacationRepository = VacationsRepositoryImpl(supabaseClient)
 
             return VacationPlannerViewModel(
-                GetCurrentUserUseCase(AuthRepositoryImpl(resourceProvider, null)),
-                CreateVacationFromTextUseCase(vacationPlannerRepository, resourceProvider),
+                GetCurrentUserUseCase(AuthRepositoryImpl( null)),
+                CreateVacationFromTextUseCase(vacationPlannerRepository),
                 RemovePlaceFromVacationUseCase(vacationRepository),
                 resourceProvider
             ) as T

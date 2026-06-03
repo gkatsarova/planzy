@@ -1,11 +1,11 @@
 package com.planzy.app.data.repository
 
 import android.util.Log
-import com.planzy.app.R
 import com.planzy.app.data.model.User
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.RecoverySessionManager
-import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.repository.AuthRepository
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
@@ -20,7 +20,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 class AuthRepositoryImpl(
-    private val resourceProvider: ResourceProviderImpl,
     private val recoverySessionManager: RecoverySessionManager? = null
 ) : AuthRepository {
     private val TAG = AuthRepositoryImpl::class.java.simpleName
@@ -50,7 +49,7 @@ class AuthRepositoryImpl(
 
             if (authResponse?.id == null) {
                 Log.e(TAG, "Failed to create auth user - no ID returned")
-                Result.failure(Exception(resourceProvider.getString(R.string.error_creating_auth_user)))
+                Result.failure(AppException(AppError.ERROR_CREATING_AUTH_USER))
             } else {
                 Log.i(TAG, "Auth user created with ID: ${authResponse.id}")
 
@@ -81,7 +80,7 @@ class AuthRepositoryImpl(
 
             if (currentUser == null) {
                 Log.e(TAG, "Failed to get user after sign in")
-                Result.failure(Exception(resourceProvider.getString(R.string.error_login_failed)))
+                Result.failure(AppException(AppError.ERROR_LOGIN_FAILED))
             } else {
                 Log.i(TAG, "Sign in successful for user: ${currentUser.id}")
 
@@ -106,7 +105,7 @@ class AuthRepositoryImpl(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error signing out: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_logout_failed)))
+            Result.failure(AppException(AppError.ERROR_LOGOUT_FAILED))
         }
     }
 
@@ -117,7 +116,7 @@ class AuthRepositoryImpl(
             val currentUser = SupabaseClient.client.auth.currentUserOrNull()
             if (currentUser == null) {
                 Log.e(TAG, "No user logged in")
-                return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+                return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
             }
 
             SupabaseClient.client.postgrest.rpc(
@@ -131,7 +130,7 @@ class AuthRepositoryImpl(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error deleting account: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_delete_account_failed)))
+            Result.failure(AppException(AppError.ERROR_DELETE_ACCOUNT_FAILED))
         }
     }
 
@@ -213,7 +212,7 @@ class AuthRepositoryImpl(
             val recoverySession = recoverySessionManager?.getRecoverySession()
                 ?: run {
                     Log.e(TAG, "No recovery session found")
-                    return Result.failure(Exception(resourceProvider.getString(R.string.error_session_expired)))
+                    return Result.failure(AppException(AppError.ERROR_SESSION_EXPIRED))
                 }
 
             val fragmentUrl = "planzy://auth-callback#" +
@@ -238,7 +237,7 @@ class AuthRepositoryImpl(
         } catch (e: Exception) {
             Log.e(TAG, "Error updating password: ${e.message}", e)
             recoverySessionManager?.clearRecoverySession()
-            Result.failure(Exception(resourceProvider.getString(R.string.error_update_password)))
+            Result.failure(AppException(AppError.ERROR_UPDATE_PASSWORD))
         }
     }
 
@@ -249,20 +248,20 @@ class AuthRepositoryImpl(
     private fun handleAuthException(e: AuthRestException): Exception {
         Log.e(TAG, "Handling auth exception: ${e.error}", e)
 
-        val errorMessage = when {
+        val appError = when {
             e.error.contains(ERROR_KEYWORD_INVALID_CREDENTIALS, ignoreCase = true) -> {
-                resourceProvider.getString(R.string.error_invalid_credentials)
+                AppError.ERROR_INVALID_CREDENTIALS
             }
             e.error.contains(ERROR_KEYWORD_EMAIL_NOT_CONFIRMED, ignoreCase = true) ||
                     e.error.contains(ERROR_KEYWORD_NOT_CONFIRMED, ignoreCase = true) -> {
-                resourceProvider.getString(R.string.error_email_not_verified)
+                AppError.ERROR_EMAIL_NOT_VERIFIED
             }
             else -> {
-                e.message ?: resourceProvider.getString(R.string.error_auth_failed)
+                AppError.ERROR_LOGIN_FAILED
             }
         }
 
-        return Exception(errorMessage)
+        return AppException(appError)
     }
 
     private fun handleGeneralException(e: Exception): Exception {
@@ -272,10 +271,10 @@ class AuthRepositoryImpl(
             e is java.io.IOException || e.toString().contains(
                 ERROR_KEYWORD_UNKNOWN_EXCEPTION,
                 ignoreCase = true) -> {
-                Exception(resourceProvider.getString(R.string.error_no_internet))
+                AppException(AppError.ERROR_NO_INTERNET)
             }
             e.message.isNullOrBlank() -> {
-                Exception(resourceProvider.getString(R.string.unknown_error))
+               AppException(AppError.UNKNOWN_ERROR)
             }
             else -> e
         }

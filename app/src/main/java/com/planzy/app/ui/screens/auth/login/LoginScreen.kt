@@ -46,11 +46,10 @@ fun LoginScreen(
     val recoverySessionManager = remember { RecoverySessionManager(context) }
     val authRepo = remember {
         AuthRepositoryImpl(
-            resourceProvider = resourceProvider,
             recoverySessionManager = recoverySessionManager
         )
     }
-    val userRepo = remember { UserRepositoryImpl(resourceProvider) }
+    val userRepo = remember { UserRepositoryImpl() }
     val cooldownManager = remember { CooldownManager(context) }
 
     val viewModel: LoginViewModel = viewModel(
@@ -76,9 +75,11 @@ fun LoginScreen(
     }
 
     LaunchedEffect(deepLinkViewModel.deepLinkResult) {
-        when (val result = deepLinkViewModel.deepLinkResult) {
+        when (deepLinkViewModel.deepLinkResult) {
             is DeepLinkResult.Error -> {
-                viewModel.setAuthError(result.message)
+                val errorMessage = deepLinkViewModel.getErrorMessage()
+
+                viewModel.setAuthError(errorMessage)
                 deepLinkViewModel.clearDeepLinkResult()
             }
             is DeepLinkResult.PasswordReset -> {

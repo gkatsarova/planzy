@@ -83,6 +83,8 @@ class LoginViewModelTest {
                 "Email not found"
         every { resourceProvider.getString(R.string.error_passwords_dont_match) } returns
                 "Passwords don't match"
+        every { resourceProvider.getString(R.string.error_login_failed) } returns
+                "Login failed. Please try again."
     }
 
     private fun setupSupabaseClient() {
@@ -117,7 +119,7 @@ class LoginViewModelTest {
     @Test
     fun `successful login shows success state`() = runTest {
         coEvery { loginUseCase("test@example.com", "Password123!") } returns
-                Result.success("Login successful")
+                Result.success(mockk<UserInfo>(relaxed = true))
 
         viewModel.login("test@example.com", "Password123!")
         advanceUntilIdle()
@@ -129,15 +131,14 @@ class LoginViewModelTest {
 
     @Test
     fun `failed login shows error message`() = runTest {
-        val errorMessage = "Invalid credentials"
         coEvery { loginUseCase(any(), any()) } returns
-                Result.failure(Exception(errorMessage))
+                Result.failure(Exception("Invalid credentials"))
 
         viewModel.login("test@example.com", "WrongPass!")
         advanceUntilIdle()
 
         Assert.assertFalse(viewModel.success)
-        Assert.assertEquals(errorMessage, viewModel.error)
+        Assert.assertEquals("Login failed. Please try again.", viewModel.error)
     }
 
     @Test
@@ -145,7 +146,7 @@ class LoginViewModelTest {
         coEvery { authRepository.checkEmailExistsInAuth("test@example.com") } returns
                 Result.success(true)
         coEvery { sendPasswordResetEmailUseCase("test@example.com") } returns
-                Result.success("Password reset email sent")
+                Result.success(Unit)
 
         viewModel.sendPasswordResetEmail("test@example.com")
         advanceUntilIdle()
@@ -200,7 +201,7 @@ class LoginViewModelTest {
     @Test
     fun `resetPassword succeeds with matching valid passwords`() = runTest {
         coEvery { updatePasswordUseCase("NewPassword123!") } returns
-                Result.success("Password updated")
+                Result.success(Unit)
 
         viewModel.resetPassword("NewPassword123!", "NewPassword123!")
         advanceUntilIdle()

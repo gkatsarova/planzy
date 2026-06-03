@@ -45,17 +45,7 @@ class HomeViewModel(
     }
 
     fun refreshVacations() {
-        viewModelScope.launch {
-            vacationsState = VacationsState.Loading
-
-            getFollowedUsersVacationsUseCase()
-                .onSuccess { vacations ->
-                    vacationsState = VacationsState.Success(vacations)
-                }
-                .onFailure { error ->
-                    vacationsState = VacationsState.Error(error.toUserMessage(resourceProvider))
-                }
-        }
+        loadFollowedUsersVacations()
     }
 
     class Factory(

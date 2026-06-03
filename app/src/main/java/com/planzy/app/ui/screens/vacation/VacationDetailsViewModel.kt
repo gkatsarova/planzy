@@ -9,7 +9,6 @@ import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.util.ResourceProvider
-import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.model.VacationComment
@@ -254,7 +253,7 @@ class VacationDetailsViewModel(
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            val authRepository = AuthRepositoryImpl(resourceProvider as ResourceProviderImpl)
+            val authRepository = AuthRepositoryImpl(null)
             val getCurrentUserUseCase = GetCurrentUserUseCase(authRepository)
             return VacationDetailsViewModel(
                 getVacationDataUseCase,

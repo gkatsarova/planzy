@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.planzy.app.R
 import com.planzy.app.data.util.LocationEntityExtractor
 import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
 import com.planzy.app.domain.model.SearchAllOutcome
@@ -63,7 +64,8 @@ class SearchViewModelTest {
             getUserCommentsStatsUseCase = getUserCommentsStatsUseCase,
             getVacationCommentsCountUseCase = getVacationCommentsCountUseCase,
             entityExtractor = entityExtractor,
-            context = context
+            context = context,
+            resourceProvider = resourceProvider
         )
     }
 
@@ -125,7 +127,7 @@ class SearchViewModelTest {
     fun `empty outcome sets error message and clears results`() = runTest {
         every { resourceProvider.getString(R.string.error_no_results_found) } returns "No results"
 
-        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.Empty("No results")
+        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.Empty(AppError.ERROR_NO_RESULTS_FOUND)
 
         viewModel.search("Nowhere")
         advanceUntilIdle()
@@ -148,7 +150,7 @@ class SearchViewModelTest {
         )
 
         coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.PlacesError(
-            message = "API limit",
+            error = AppError.ERROR_API_LIMIT,
             partialResult = SearchAllResult(vacations = listOf(vacation))
         )
         coEvery { getVacationCommentsCountUseCase("v1") } returns Result.success(0)
@@ -165,7 +167,7 @@ class SearchViewModelTest {
         viewModel.setLocationPermission(true)
         viewModel.setUserLocation(48.8, 2.3)
 
-        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.Empty("No results")
+        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.Empty(AppError.ERROR_NO_RESULTS_FOUND)
 
         viewModel.search("coffee")
         advanceUntilIdle()
@@ -183,7 +185,7 @@ class SearchViewModelTest {
 
     @Test
     fun `search without location permission passes null location`() = runTest {
-        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.Empty("No results")
+        coEvery { searchAllUseCase(any()) } returns SearchAllOutcome.Empty(AppError.ERROR_NO_RESULTS_FOUND)
 
         viewModel.search("pizza")
         advanceUntilIdle()

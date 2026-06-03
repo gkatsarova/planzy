@@ -15,6 +15,7 @@ import com.planzy.app.domain.usecase.place.AddUserCommentUseCase
 import com.planzy.app.domain.usecase.place.DeleteUserCommentUseCase
 import com.planzy.app.domain.usecase.place.GetPlaceDataUseCase
 import com.planzy.app.domain.usecase.place.UpdateUserCommentUseCase
+import com.planzy.app.ui.util.toUserMessage
 import kotlinx.coroutines.launch
 
 class PlaceDetailsViewModel(
@@ -85,7 +86,7 @@ class PlaceDetailsViewModel(
                     userComments = data.userComments
                 }
                 .onFailure { error ->
-                    errorMessage = error.message
+                    errorMessage = error.toUserMessage(resourceProvider)
                     userCommentsErrorMessage = resourceProvider.getString(R.string.error_loading_community_comments)
                 }
 
@@ -110,7 +111,7 @@ class PlaceDetailsViewModel(
                     isSubmittingComment = false
                 }
                 .onFailure { error ->
-                    commentErrorMessage = error.message
+                    commentErrorMessage = error.toUserMessage(resourceProvider)
                     isSubmittingComment = false
                 }
         }
@@ -127,7 +128,7 @@ class PlaceDetailsViewModel(
                     isUpdatingComment = false
                 }
                 .onFailure { error ->
-                    commentErrorMessage = error.message
+                    commentErrorMessage = error.toUserMessage(resourceProvider)
                     isUpdatingComment = false
                 }
         }
@@ -136,13 +137,15 @@ class PlaceDetailsViewModel(
     fun deleteUserComment(commentId: String) {
         viewModelScope.launch {
             isDeletingComment = true
+            commentErrorMessage = null
 
             deleteUserCommentUseCase(commentId)
                 .onSuccess {
                     userComments = userComments.filter { it.id != commentId }
                     isDeletingComment = false
                 }
-                .onFailure {
+                .onFailure { error ->
+                    commentErrorMessage = error.toUserMessage(resourceProvider)
                     isDeletingComment = false
                 }
         }

@@ -15,6 +15,7 @@ import com.planzy.app.domain.model.SearchAllParams
 import com.planzy.app.domain.usecase.search.SearchAllUseCase
 import com.google.mlkit.nl.entityextraction.Entity
 import com.google.mlkit.nl.entityextraction.EntityAnnotation
+import com.planzy.app.domain.model.AppError
 import io.mockk.*
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -80,7 +81,7 @@ class SearchAllUseCaseTest {
     fun tearDown() = clearAllMocks()
 
     private fun createUseCase() = SearchAllUseCase(
-        placesRepository, vacationsRepository, userRepository, entityExtractor, resourceProvider
+        placesRepository, vacationsRepository, userRepository, entityExtractor
     )
 
     @Test
@@ -141,7 +142,7 @@ class SearchAllUseCaseTest {
         val partial = (outcome as SearchAllOutcome.PlacesError).partialResult
         assertEquals(1, partial.vacations.size)
         assertTrue(partial.places.isEmpty())
-        assertEquals("API limit", outcome.message)
+        assertEquals(AppError.ERROR_API_LIMIT, outcome.error)
     }
 
     @Test
@@ -269,7 +270,7 @@ class SearchAllUseCaseTest {
         val outcome = useCase(SearchAllParams("test"))
 
         assertTrue(outcome is SearchAllOutcome.PlacesError)
-        assertEquals("API limit", (outcome as SearchAllOutcome.PlacesError).message)
+        assertEquals(AppError.ERROR_API_LIMIT, (outcome as SearchAllOutcome.PlacesError).error)
     }
 
     @Test
@@ -284,6 +285,6 @@ class SearchAllUseCaseTest {
         val outcome = useCase(SearchAllParams("test"))
 
         assertTrue(outcome is SearchAllOutcome.PlacesError)
-        assertEquals("No internet", (outcome as SearchAllOutcome.PlacesError).message)
+        assertEquals(AppError.ERROR_NO_INTERNET, (outcome as SearchAllOutcome.PlacesError).error)
     }
 }

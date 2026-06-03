@@ -1,11 +1,10 @@
 package com.planzy.app.domain.usecase.search
 
 import android.util.Log
-import com.planzy.app.R
 import com.planzy.app.data.model.User
 import com.planzy.app.data.util.LocationEntityExtractor
-import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.data.util.HttpStatusCodes
+import com.planzy.app.domain.model.AppError
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.model.SearchAllParams
@@ -24,8 +23,7 @@ class SearchAllUseCase(
     private val placesRepository: PlacesRepository,
     private val vacationsRepository: VacationsRepository,
     private val userRepository: UserRepository,
-    private val entityExtractor: LocationEntityExtractor,
-    private val resourceProvider: ResourceProvider
+    private val entityExtractor: LocationEntityExtractor
 ) {
     private val TAG = SearchAllUseCase::class.java.simpleName
     private val cache = mutableMapOf<String, SearchAllResult>()
@@ -34,9 +32,7 @@ class SearchAllUseCase(
         val query = params.query.trim()
 
         if (query.isBlank()) {
-            return SearchAllOutcome.Empty(
-                resourceProvider.getString(R.string.error_no_results_found)
-            )
+            return SearchAllOutcome.Empty(AppError.ERROR_NO_RESULTS_FOUND)
         }
 
         cache[query]?.let { cached ->
@@ -56,7 +52,7 @@ class SearchAllUseCase(
         )
         Log.d(TAG, "Location detected=$foundLocationInText, GPS active=${latLong != null}")
 
-        var placesError: String? = null
+        var placesError: AppError? = null
         val places = mutableListOf<Place>()
 
         placesRepository.searchPlaces(
@@ -68,16 +64,14 @@ class SearchAllUseCase(
             places.addAll(list.sortedByDescending { it.rating }.take(10))
             Log.d(TAG, "Found ${places.size} places for '$query'")
         }.onFailure { exception ->
-            placesError = mapExceptionToErrorMessage(exception)
+            placesError = mapExceptionToAppError(exception)
             Log.w(TAG, "Places search failed: ${exception.message}")
         }
 
         val hasAnyResults = users.isNotEmpty() || vacations.isNotEmpty() || places.isNotEmpty()
 
         return if (!hasAnyResults) {
-            SearchAllOutcome.Empty(
-                resourceProvider.getString(R.string.error_no_results_found)
-            )
+            SearchAllOutcome.Empty(AppError.ERROR_NO_RESULTS_FOUND)
         } else {
             val result = SearchAllResult(
                 places = places,
@@ -88,7 +82,7 @@ class SearchAllUseCase(
 
             if (placesError != null && places.isEmpty() && (users.isNotEmpty() || vacations.isNotEmpty())) {
                 SearchAllOutcome.PlacesError(
-                    message = placesError,
+                    error = placesError,
                     partialResult = result
                 )
             } else {
@@ -138,14 +132,13 @@ class SearchAllUseCase(
         }
     }
 
-    private fun mapExceptionToErrorMessage(exception: Throwable): String {
+    private fun mapExceptionToAppError(exception: Throwable): AppError {
         val msg = exception.message ?: ""
-        val resId = when {
-            msg.contains(HttpStatusCodes.TOO_MANY_REQUESTS.toString()) -> R.string.error_api_limit
-            msg.contains(HttpStatusCodes.UNAUTHORIZED.toString()) -> R.string.error_unauthorized
-            msg.contains(NETWORK_ERROR_HOST) -> R.string.error_no_internet
-            else -> R.string.error_unknown
+        return when {
+            msg.contains(HttpStatusCodes.TOO_MANY_REQUESTS.toString()) -> AppError.ERROR_API_LIMIT
+            msg.contains(HttpStatusCodes.UNAUTHORIZED.toString()) -> AppError.ERROR_UNAUTHORIZED
+            msg.contains(NETWORK_ERROR_HOST) -> AppError.ERROR_NO_INTERNET
+            else -> AppError.UNKNOWN_ERROR
         }
-        return resourceProvider.getString(resId)
     }
 }

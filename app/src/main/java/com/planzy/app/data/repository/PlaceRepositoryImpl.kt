@@ -1,7 +1,6 @@
 package com.planzy.app.data.repository
 
 import android.util.Log
-import com.planzy.app.R
 import com.planzy.app.data.model.UserCommentDTO
 import com.planzy.app.data.model.UserCommentInsertDTO
 import com.planzy.app.data.model.UserCommentStatsDTO
@@ -10,7 +9,8 @@ import com.planzy.app.data.model.toDomainModel
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.SupabaseClient.currentUserIdFlow
 import com.planzy.app.data.remote.TripadvisorApi
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.PlaceReview
 import com.planzy.app.domain.model.UserComment
@@ -25,8 +25,7 @@ import kotlinx.serialization.SerializationException
 
 class PlacesRepositoryImpl(
     private val tripadvisorApi: TripadvisorApi,
-    private val supabaseClient: SupabaseClient,
-    private val resourceProvider: ResourceProvider
+    private val supabaseClient: SupabaseClient
 ) : PlacesRepository {
     private val TAG = PlacesRepositoryImpl::class.java.simpleName
 
@@ -107,7 +106,7 @@ class PlacesRepositoryImpl(
     override suspend fun getUserComments(placeId: String): Result<List<UserComment>> {
         return try {
             if (placeId.isBlank()) {
-                return Result.failure(IllegalArgumentException(resourceProvider.getString(R.string.empty_place_id)))
+                return Result.failure(AppException(AppError.ERROR_EMPTY_PLACE_ID))
             }
 
             val response = supabaseClient.client.postgrest
@@ -130,10 +129,10 @@ class PlacesRepositoryImpl(
             Result.success(comments)
         } catch (e: SerializationException) {
             Log.e(TAG, "Serialization error: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_parsing_comments)))
+            Result.failure(AppException(AppError.ERROR_PARSING_COMMENTS))
         } catch (e: Exception) {
             Log.e(TAG, "Error getting comments: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.unknown_error)))
+            Result.failure(AppException(AppError.UNKNOWN_ERROR))
         }
     }
 
@@ -147,7 +146,7 @@ class PlacesRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             val commentToInsert = UserCommentInsertDTO(
                 placeId = placeId,
@@ -169,7 +168,7 @@ class PlacesRepositoryImpl(
             Result.success(comment)
         } catch (e: Exception) {
             Log.e(TAG, "Error adding comment: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_posting_comment)))
+            Result.failure(AppException(AppError.ERROR_POSTING_COMMENT))
         }
     }
 
@@ -183,7 +182,7 @@ class PlacesRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             supabaseClient.client.postgrest
                 .from("user_comments")
@@ -200,7 +199,7 @@ class PlacesRepositoryImpl(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error updating comment: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_updating_comment)))
+            Result.failure(AppException(AppError.ERROR_UPDATING_COMMENT))
         }
     }
 
@@ -210,7 +209,7 @@ class PlacesRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             supabaseClient.client.postgrest
                 .from("user_comments")
@@ -224,7 +223,7 @@ class PlacesRepositoryImpl(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error deleting comment: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_deleting_comment)))
+            Result.failure(AppException(AppError.ERROR_DELETING_COMMENT))
         }
     }
 
@@ -270,7 +269,7 @@ class PlacesRepositoryImpl(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error saving place: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_saving_place)))
+            Result.failure(AppException(AppError.ERROR_SAVING_PLACE))
         }
     }
 }

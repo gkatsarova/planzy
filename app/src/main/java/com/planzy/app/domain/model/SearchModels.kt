@@ -16,9 +16,6 @@ data class SearchAllResult(
 
 sealed class SearchAllOutcome {
     data class Success(val result: SearchAllResult) : SearchAllOutcome()
-    data class Empty(val message: String) : SearchAllOutcome()
-    data class PlacesError(
-        val message: String,
-        val partialResult: SearchAllResult
-    ) : SearchAllOutcome()
+    data class Empty(val error: AppError) : SearchAllOutcome()
+    data class PlacesError(val error: AppError, val partialResult: SearchAllResult) : SearchAllOutcome()
 }

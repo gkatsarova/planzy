@@ -66,9 +66,9 @@ fun ProfileScreen(
 ){
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context) }
-    val authRepository = remember { AuthRepositoryImpl(resourceProvider) }
-    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
-    val followRepository = remember { FollowRepositoryImpl(resourceProvider) }
+    val authRepository = remember { AuthRepositoryImpl() }
+    val userRepository = remember { UserRepositoryImpl() }
+    val followRepository = remember { FollowRepositoryImpl() }
 
     val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }

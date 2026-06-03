@@ -1,7 +1,7 @@
 package com.planzy.app.domain.repository
 
-import com.planzy.app.data.model.VacationPlannerResponse
+import com.planzy.app.domain.model.VacationPlannerResult
 
 interface VacationPlannerRepository {
-    suspend fun createVacationFromText(userMessage: String): Result<VacationPlannerResponse>
+    suspend fun createVacationFromText(userMessage: String): Result<VacationPlannerResult>
 }
