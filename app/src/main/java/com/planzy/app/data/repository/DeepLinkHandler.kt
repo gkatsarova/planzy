@@ -17,6 +17,12 @@ class DeepLinkHandler(
     private val recoverySessionManager: RecoverySessionManager
 ) {
     private val TAG = DeepLinkHandler::class.java.simpleName
+
+    companion object {
+        private const val DUPLICATE = "duplicate"
+        private const val ALREADY_EXISTS = "already exists"
+        private const val UNIQUE = "unique"
+    }
     private val userRepo = UserRepositoryImpl(resourceProvider)
 
     suspend fun handleAuthDeepLink(intent: Intent?): DeepLinkResult {
@@ -139,9 +145,9 @@ class DeepLinkHandler(
                 val errorMsg = result.exceptionOrNull()?.message
                 Log.e(TAG, "Failed to create user record")
 
-                if (errorMsg?.contains(resourceProvider.getString(R.string.duplicate), ignoreCase = true) == true ||
-                    errorMsg?.contains(resourceProvider.getString(R.string.already_exists), ignoreCase = true) == true ||
-                    errorMsg?.contains(resourceProvider.getString(R.string.unique), ignoreCase = true) == true) {
+                if (errorMsg?.contains(DUPLICATE, ignoreCase = true) == true ||
+                    errorMsg?.contains(ALREADY_EXISTS, ignoreCase = true) == true ||
+                    errorMsg?.contains(UNIQUE, ignoreCase = true) == true) {
                     DeepLinkResult.EmailVerified(email)
                 } else {
                     DeepLinkResult.Error(resourceProvider.getString(R.string.error_record_db_failed))

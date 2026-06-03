@@ -25,6 +25,13 @@ class AuthRepositoryImpl(
 ) : AuthRepository {
     private val TAG = AuthRepositoryImpl::class.java.simpleName
 
+    companion object {
+        private const val ERROR_KEYWORD_INVALID_CREDENTIALS = "invalid_credentials"
+        private const val ERROR_KEYWORD_EMAIL_NOT_CONFIRMED = "email_not_confirmed"
+        private const val ERROR_KEYWORD_NOT_CONFIRMED = "not_confirmed"
+        private const val ERROR_KEYWORD_UNKNOWN_EXCEPTION = "UnknownException"
+    }
+
     override suspend fun signUp(
         email: String,
         password: String,
@@ -243,11 +250,11 @@ class AuthRepositoryImpl(
         Log.e(TAG, "Handling auth exception: ${e.error}", e)
 
         val errorMessage = when {
-            e.error.contains(resourceProvider.getString(R.string.auth_error_keyword_invalid_credentials), ignoreCase = true) -> {
+            e.error.contains(ERROR_KEYWORD_INVALID_CREDENTIALS, ignoreCase = true) -> {
                 resourceProvider.getString(R.string.error_invalid_credentials)
             }
-            e.error.contains(resourceProvider.getString(R.string.auth_error_keyword_email_not_confirmed), ignoreCase = true) ||
-                    e.error.contains(resourceProvider.getString(R.string.auth_error_keyword_not_confirmed), ignoreCase = true) -> {
+            e.error.contains(ERROR_KEYWORD_EMAIL_NOT_CONFIRMED, ignoreCase = true) ||
+                    e.error.contains(ERROR_KEYWORD_NOT_CONFIRMED, ignoreCase = true) -> {
                 resourceProvider.getString(R.string.error_email_not_verified)
             }
             else -> {
@@ -263,7 +270,7 @@ class AuthRepositoryImpl(
 
         return when {
             e is java.io.IOException || e.toString().contains(
-                resourceProvider.getString(R.string.auth_error_keyword_unknown_exception),
+                ERROR_KEYWORD_UNKNOWN_EXCEPTION,
                 ignoreCase = true) -> {
                 Exception(resourceProvider.getString(R.string.error_no_internet))
             }

@@ -6,7 +6,7 @@ import androidx.core.content.edit
 
 class RecoverySessionManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences(
-        "recovery_session_prefs",
+        RECOVERY_SESSION_PREFS,
         Context.MODE_PRIVATE
     )
 
@@ -44,6 +44,7 @@ class RecoverySessionManager(context: Context) {
         private const val KEY_ACCESS_TOKEN = "recovery_access_token"
         private const val KEY_REFRESH_TOKEN = "recovery_refresh_token"
         private const val KEY_TIMESTAMP = "recovery_timestamp"
+        private const val RECOVERY_SESSION_PREFS = "recovery_session_prefs"
     }
 }
 

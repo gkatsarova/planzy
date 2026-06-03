@@ -33,6 +33,11 @@ class VacationsRepositoryImpl(
 
     private val TAG = VacationsRepositoryImpl::class.java.simpleName
 
+    companion object {
+        private const val DUPLICATE = "duplicate"
+        private const val UNIQUE_CONSTRAINT = "unique constraint"
+    }
+
     override suspend fun getUserVacations(): Result<List<Vacation>> {
         return try {
             val currentUserId = withTimeoutOrNull(1500L) {
@@ -206,8 +211,8 @@ class VacationsRepositoryImpl(
             Log.e(TAG, "Error adding place to vacation: ${e.message}", e)
             Log.e(TAG, "Stack trace:", e)
 
-            if (e.message?.contains("unique constraint", ignoreCase = true) == true ||
-                e.message?.contains("duplicate", ignoreCase = true) == true) {
+            if (e.message?.contains(UNIQUE_CONSTRAINT, ignoreCase = true) == true ||
+                e.message?.contains(DUPLICATE, ignoreCase = true) == true) {
                 Result.failure(Exception(resourceProvider.getString(R.string.error_place_already_in_vacation)))
             } else {
                 Result.failure(Exception(resourceProvider.getString(R.string.error_adding_place_to_vacation)))

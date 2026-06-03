@@ -49,13 +49,6 @@
     <string name="success_login">Login successful!</string>
     <string name="error_invalid_credentials">Invalid email or password</string>
     <string name="error_auth_failed">Authentication failed. Please try again</string>
-    <string name="auth_error_keyword_unknown_exception">UnknownException</string>
-    <string name="auth_error_keyword_invalid_credentials">invalid_credentials</string>
-    <string name="auth_error_keyword_email_not_confirmed">email_not_confirmed</string>
-    <string name="auth_error_keyword_not_confirmed">not_confirmed</string>
-    <string name="duplicate">duplicate</string>
-    <string name="already_exists">already exists</string>
-    <string name="unique">unique</string>
     <string name="password_reset_email_sent">Check your email for reset instructions.</string>
     <string name="forgot_password">Forgot password?</string>
     <string name="reset_password_description">Enter your new password below</string>
