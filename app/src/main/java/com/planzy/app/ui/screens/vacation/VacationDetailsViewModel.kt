@@ -16,6 +16,7 @@ import com.planzy.app.domain.model.VacationComment
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
 import com.planzy.app.domain.usecase.vacation.*
+import com.planzy.app.ui.util.toUserMessage
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
@@ -112,8 +113,8 @@ class VacationDetailsViewModel(
                     isLoading = false
                     isLoadingComments = false
                 }
-                .onFailure { exception ->
-                    errorMessage = exception.message ?: resourceProvider.getString(R.string.unknown_error)
+                .onFailure { error ->
+                    errorMessage = error.toUserMessage(resourceProvider)
                     commentsErrorMessage = resourceProvider.getString(R.string.error_loading_community_comments)
                     isLoading = false
                     isLoadingComments = false
@@ -147,8 +148,8 @@ class VacationDetailsViewModel(
                     vacation = vacation?.copy(placesCount = (vacation?.placesCount ?: 1) - 1)
                     userRatingsCache.remove(placeId)
                 }
-                .onFailure { exception ->
-                    errorMessage = exception.message
+                .onFailure { error ->
+                    errorMessage = error.toUserMessage(resourceProvider)
                 }
         }
     }
@@ -169,7 +170,7 @@ class VacationDetailsViewModel(
                     onCommentsChanged()
                 }
                 .onFailure { error ->
-                    commentErrorMessage = error.message
+                    commentErrorMessage = error.toUserMessage(resourceProvider)
                     isSubmittingComment = false
                 }
         }
@@ -186,7 +187,7 @@ class VacationDetailsViewModel(
                     isUpdatingComment = false
                 }
                 .onFailure { error ->
-                    commentErrorMessage = error.message
+                    commentErrorMessage =  error.toUserMessage(resourceProvider)
                     isUpdatingComment = false
                 }
         }
@@ -202,7 +203,8 @@ class VacationDetailsViewModel(
                     isDeletingComment = false
                     onCommentsChanged()
                 }
-                .onFailure {
+                .onFailure { error ->
+                    commentErrorMessage = error.toUserMessage(resourceProvider)
                     isDeletingComment = false
                 }
         }
@@ -225,8 +227,8 @@ class VacationDetailsViewModel(
                 .onSuccess { nextSavedState ->
                     isSaved = nextSavedState
                 }
-                .onFailure { exception ->
-                    errorMessage = exception.message ?: resourceProvider.getString(R.string.unknown_error)
+                .onFailure { error ->
+                    errorMessage = error.toUserMessage(resourceProvider)
                 }
 
             isSavingInProgress = false

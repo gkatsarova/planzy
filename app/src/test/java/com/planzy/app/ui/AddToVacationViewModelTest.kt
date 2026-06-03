@@ -2,6 +2,8 @@ package com.planzy.app.ui
 
 import com.planzy.app.R
 import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.model.VacationPlace
 import com.planzy.app.domain.usecase.vacation.AddPlaceToVacationUseCase
@@ -33,11 +35,13 @@ class AddToVacationViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         coEvery { getUserVacationsUseCase() } returns Result.success(Pair(emptyList(), emptyList()))
+        every { resourceProvider.getString(R.string.unknown_error) } returns "Unknown Error"
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        clearAllMocks()
     }
 
     private fun createViewModel() {
@@ -66,13 +70,14 @@ class AddToVacationViewModelTest {
 
     @Test
     fun `loadVacations failure updates error message`() = runTest {
-        val errorMsg = "Failed to load"
-        coEvery { getUserVacationsUseCase() } returns Result.failure(Exception(errorMsg))
+        val expectedMessage = "Failed to load"
+        every { resourceProvider.getString(R.string.error_loading_vacations) } returns expectedMessage
+        coEvery { getUserVacationsUseCase() } returns Result.failure(AppException(AppError.ERROR_LOADING_VACATIONS))
 
         createViewModel()
 
         assertTrue(viewModel.vacations.isEmpty())
-        assertEquals(errorMsg, viewModel.errorMessage)
+        assertEquals(expectedMessage, viewModel.errorMessage)
         assertFalse(viewModel.isLoading)
     }
 
@@ -96,17 +101,18 @@ class AddToVacationViewModelTest {
 
     @Test
     fun `createVacation failure updates error message and does not call onSuccess`() = runTest {
-        createViewModel()
-
         val title = "Summer Trip"
-        val errorMsg = "Creation failed"
+        val expectedMessage = "Creation failed"
         val onSuccessCallback = mockk<(Vacation) -> Unit>()
 
-        coEvery { createVacationUseCase(title) } returns Result.failure(Exception(errorMsg))
+        every { resourceProvider.getString(R.string.error_creating_vacation) } returns expectedMessage
+        coEvery { createVacationUseCase(title) } returns Result.failure(AppException(AppError.ERROR_CREATING_VACATION))
+
+        createViewModel()
 
         viewModel.createVacation(title, onSuccessCallback)
 
-        assertEquals(errorMsg, viewModel.errorMessage)
+        assertEquals(expectedMessage, viewModel.errorMessage)
         assertFalse(viewModel.isCreatingVacation)
         verify(exactly = 0) { onSuccessCallback(any()) }
     }
@@ -144,18 +150,19 @@ class AddToVacationViewModelTest {
 
     @Test
     fun `addPlaceToVacation failure updates error message and does not call onSuccess`() = runTest {
-        createViewModel()
-
         val vacationId = "vacation123"
         val placeId = "place456"
-        val errorMsg = "Failed to add place"
+        val expectedMessage = "Failed to add place"
         val onSuccessCallback = mockk<() -> Unit>()
 
-        coEvery { addPlaceToVacationUseCase(vacationId, placeId) } returns Result.failure(Exception(errorMsg))
+        every { resourceProvider.getString(R.string.error_adding_place_to_vacation) } returns expectedMessage
+        coEvery { addPlaceToVacationUseCase(vacationId, placeId) } returns Result.failure(AppException(AppError.ERROR_ADDING_PLACE_TO_VACATION))
+
+        createViewModel()
 
         viewModel.addPlaceToVacation(vacationId, placeId, onSuccessCallback)
 
-        assertEquals(errorMsg, viewModel.errorMessage)
+        assertEquals(expectedMessage, viewModel.errorMessage)
         assertFalse(viewModel.isAddingPlace)
         assertNull(viewModel.successMessage)
         verify(exactly = 0) { onSuccessCallback() }

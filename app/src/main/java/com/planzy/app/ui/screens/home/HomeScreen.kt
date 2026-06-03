@@ -43,7 +43,7 @@ fun HomeScreen(
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val resourceProvider = remember { ResourceProviderImpl(context) }
-    val vacationsRepository = remember { VacationsRepositoryImpl(supabaseClient = SupabaseClient, resourceProvider = resourceProvider) }
+    val vacationsRepository = remember { VacationsRepositoryImpl(supabaseClient = SupabaseClient)}
     val userRepository = remember { UserRepositoryImpl(resourceProvider) }
     val getFollowedUsersVacationsUseCase = remember { GetFollowedUsersVacationsUseCase(vacationsRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }

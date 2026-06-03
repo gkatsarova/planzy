@@ -1,14 +1,13 @@
 package com.planzy.app.usecase
 
-import com.planzy.app.R
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.model.VacationComment
 import com.planzy.app.domain.repository.VacationsRepository
 import com.planzy.app.domain.usecase.vacation.AddVacationCommentUseCase
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -19,16 +18,12 @@ import org.junit.Test
 class AddVacationCommentUseCaseTest {
 
     private lateinit var repository: VacationsRepository
-    private lateinit var resourceProvider: ResourceProvider
     private lateinit var useCase: AddVacationCommentUseCase
 
     @Before
     fun setup() {
         repository = mockk()
-        resourceProvider = mockk()
-        useCase = AddVacationCommentUseCase(repository, resourceProvider)
-
-        every { resourceProvider.getString(R.string.empty_comment_text) } returns "Empty comment text"
+        useCase = AddVacationCommentUseCase(repository)
     }
 
     @After
@@ -50,7 +45,12 @@ class AddVacationCommentUseCaseTest {
         val result = useCase("vacation123", "  ")
 
         Assert.assertTrue(result.isFailure)
-        Assert.assertEquals("Empty comment text", result.exceptionOrNull()?.message)
+
+        val exception = result.exceptionOrNull()
+        Assert.assertTrue(exception is AppException)
+
+        Assert.assertEquals(AppError.EMPTY_COMMENT_TEXT, (exception as AppException).error)
+
         coVerify(exactly = 0) { repository.addVacationComment(any(), any()) }
     }
 }

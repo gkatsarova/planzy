@@ -16,6 +16,7 @@ import com.planzy.app.domain.usecase.follow.GetFollowDataUseCase
 import com.planzy.app.domain.usecase.follow.ManageFollowUseCase
 import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
+import com.planzy.app.ui.util.toUserMessage
 import kotlinx.coroutines.launch
 
 sealed class UserState {
@@ -145,8 +146,8 @@ class ProfileDetailsViewModel(
                 .onSuccess { vacationsList ->
                     vacations = vacationsList
                 }
-                .onFailure {
-                    vacationsError = it.message
+                .onFailure { error ->
+                    vacationsError = error.toUserMessage(resourceProvider)
                 }
             isLoadingVacations = false
         }

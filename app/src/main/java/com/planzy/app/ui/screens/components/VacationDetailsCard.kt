@@ -25,7 +25,7 @@ import com.planzy.app.ui.theme.Raleway
 @Composable
 fun VacationDetailsCard(
     places: List<Place>,
-    creatorUsername: String,
+    creatorUsername: String?,
     createdAt: String,
     onPlaceClick: (Place) -> Unit,
     onRemovePlace: (Place) -> Unit,
@@ -38,6 +38,8 @@ fun VacationDetailsCard(
     showMetadata: Boolean = true,
     navController: NavController
 ) {
+    val displayName = creatorUsername ?: if (isOwner) stringResource(id = R.string.you) else stringResource(id = R.string.unknown_user)
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
@@ -64,14 +66,14 @@ fun VacationDetailsCard(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = stringResource(id = R.string.created_by, creatorUsername),
+                                text = stringResource(id = R.string.created_by, displayName),
                                 fontFamily = Raleway,
                                 fontSize = 14.sp,
                                 color = Lavender,
                                 modifier = if (!isOwner)
                                     Modifier
                                         .clickable {
-                                            creatorUsername.let { username ->
+                                            creatorUsername?.let { username ->
                                                 navController.navigate(ProfileDetails.createRoute(username))
                                             }
                                         }

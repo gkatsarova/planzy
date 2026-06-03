@@ -6,10 +6,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.planzy.app.R
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.vacation.GetFollowedUsersVacationsUseCase
+import com.planzy.app.ui.util.toUserMessage
 import kotlinx.coroutines.launch
 
 sealed interface VacationsState {
@@ -38,10 +38,8 @@ class HomeViewModel(
                 .onSuccess { vacations ->
                     vacationsState = VacationsState.Success(vacations)
                 }
-                .onFailure { _ ->
-                    vacationsState = VacationsState.Error(
-                        resourceProvider.getString(R.string.error_loading_vacations)
-                    )
+                .onFailure { error ->
+                    vacationsState = VacationsState.Error(error.toUserMessage(resourceProvider))
                 }
         }
     }
@@ -54,10 +52,8 @@ class HomeViewModel(
                 .onSuccess { vacations ->
                     vacationsState = VacationsState.Success(vacations)
                 }
-                .onFailure { _ ->
-                    vacationsState = VacationsState.Error(
-                        resourceProvider.getString(R.string.error_loading_vacations)
-                    )
+                .onFailure { error ->
+                    vacationsState = VacationsState.Error(error.toUserMessage(resourceProvider))
                 }
         }
     }

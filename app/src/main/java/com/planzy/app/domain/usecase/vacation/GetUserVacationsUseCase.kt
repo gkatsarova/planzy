@@ -1,13 +1,12 @@
 package com.planzy.app.domain.usecase.vacation
 
-import com.planzy.app.R
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.repository.VacationsRepository
 
 class GetUserVacationsUseCase(
-    private val vacationsRepository: VacationsRepository,
-    private val resourceProvider: ResourceProvider
+    private val vacationsRepository: VacationsRepository
 ) {
 
     suspend operator fun invoke(): Result<Pair<List<Vacation>, List<Vacation>>> {
@@ -27,7 +26,7 @@ class GetUserVacationsUseCase(
         } else {
             val error = userVacationsResult.exceptionOrNull()
                 ?: savedVacationsResult.exceptionOrNull()
-                ?: Exception(resourceProvider.getString(R.string.unknown_error))
+                ?: AppException(AppError.UNKNOWN_ERROR)
             Result.failure(error)
         }
     }

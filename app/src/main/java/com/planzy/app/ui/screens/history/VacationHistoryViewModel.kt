@@ -6,14 +6,17 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.vacation.DeleteVacationUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsUseCase
+import com.planzy.app.ui.util.toUserMessage
 import kotlinx.coroutines.launch
 
 class VacationHistoryViewModel(
     private val getUserVacationsUseCase: GetUserVacationsUseCase,
-    private val deleteVacationUseCase: DeleteVacationUseCase
+    private val deleteVacationUseCase: DeleteVacationUseCase,
+    private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
     var myVacations by mutableStateOf<List<Vacation>>(emptyList())
@@ -51,9 +54,8 @@ class VacationHistoryViewModel(
 
                     isLoading = false
                 }
-                .onFailure { exception ->
-                    errorMessage = exception.message
-                    isLoading = false
+                .onFailure { error ->
+                    errorMessage = error.toUserMessage(resourceProvider)
                 }
         }
     }
@@ -69,9 +71,8 @@ class VacationHistoryViewModel(
                     savedVacations = savedVacations.filter { it.id != vacationId }
                     isDeleting = false
                 }
-                .onFailure { exception ->
-                    deleteErrorMessage = exception.message
-                    isDeleting = false
+                .onFailure { error ->
+                    errorMessage = error.toUserMessage(resourceProvider)
                 }
         }
     }
@@ -90,13 +91,15 @@ class VacationHistoryViewModel(
 
     class Factory(
         private val getUserVacationsUseCase: GetUserVacationsUseCase,
-        private val deleteVacationUseCase: DeleteVacationUseCase
+        private val deleteVacationUseCase: DeleteVacationUseCase,
+        private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return VacationHistoryViewModel(
                 getUserVacationsUseCase,
-                deleteVacationUseCase
+                deleteVacationUseCase,
+                resourceProvider
             ) as T
         }
     }

@@ -97,8 +97,7 @@ class MainActivity : ComponentActivity() {
                             entityExtractor = LocationEntityExtractor(),
                             resourceProvider = ResourceProviderImpl(this@MainActivity),
                             vacationsRepository = VacationsRepositoryImpl(
-                                supabaseClient =SupabaseClient,
-                                resourceProvider = ResourceProviderImpl(this@MainActivity)
+                                supabaseClient =SupabaseClient
                             ),
                             userRepository = UserRepositoryImpl(ResourceProviderImpl(this@MainActivity))
                         )

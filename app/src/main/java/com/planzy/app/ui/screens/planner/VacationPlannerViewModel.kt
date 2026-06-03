@@ -20,6 +20,7 @@ import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.planner.CreateVacationFromTextUseCase
 import com.planzy.app.domain.usecase.vacation.RemovePlaceFromVacationUseCase
 import com.planzy.app.ui.screens.components.ChatMessage
+import com.planzy.app.ui.util.toUserMessage
 import kotlinx.coroutines.launch
 
 class VacationPlannerViewModel(
@@ -81,6 +82,9 @@ class VacationPlannerViewModel(
                 .onSuccess {
                     lastCreatedVacationPlaces.removeAll { it.id == placeId }
                 }
+                .onFailure { error ->
+                    messages.add(ChatMessage(error.toUserMessage(resourceProvider), false))
+                }
         }
     }
 
@@ -100,8 +104,7 @@ class VacationPlannerViewModel(
                 supabaseClient,
                 resourceProvider)
             val vacationRepository = VacationsRepositoryImpl(
-                supabaseClient,
-                resourceProvider)
+                supabaseClient)
 
             return VacationPlannerViewModel(
                 GetCurrentUserUseCase(AuthRepositoryImpl(resourceProvider, null)),

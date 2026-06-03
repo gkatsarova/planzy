@@ -68,16 +68,17 @@ fun VacationHistoryScreen(
 
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context) }
-    val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
+    val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient) }
     val userRepository = remember { UserRepositoryImpl(resourceProvider) }
-    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository, resourceProvider) }
+    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository) }
     val deleteVacationUseCase = remember { DeleteVacationUseCase(vacationsRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
 
     val viewModel: VacationHistoryViewModel = viewModel(
         factory = VacationHistoryViewModel.Factory(
             getUserVacationsUseCase = getUserVacationsUseCase,
-            deleteVacationUseCase = deleteVacationUseCase
+            deleteVacationUseCase = deleteVacationUseCase,
+            resourceProvider = resourceProvider
         )
     )
 

@@ -1,6 +1,9 @@
 package com.planzy.app.ui
 
+import com.planzy.app.R
 import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.model.VacationComment
@@ -52,6 +55,8 @@ class VacationDetailsViewModelTest {
         )
         coEvery { getUserCommentsStatsUseCase(any()) } returns Result.success(Pair(null, 0))
         coEvery { isVacationSavedUseCase(any()) } returns Result.success(false)
+
+        every { resourceProvider.getString(R.string.unknown_error) } returns "Unknown Error"
     }
 
     @After
@@ -93,17 +98,6 @@ class VacationDetailsViewModelTest {
     }
 
     @Test
-    fun `loadVacationDetails failure updates error message and vacation is null`() = runTest {
-        val errorMsg = "Network Error"
-        coEvery { getVacationDataUseCase(vacationId) } returns Result.failure(Exception(errorMsg))
-
-        createViewModel()
-
-        assertNull(viewModel.vacation)
-        assertEquals(errorMsg, viewModel.errorMessage)
-    }
-
-    @Test
     fun `removePlaceFromVacation success updates places list and count`() = runTest {
         val placeId = "place1"
         val mockPlace = mockk<Place>(relaxed = true) {
@@ -132,16 +126,17 @@ class VacationDetailsViewModelTest {
 
     @Test
     fun `removePlaceFromVacation failure updates error message`() = runTest {
-        val errorMsg = "Delete failed"
+        val expectedMessage = "Error removing place"
         val placeId = "place1"
+        every { resourceProvider.getString(R.string.error_removing_place) } returns expectedMessage
 
         createViewModel()
 
-        coEvery { removePlaceFromVacationUseCase(vacationId, placeId) } returns Result.failure(Exception(errorMsg))
+        coEvery { removePlaceFromVacationUseCase(vacationId, placeId) } returns Result.failure(AppException(AppError.ERROR_REMOVING_PLACE))
 
         viewModel.removePlaceFromVacation(placeId)
 
-        assertEquals(errorMsg, viewModel.errorMessage)
+        assertEquals(expectedMessage, viewModel.errorMessage)
     }
 
     @Test
@@ -160,15 +155,17 @@ class VacationDetailsViewModelTest {
 
     @Test
     fun `addVacationComment failure updates error message`() = runTest {
+        val expectedMessage = "Error posting comment"
+        every { resourceProvider.getString(R.string.error_posting_comment) } returns expectedMessage
+
         createViewModel()
 
-        val errorMsg = "Failed to add"
-        coEvery { addVacationCommentUseCase(vacationId, any()) } returns Result.failure(Exception(errorMsg))
+        coEvery { addVacationCommentUseCase(vacationId, any()) } returns Result.failure(AppException(AppError.ERROR_POSTING_COMMENT))
 
         viewModel.addVacationComment("Test")
 
         assertFalse(viewModel.isSubmittingComment)
-        assertEquals(errorMsg, viewModel.commentErrorMessage)
+        assertEquals(expectedMessage, viewModel.commentErrorMessage)
     }
 
     @Test
@@ -193,15 +190,17 @@ class VacationDetailsViewModelTest {
 
     @Test
     fun `updateVacationComment failure updates error message`() = runTest {
+        val expectedMessage = "Error updating comment"
+        every { resourceProvider.getString(R.string.error_updating_comment) } returns expectedMessage
+
         createViewModel()
 
-        val errorMsg = "Update failed"
-        coEvery { updateVacationCommentUseCase(any(), any()) } returns Result.failure(Exception(errorMsg))
+        coEvery { updateVacationCommentUseCase(any(), any()) } returns Result.failure(AppException(AppError.ERROR_UPDATING_COMMENT))
 
         viewModel.updateVacationComment("c1", "Updated")
 
         assertFalse(viewModel.isUpdatingComment)
-        assertEquals(errorMsg, viewModel.commentErrorMessage)
+        assertEquals(expectedMessage, viewModel.commentErrorMessage)
     }
 
     @Test

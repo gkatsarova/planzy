@@ -69,6 +69,8 @@ fun VacationCard(
         }
     }
 
+    val displayName = user?.username ?: if (isOwner) stringResource(id = R.string.you) else stringResource(id = R.string.unknown_user)
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -125,7 +127,7 @@ fun VacationCard(
                     }
 
                     Text(
-                        text = user?.username ?: stringResource(id = R.string.unknown_user),
+                        text = displayName,
                         fontFamily = Raleway,
                         fontSize = 14.sp,
                         color = Lavender,

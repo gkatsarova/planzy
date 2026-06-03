@@ -20,7 +20,7 @@ data class VacationPlace(
 
 data class VacationDetails(
     val vacation: Vacation,
-    val creatorUsername: String,
+    val creatorUsername: String?,
     val places: List<Place>,
     val vacationComments: List<VacationComment>
 )

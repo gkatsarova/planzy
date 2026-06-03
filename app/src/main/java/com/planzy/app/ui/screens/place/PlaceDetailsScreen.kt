@@ -50,7 +50,7 @@ fun PlaceDetailsScreen(
     }
 
     val vacationsRepository = remember {
-        VacationsRepositoryImpl(SupabaseClient, resourceProvider)
+        VacationsRepositoryImpl(SupabaseClient)
     }
 
     val userRepository = remember { UserRepositoryImpl(resourceProvider) }
@@ -60,7 +60,7 @@ fun PlaceDetailsScreen(
     val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(placesRepository, resourceProvider) }
     val deleteUserCommentUseCase = remember { DeleteUserCommentUseCase(placesRepository) }
 
-    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository, resourceProvider) }
+    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository) }
     val createVacationUseCase = remember { CreateVacationUseCase(vacationsRepository) }
     val addPlaceToVacationUseCase = remember { AddPlaceToVacationUseCase(vacationsRepository, placesRepository) }
 
