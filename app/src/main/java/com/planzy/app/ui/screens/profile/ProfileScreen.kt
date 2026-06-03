@@ -40,12 +40,9 @@ import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.auth.SignOutUseCase
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
-import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowDataUseCase
 import com.planzy.app.domain.usecase.user.DeleteProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
-import com.planzy.app.domain.usecase.user.UpdateProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.UploadProfilePictureUseCase
 import com.planzy.app.ui.navigation.Login
 import com.planzy.app.ui.navigation.Register
@@ -69,20 +66,17 @@ fun ProfileScreen(
 ){
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context) }
-    val authRepository = remember { AuthRepositoryImpl(resourceProvider) }
-    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
-    val followRepository = remember { FollowRepositoryImpl(resourceProvider) }
+    val authRepository = remember { AuthRepositoryImpl() }
+    val userRepository = remember { UserRepositoryImpl() }
+    val followRepository = remember { FollowRepositoryImpl() }
 
     val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
     val signOutUseCase = remember { SignOutUseCase(authRepository) }
     val deleteAccountUseCase = remember { DeleteAccountUseCase(authRepository) }
     val uploadProfilePictureUseCase = remember { UploadProfilePictureUseCase(userRepository) }
-    val updateProfilePictureUseCase = remember { UpdateProfilePictureUseCase(userRepository) }
     val deleteProfilePictureUseCase = remember { DeleteProfilePictureUseCase(userRepository) }
-    val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }
-    val getFollowersUseCase = remember { GetFollowersUseCase(followRepository) }
-    val getFollowingUseCase = remember { GetFollowingUseCase(followRepository) }
+    val getFollowDataUseCase = remember { GetFollowDataUseCase(followRepository) }
 
 
     val viewModel: ProfileViewModel = viewModel(
@@ -92,11 +86,8 @@ fun ProfileScreen(
             signOutUseCase = signOutUseCase,
             deleteAccountUseCase = deleteAccountUseCase,
             uploadProfilePictureUseCase = uploadProfilePictureUseCase,
-            updateProfilePictureUseCase = updateProfilePictureUseCase,
             deleteProfilePictureUseCase = deleteProfilePictureUseCase,
-            getFollowStatsUseCase = getFollowStatsUseCase,
-            getFollowersUseCase = getFollowersUseCase,
-            getFollowingUseCase = getFollowingUseCase,
+            getFollowDataUseCase = getFollowDataUseCase,
             resourceProvider = resourceProvider
         )
     )

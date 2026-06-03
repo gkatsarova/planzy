@@ -3,21 +3,25 @@ package com.planzy.app.data.repository
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import com.planzy.app.R
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.RecoverySessionManager
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.parseFragmentAndImportSession
 import kotlinx.coroutines.delay
-import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.model.AppError
 import io.github.jan.supabase.annotations.SupabaseInternal
 
 class DeepLinkHandler(
-    private val resourceProvider: ResourceProviderImpl,
     private val recoverySessionManager: RecoverySessionManager
 ) {
     private val TAG = DeepLinkHandler::class.java.simpleName
-    private val userRepo = UserRepositoryImpl(resourceProvider)
+
+    companion object {
+        private const val DUPLICATE = "duplicate"
+        private const val ALREADY_EXISTS = "already exists"
+        private const val UNIQUE = "unique"
+    }
+    private val userRepo = UserRepositoryImpl()
 
     suspend fun handleAuthDeepLink(intent: Intent?): DeepLinkResult {
         val uri = intent?.data ?: return DeepLinkResult.NoDeepLink
@@ -31,7 +35,7 @@ class DeepLinkHandler(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error handling deep link: ${e.message}", e)
-            DeepLinkResult.Error(e.message ?: resourceProvider.getString(R.string.unknown_error))
+            DeepLinkResult.Error(AppError.UNKNOWN_ERROR)
         }
     }
 
@@ -70,7 +74,8 @@ class DeepLinkHandler(
                     handleEmailVerification()
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to import session from fragment: ${e.message}", e)
-                    DeepLinkResult.Error("Failed to verify email: ${e.message}")
+                    val email = uri.getQueryParameter("email") ?: params["email"]
+                    DeepLinkResult.Error(AppError.ERROR_EMAIL_VERIFICATION, email)
                 }
             }
             "recovery" -> {
@@ -78,7 +83,7 @@ class DeepLinkHandler(
                 try {
                     if (accessToken.isNullOrEmpty() || refreshToken.isNullOrEmpty()) {
                         Log.e(TAG, "Missing tokens in recovery link")
-                        return DeepLinkResult.Error(resourceProvider.getString(R.string.error_invalid_reset_link))
+                        return DeepLinkResult.Error(AppError.ERROR_INVALID_RESET_LINK)
                     }
                     recoverySessionManager.saveRecoverySession(accessToken, refreshToken)
 
@@ -95,7 +100,7 @@ class DeepLinkHandler(
                         Log.d(TAG, "Recovery tokens saved locally, proceeding with password reset")
                         DeepLinkResult.PasswordReset
                     } else {
-                        DeepLinkResult.Error(resourceProvider.getString(R.string.error_session))
+                        DeepLinkResult.Error(AppError.ERROR_SESSION)
                     }
                 }
             }
@@ -111,13 +116,13 @@ class DeepLinkHandler(
 
             if (user == null) {
                 Log.w(TAG, "No current user after verification")
-                return DeepLinkResult.Error(resourceProvider.getString(R.string.error_active_session))
+                return DeepLinkResult.Error(AppError.ERROR_ACTIVE_SESSION)
             }
 
             Log.d(TAG, "User verified: ${user.email}")
 
             val email = user.email
-                ?: return DeepLinkResult.Error(resourceProvider.getString(R.string.error_verified_user_email))
+                ?: return DeepLinkResult.Error(AppError.ERROR_VERIFIED_USER_EMAIL)
 
             val username = user.userMetadata?.get("username")?.toString()
                 ?: user.email?.substringBefore("@")
@@ -138,18 +143,18 @@ class DeepLinkHandler(
                 val errorMsg = result.exceptionOrNull()?.message
                 Log.e(TAG, "Failed to create user record")
 
-                if (errorMsg?.contains(resourceProvider.getString(R.string.duplicate), ignoreCase = true) == true ||
-                    errorMsg?.contains(resourceProvider.getString(R.string.already_exists), ignoreCase = true) == true ||
-                    errorMsg?.contains(resourceProvider.getString(R.string.unique), ignoreCase = true) == true) {
+                if (errorMsg?.contains(DUPLICATE, ignoreCase = true) == true ||
+                    errorMsg?.contains(ALREADY_EXISTS, ignoreCase = true) == true ||
+                    errorMsg?.contains(UNIQUE, ignoreCase = true) == true) {
                     DeepLinkResult.EmailVerified(email)
                 } else {
-                    DeepLinkResult.Error(resourceProvider.getString(R.string.error_record_db_failed))
+                    DeepLinkResult.Error(AppError.ERROR_RECORD_DB_FAILED)
                 }
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error during email verification: ${e.message}", e)
-            DeepLinkResult.Error(e.message ?: resourceProvider.getString(R.string.error_email_verification))
+            DeepLinkResult.Error(AppError.ERROR_EMAIL_VERIFICATION)
         }
     }
 }
@@ -159,5 +164,5 @@ sealed class DeepLinkResult {
     object Unknown : DeepLinkResult()
     data class EmailVerified(val email: String) : DeepLinkResult()
     object PasswordReset : DeepLinkResult()
-    data class Error(val message: String) : DeepLinkResult()
+    data class Error(val error: AppError, val emailArg: String? = null) : DeepLinkResult()
 }

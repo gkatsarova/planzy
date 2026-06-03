@@ -11,10 +11,12 @@ import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+import com.planzy.app.BuildConfig
+
 object SupabaseClient {
 
-    private const val SUPABASE_URL = "https://pjngaenofksdgnuitqut.supabase.co"
-    private const val SUPABASE_KEY = "sb_publishable_4HKq4fc5eGbwQaVl37geDg_9U-0_dfg"
+    private const val SUPABASE_URL = BuildConfig.SUPABASE_URL
+    private const val SUPABASE_KEY = BuildConfig.SUPABASE_KEY
 
     lateinit var client: SupabaseClient
         private set

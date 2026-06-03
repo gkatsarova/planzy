@@ -8,6 +8,7 @@ import com.planzy.app.domain.usecase.auth.CheckUsernameAvailabilityUseCase
 import com.planzy.app.domain.usecase.auth.RegisterUserUseCase
 import com.planzy.app.domain.usecase.auth.ResendVerificationEmailUseCase
 import com.planzy.app.ui.screens.auth.registration.RegisterViewModel
+import io.github.jan.supabase.auth.user.UserInfo
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -74,6 +75,14 @@ class RegisterViewModelTest {
                 "Verification email"
         every { resourceProvider.getString(R.string.success_verification_email_sent) } returns
                 "Verification email sent. Please check your inbox."
+        every { resourceProvider.getString(R.string.success_resend_verification_email) } returns
+                "Verification email resent. Please check your inbox."
+        every { resourceProvider.getString(R.string.error_registration_failed) } returns
+                "Registration failed. Please try again."
+        every { resourceProvider.getString(R.string.error_verification_email_resend) } returns
+                "Failed to resend verification email."
+        every { resourceProvider.getString(R.string.error_no_internet) } returns
+                "No internet connection."
     }
 
     @After
@@ -84,26 +93,25 @@ class RegisterViewModelTest {
     @Test
     fun `successful registration shows success state`() = runTest {
         coEvery { registerUserUseCase(any(), any(), any()) } returns
-                Result.success("Verification email sent")
+                Result.success(mockk<UserInfo>())
 
         viewModel.signUp("test@example.com", "Password123!", "testuser")
         advanceUntilIdle()
 
-        Assert.assertTrue(viewModel.success.value)
-        Assert.assertNotNull(viewModel.successMessage.value)
+        Assert.assertTrue(viewModel.success)
+        Assert.assertNotNull(viewModel.successMessage)
     }
 
     @Test
     fun `failed registration shows error message`() = runTest {
-        val errorMessage = "Network error"
         coEvery { registerUserUseCase(any(), any(), any()) } returns
-                Result.failure(Exception(errorMessage))
+                Result.failure(Exception("Network error"))
 
         viewModel.signUp("test@example.com", "Password123!", "testuser")
         advanceUntilIdle()
 
-        Assert.assertFalse(viewModel.success.value)
-        Assert.assertEquals(errorMessage, viewModel.error.value)
+        Assert.assertFalse(viewModel.success)
+        Assert.assertEquals("Registration failed. Please try again.", viewModel.error)
     }
 
     @Test
@@ -111,7 +119,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername("TestUser")
         advanceUntilIdle()
 
-        Assert.assertNotNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNotNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -121,7 +129,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername("validuser")
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -133,7 +141,7 @@ class RegisterViewModelTest {
 
         Assert.assertEquals(
             "This username already exists",
-            viewModel.fieldErrors.value.usernameError
+            viewModel.fieldErrors.usernameError
         )
     }
 
@@ -144,7 +152,7 @@ class RegisterViewModelTest {
         viewModel.validateEmail("test@example.com")
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.emailError)
+        Assert.assertNull(viewModel.fieldErrors.emailError)
     }
 
     @Test
@@ -156,19 +164,22 @@ class RegisterViewModelTest {
         viewModel.validateEmail("existing@example.com")
         advanceUntilIdle()
 
-        Assert.assertNotNull(viewModel.fieldErrors.value.emailError)
+        Assert.assertNotNull(viewModel.fieldErrors.emailError)
     }
 
     @Test
     fun `resending verification email succeeds`() = runTest {
         coEvery { resendVerificationEmailUseCase("test@example.com") } returns
-                Result.success("Email resent")
+                Result.success(Unit)
 
         viewModel.resendVerificationEmail("test@example.com")
         advanceUntilIdle()
 
-        Assert.assertNotNull(viewModel.successMessage.value)
-        Assert.assertFalse(viewModel.loading.value)
+        Assert.assertEquals(
+            "Verification email resent. Please check your inbox.",
+            viewModel.successMessage
+        )
+        Assert.assertFalse(viewModel.loading)
     }
 
     @Test
@@ -179,7 +190,7 @@ class RegisterViewModelTest {
         viewModel.resendVerificationEmail("test@example.com")
         advanceUntilIdle()
 
-        Assert.assertNotNull(viewModel.error.value)
+        Assert.assertEquals("Failed to resend verification email.", viewModel.error)
     }
 
     @Test
@@ -187,7 +198,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername("")
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -197,7 +208,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername("abc")
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -208,7 +219,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername(longUsername)
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -216,7 +227,7 @@ class RegisterViewModelTest {
         viewModel.validateUsername("a".repeat(21))
         advanceUntilIdle()
 
-        Assert.assertNotNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNotNull(viewModel.fieldErrors.usernameError)
     }
 
     @Test
@@ -226,6 +237,6 @@ class RegisterViewModelTest {
         viewModel.validateUsername("user.name_123")
         advanceUntilIdle()
 
-        Assert.assertNull(viewModel.fieldErrors.value.usernameError)
+        Assert.assertNull(viewModel.fieldErrors.usernameError)
     }
 }

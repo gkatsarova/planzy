@@ -22,7 +22,7 @@ interface VacationsRepository {
 
     suspend fun getVacationWithUser(
         vacationId: String
-    ): Result<Pair<Vacation, String>>
+    ): Result<Pair<Vacation, String?>>
     suspend fun getVacationPlaceIds(
         vacationId: String
     ): Result<List<String>>

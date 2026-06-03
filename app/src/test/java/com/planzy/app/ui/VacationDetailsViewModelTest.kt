@@ -1,11 +1,15 @@
 package com.planzy.app.ui
 
+import com.planzy.app.R
 import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.model.VacationComment
-import com.planzy.app.domain.repository.PlacesRepository
+import com.planzy.app.domain.model.VacationDetails
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
 import com.planzy.app.ui.screens.vacation.VacationDetailsViewModel
 import com.planzy.app.domain.usecase.vacation.*
 import io.mockk.*
@@ -21,17 +25,15 @@ import org.junit.Test
 class VacationDetailsViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
-    private val getVacationDetailsUseCase: GetVacationDetailsUseCase = mockk()
+    private val getVacationDataUseCase: GetVacationDataUseCase = mockk()
     private val removePlaceFromVacationUseCase: RemovePlaceFromVacationUseCase = mockk()
-    private val getVacationCommentsUseCase: GetVacationCommentsUseCase = mockk()
     private val addVacationCommentUseCase: AddVacationCommentUseCase = mockk()
     private val updateVacationCommentUseCase: UpdateVacationCommentUseCase = mockk()
     private val deleteVacationCommentUseCase: DeleteVacationCommentUseCase = mockk()
-    private val saveVacationUseCase: SaveVacationUseCase = mockk()
-    private val unsaveVacationUseCase: UnsaveVacationUseCase = mockk()
-    private val isVacationSavedUseCase: IsVacationSavedUseCase = mockk()
+    private val manageSavedVacationUseCase: ManageSavedVacationUseCase = mockk()
     private val getCurrentUserUseCase: GetCurrentUserUseCase = mockk()
-    private val placesRepository: PlacesRepository = mockk()
+    private val getUserCommentsStatsUseCase: GetUserCommentsStatsUseCase = mockk()
+    private val isVacationSavedUseCase: IsVacationSavedUseCase = mockk()
     private val resourceProvider: ResourceProvider = mockk()
 
     private val vacationId = "vacation123"
@@ -42,63 +44,57 @@ class VacationDetailsViewModelTest {
         Dispatchers.setMain(testDispatcher)
 
         coEvery { getCurrentUserUseCase() } returns null
-        coEvery { getVacationDetailsUseCase(any()) } returns Result.success(
+
+        coEvery { getVacationDataUseCase(any()) } returns Result.success(
             VacationDetails(
                 vacation = mockk(relaxed = true),
                 creatorUsername = "testUser",
-                places = emptyList()
+                places = emptyList(),
+                vacationComments = emptyList()
             )
         )
-        coEvery { getVacationCommentsUseCase(any()) } returns Result.success(emptyList())
-        coEvery { placesRepository.getUserCommentsStats(any()) } returns Result.success(Pair(null, 0))
+        coEvery { getUserCommentsStatsUseCase(any()) } returns Result.success(Pair(null, 0))
         coEvery { isVacationSavedUseCase(any()) } returns Result.success(false)
+
+        every { resourceProvider.getString(R.string.unknown_error) } returns "Unknown Error"
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        clearAllMocks()
     }
 
     private fun createViewModel() {
         viewModel = VacationDetailsViewModel(
-            getVacationDetailsUseCase,
-            removePlaceFromVacationUseCase,
-            getVacationCommentsUseCase,
-            addVacationCommentUseCase,
-            updateVacationCommentUseCase,
-            deleteVacationCommentUseCase,
-            saveVacationUseCase,
-            unsaveVacationUseCase,
-            isVacationSavedUseCase,
-            getCurrentUserUseCase,
-            placesRepository,
-            resourceProvider,
-            vacationId
+            getVacationDataUseCase = getVacationDataUseCase,
+            removePlaceFromVacationUseCase = removePlaceFromVacationUseCase,
+            addVacationCommentUseCase = addVacationCommentUseCase,
+            updateVacationCommentUseCase = updateVacationCommentUseCase,
+            deleteVacationCommentUseCase = deleteVacationCommentUseCase,
+            manageSavedVacationUseCase = manageSavedVacationUseCase,
+            getCurrentUserUseCase = getCurrentUserUseCase,
+            getUserCommentsStatsUseCase = getUserCommentsStatsUseCase,
+            isVacationSavedUseCase = isVacationSavedUseCase,
+            resourceProvider = resourceProvider,
+            vacationId = vacationId
         )
     }
 
     @Test
     fun `loadVacationDetails success updates vacation state`() = runTest {
         val expectedVacation = mockk<Vacation>(relaxed = true)
-        val expectedDetails = VacationDetails(expectedVacation, "testUser", emptyList())
-        coEvery { getVacationDetailsUseCase(vacationId) } returns Result.success(expectedDetails)
+        val expectedComments = listOf(mockk<VacationComment>(relaxed = true))
+        val expectedDetails = VacationDetails(expectedVacation, "testUser", emptyList(), expectedComments)
+
+        coEvery { getVacationDataUseCase(vacationId) } returns Result.success(expectedDetails)
 
         createViewModel()
 
         assertEquals(expectedVacation, viewModel.vacation)
         assertEquals("testUser", viewModel.creatorUsername)
+        assertEquals(expectedComments, viewModel.vacationComments)
         assertNull(viewModel.errorMessage)
-    }
-
-    @Test
-    fun `loadVacationDetails failure updates error message and vacation is null`() = runTest {
-        val errorMsg = "Network Error"
-        coEvery { getVacationDetailsUseCase(vacationId) } returns Result.failure(Exception(errorMsg))
-
-        createViewModel()
-
-        assertNull(viewModel.vacation)
-        assertEquals(errorMsg, viewModel.errorMessage)
     }
 
     @Test
@@ -115,9 +111,9 @@ class VacationDetailsViewModelTest {
         }
         every { mockVacation.copy(placesCount = 1) } returns updatedVacation
 
-        val mockDetails = VacationDetails(mockVacation, "testUser", listOf(mockPlace))
+        val mockDetails = VacationDetails(mockVacation, "testUser", listOf(mockPlace), emptyList())
 
-        coEvery { getVacationDetailsUseCase(vacationId) } returns Result.success(mockDetails)
+        coEvery { getVacationDataUseCase(vacationId) } returns Result.success(mockDetails)
         coEvery { removePlaceFromVacationUseCase(vacationId, placeId) } returns Result.success(Unit)
 
         createViewModel()
@@ -130,16 +126,17 @@ class VacationDetailsViewModelTest {
 
     @Test
     fun `removePlaceFromVacation failure updates error message`() = runTest {
-        val errorMsg = "Delete failed"
+        val expectedMessage = "Error removing place"
         val placeId = "place1"
+        every { resourceProvider.getString(R.string.error_removing_place) } returns expectedMessage
 
         createViewModel()
 
-        coEvery { removePlaceFromVacationUseCase(vacationId, placeId) } returns Result.failure(Exception(errorMsg))
+        coEvery { removePlaceFromVacationUseCase(vacationId, placeId) } returns Result.failure(AppException(AppError.ERROR_REMOVING_PLACE))
 
         viewModel.removePlaceFromVacation(placeId)
 
-        assertEquals(errorMsg, viewModel.errorMessage)
+        assertEquals(expectedMessage, viewModel.errorMessage)
     }
 
     @Test
@@ -158,25 +155,28 @@ class VacationDetailsViewModelTest {
 
     @Test
     fun `addVacationComment failure updates error message`() = runTest {
+        val expectedMessage = "Error posting comment"
+        every { resourceProvider.getString(R.string.error_posting_comment) } returns expectedMessage
+
         createViewModel()
 
-        val errorMsg = "Failed to add"
-        coEvery { addVacationCommentUseCase(vacationId, any()) } returns Result.failure(Exception(errorMsg))
+        coEvery { addVacationCommentUseCase(vacationId, any()) } returns Result.failure(AppException(AppError.ERROR_POSTING_COMMENT))
 
         viewModel.addVacationComment("Test")
 
         assertFalse(viewModel.isSubmittingComment)
-        assertEquals(errorMsg, viewModel.commentErrorMessage)
+        assertEquals(expectedMessage, viewModel.commentErrorMessage)
     }
 
     @Test
-    fun `updateVacationComment success reloads comments`() = runTest {
+    fun `updateVacationComment success reloads data`() = runTest {
         val commentId = "c1"
         val updatedComment = mockk<VacationComment>(relaxed = true)
+        val detailsWithUpdatedComment = VacationDetails(mockk(relaxed = true), "testUser", emptyList(), listOf(updatedComment))
 
-        coEvery { getVacationCommentsUseCase(vacationId) } returnsMany listOf(
-            Result.success(emptyList()),
-            Result.success(listOf(updatedComment))
+        coEvery { getVacationDataUseCase(vacationId) } returnsMany listOf(
+            Result.success(VacationDetails(mockk(relaxed = true), "testUser", emptyList(), emptyList())),
+            Result.success(detailsWithUpdatedComment)
         )
         coEvery { updateVacationCommentUseCase(commentId, "Updated") } returns Result.success(Unit)
 
@@ -190,15 +190,17 @@ class VacationDetailsViewModelTest {
 
     @Test
     fun `updateVacationComment failure updates error message`() = runTest {
+        val expectedMessage = "Error updating comment"
+        every { resourceProvider.getString(R.string.error_updating_comment) } returns expectedMessage
+
         createViewModel()
 
-        val errorMsg = "Update failed"
-        coEvery { updateVacationCommentUseCase(any(), any()) } returns Result.failure(Exception(errorMsg))
+        coEvery { updateVacationCommentUseCase(any(), any()) } returns Result.failure(AppException(AppError.ERROR_UPDATING_COMMENT))
 
         viewModel.updateVacationComment("c1", "Updated")
 
         assertFalse(viewModel.isUpdatingComment)
-        assertEquals(errorMsg, viewModel.commentErrorMessage)
+        assertEquals(expectedMessage, viewModel.commentErrorMessage)
     }
 
     @Test
@@ -207,7 +209,8 @@ class VacationDetailsViewModelTest {
         val comment = mockk<VacationComment>(relaxed = true) {
             every { id } returns commentId
         }
-        coEvery { getVacationCommentsUseCase(vacationId) } returns Result.success(listOf(comment))
+        val details = VacationDetails(mockk(relaxed = true), "testUser", emptyList(), listOf(comment))
+        coEvery { getVacationDataUseCase(vacationId) } returns Result.success(details)
 
         createViewModel()
 
@@ -225,7 +228,6 @@ class VacationDetailsViewModelTest {
 
         viewModel.onRetry()
 
-        coVerify(exactly = 2) { getVacationDetailsUseCase(vacationId) }
-        coVerify(exactly = 2) { getVacationCommentsUseCase(vacationId) }
+        coVerify(exactly = 2) { getVacationDataUseCase(vacationId) }
     }
 }

@@ -4,12 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -22,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -37,15 +38,14 @@ import com.planzy.app.data.repository.PlacesRepositoryImpl
 import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.util.ResourceProviderImpl
+import com.planzy.app.domain.usecase.place.GetUserCommentsStatsUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.domain.usecase.vacation.AddVacationCommentUseCase
 import com.planzy.app.domain.usecase.vacation.DeleteVacationCommentUseCase
-import com.planzy.app.domain.usecase.vacation.GetVacationCommentsUseCase
-import com.planzy.app.domain.usecase.vacation.GetVacationDetailsUseCase
+import com.planzy.app.domain.usecase.vacation.ManageSavedVacationUseCase
+import com.planzy.app.domain.usecase.vacation.GetVacationDataUseCase
 import com.planzy.app.domain.usecase.vacation.IsVacationSavedUseCase
 import com.planzy.app.domain.usecase.vacation.RemovePlaceFromVacationUseCase
-import com.planzy.app.domain.usecase.vacation.SaveVacationUseCase
-import com.planzy.app.domain.usecase.vacation.UnsaveVacationUseCase
 import com.planzy.app.domain.usecase.vacation.UpdateVacationCommentUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.screens.SearchViewModel
@@ -66,40 +66,35 @@ fun VacationDetailsScreen(
     searchViewModel: SearchViewModel
 ) {
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp.dp
 
     val tripadvisorApi = remember { TripadvisorApi() }
     val resourceProvider = remember { ResourceProviderImpl(context) }
 
-    val placesRepository = remember { PlacesRepositoryImpl(tripadvisorApi, SupabaseClient, resourceProvider) }
-    val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
-    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
-    val getVacationDetailsUseCase = remember { GetVacationDetailsUseCase(vacationsRepository, placesRepository) }
+    val placesRepository = remember { PlacesRepositoryImpl(tripadvisorApi, SupabaseClient) }
+    val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient) }
+    val userRepository = remember { UserRepositoryImpl() }
+    val getVacationDataUseCase = remember { GetVacationDataUseCase(vacationsRepository, placesRepository) }
     val removePlaceFromVacationUseCase = remember { RemovePlaceFromVacationUseCase(vacationsRepository) }
-    val getVacationCommentsUseCase = remember { GetVacationCommentsUseCase(vacationsRepository) }
-    val addVacationCommentUseCase = remember { AddVacationCommentUseCase(vacationsRepository, resourceProvider) }
-    val updateVacationCommentUseCase = remember { UpdateVacationCommentUseCase(vacationsRepository, resourceProvider) }
+    val addVacationCommentUseCase = remember { AddVacationCommentUseCase(vacationsRepository) }
+    val updateVacationCommentUseCase = remember { UpdateVacationCommentUseCase(vacationsRepository) }
     val deleteVacationCommentUseCase = remember { DeleteVacationCommentUseCase(vacationsRepository) }
-    val saveVacationUseCase = remember { SaveVacationUseCase(vacationsRepository) }
-    val unsaveVacationUseCase = remember { UnsaveVacationUseCase(vacationsRepository) }
+    val manageSavedVacationUseCase = remember { ManageSavedVacationUseCase(vacationsRepository) }
     val isVacationSavedUseCase = remember { IsVacationSavedUseCase(vacationsRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
+    val getUserCommentsStatsUseCase = remember { GetUserCommentsStatsUseCase(placesRepository) }
 
     var isEditingAnyComment by remember { mutableStateOf(false) }
 
     val viewModel: VacationDetailsViewModel = viewModel(
         factory = VacationDetailsViewModel.Factory(
-            getVacationDetailsUseCase = getVacationDetailsUseCase,
+            getVacationDataUseCase = getVacationDataUseCase,
             removePlaceFromVacationUseCase = removePlaceFromVacationUseCase,
-            getVacationCommentsUseCase = getVacationCommentsUseCase,
             addVacationCommentUseCase = addVacationCommentUseCase,
             updateVacationCommentUseCase = updateVacationCommentUseCase,
             deleteVacationCommentUseCase = deleteVacationCommentUseCase,
-            saveVacationUseCase = saveVacationUseCase,
-            unsaveVacationUseCase = unsaveVacationUseCase,
+            manageSavedVacationUseCase = manageSavedVacationUseCase,
+            getUserCommentsStatsUseCase = getUserCommentsStatsUseCase,
             isVacationSavedUseCase = isVacationSavedUseCase,
-            placesRepository = placesRepository,
             resourceProvider = resourceProvider,
             vacationId = vacationId,
             onCommentsChanged = {
@@ -110,12 +105,17 @@ fun VacationDetailsScreen(
         )
     )
 
-    val showAddVacationCommentSection = searchViewModel.placesWithStats.isEmpty() &&
+    val showAddVacationCommentSection = !searchViewModel.isSearchBarFocused &&
+            searchViewModel.placesWithStats.isEmpty() &&
             searchViewModel.vacations.isEmpty() &&
             !searchViewModel.isLoading &&
             !isEditingAnyComment
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    val mainColumnModifier = Modifier.fillMaxSize().let {
+        if (isEditingAnyComment) it.imePadding() else it
+    }
+
+    Column(modifier = mainColumnModifier) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -221,7 +221,7 @@ fun VacationDetailsScreen(
                                     },
                                     onEditStart = { isEditingAnyComment = true },
                                     onEditCancel = { isEditingAnyComment = false },
-                                    modifier = Modifier.heightIn(max = screenHeight * 0.35f),
+                                    modifier = Modifier.fillParentMaxHeight(0.35f),
                                     navController = navController,
                                     getUserByAuthIdUseCase = getUserByAuthIdUseCase
                                 )
@@ -241,7 +241,7 @@ fun VacationDetailsScreen(
                 color = Lavender,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .imePadding()
+                    .windowInsetsPadding(WindowInsets.ime)
             ) {
                 AddVacationCommentSection(
                     isSubmitting = viewModel.isSubmittingComment,

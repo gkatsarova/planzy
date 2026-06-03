@@ -31,6 +31,18 @@ android {
             "TRIPADVISOR_API_KEY",
             "\"${properties.getProperty("TRIPADVISOR_API_KEY") ?: ""}\""
         )
+
+        buildConfigField(
+            "String",
+            "SUPABASE_URL",
+            "\"${properties.getProperty("SUPABASE_URL") ?: ""}\""
+        )
+
+        buildConfigField(
+            "String",
+            "SUPABASE_KEY",
+            "\"${properties.getProperty("SUPABASE_KEY") ?: ""}\""
+        )
     }
 
     buildTypes {
@@ -71,6 +83,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.ui)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -93,6 +106,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.core.testing)
 

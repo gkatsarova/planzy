@@ -1,12 +1,11 @@
 package com.planzy.app.domain.usecase.auth
 
-import com.planzy.app.R
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.repository.AuthRepository
 
 class CheckEmailAvailabilityUseCase(
-    private val authRepository: AuthRepository,
-    private val resourceProvider: ResourceProvider
+    private val authRepository: AuthRepository
 ) {
     suspend operator fun invoke(email: String): Result<Boolean> {
         return try {
@@ -15,7 +14,7 @@ class CheckEmailAvailabilityUseCase(
                 Result.success(!(result.getOrNull() ?: false))
             } else {
                 val exception = result.exceptionOrNull()
-                    ?: Exception(resourceProvider.getString(R.string.error_email_exists))
+                    ?: AppException(AppError.ERROR_EMAIL_EXISTS)
                 Result.failure(exception)
             }
         } catch (e: Exception) {

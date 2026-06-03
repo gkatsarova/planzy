@@ -1,14 +1,15 @@
 package com.planzy.app.data.repository
 
 import android.util.Log
-import com.planzy.app.R
 import com.planzy.app.data.ml.VacationIntentParser
 import com.planzy.app.data.model.*
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.TripadvisorApi
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.model.Place
 import com.planzy.app.domain.model.Vacation
+import com.planzy.app.domain.model.VacationPlannerResult
 import com.planzy.app.domain.repository.VacationPlannerRepository
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.filterNotNull
@@ -19,19 +20,18 @@ import java.util.UUID
 class VacationPlannerRepositoryImpl(
     private val intentParser: VacationIntentParser,
     private val tripadvisorApi: TripadvisorApi,
-    private val supabaseClient: SupabaseClient,
-    private val resourceProvider: ResourceProvider
+    private val supabaseClient: SupabaseClient
 ) : VacationPlannerRepository {
 
     private val TAG = VacationPlannerRepositoryImpl::class.java.simpleName
 
-    override suspend fun createVacationFromText(userMessage: String): Result<VacationPlannerResponse> {
+    override suspend fun createVacationFromText(userMessage: String): Result<VacationPlannerResult> {
         return try {
             Log.d(TAG, "Starting creation for: $userMessage")
 
             val intent = intentParser.parseIntent(userMessage).getOrElse {
                 Log.e(TAG, "Failed to parse intent")
-                return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.error_analyzing)))
+                throw AppException(AppError.ERROR_ANALYZING_INTENT)
             }
 
             Log.d(TAG, "Parsed destination: ${intent.destination}")
@@ -39,7 +39,7 @@ class VacationPlannerRepositoryImpl(
 
             val userId = withTimeoutOrNull(2000L) {
                 SupabaseClient.currentUserIdFlow.filterNotNull().first()
-            } ?: return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: throw AppException(AppError.USER_NOT_LOGGED_IN)
 
             Log.d(TAG, "Searching for location: ${intent.destination}")
             val search = tripadvisorApi.searchLocations(intent.destination).getOrNull()
@@ -48,12 +48,13 @@ class VacationPlannerRepositoryImpl(
             val firstResult = search?.data?.firstOrNull()
             if (firstResult == null) {
                 Log.e(TAG, "No location found for: ${intent.destination}")
-                return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.error_city_not_found)))
+                throw AppException(AppError.ERROR_CITY_NOT_FOUND)
             }
 
             Log.d(TAG, "Found location: ${firstResult.name} (ID: ${firstResult.locationId})")
 
-            val destDetails = tripadvisorApi.getLocationDetails(firstResult.locationId).getOrNull() ?: return Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.where_is_your_dream_vacation)))
+            val destDetails = tripadvisorApi.getLocationDetails(firstResult.locationId).getOrNull()
+                ?: throw AppException(AppError.ERROR_DESTINATION_DETAILS_FAILED)
             val latLong = "${destDetails.latitude},${destDetails.longitude}"
 
             val allPlaces = mutableListOf<Place>()
@@ -102,22 +103,25 @@ class VacationPlannerRepositoryImpl(
             }
 
             val vacationId = UUID.randomUUID().toString()
-            val vacationDTO = VacationDTO(vacationId, userId, "Trip to ${intent.destination}", java.time.Instant.now().toString())
+            val tripTitle = "Trip to ${intent.destination}"
+            val vacationDTO = VacationDTO(vacationId, userId, tripTitle, java.time.Instant.now().toString())
             supabaseClient.client.postgrest["vacations"].insert(vacationDTO)
 
             val links = uniquePlaces.mapIndexed { i, p -> VacationPlaceInsertDTO(vacationId, p.id, i) }
             supabaseClient.client.postgrest["vacation_places"].insert(links)
 
-            return Result.success(VacationPlannerResponse.Success(
-                vacation = Vacation(vacationId, userId, vacationDTO.title, vacationDTO.createdAt, uniquePlaces.size),
-                placesAdded = uniquePlaces.size,
-                message = resourceProvider.getString(R.string.success_vacation_created),
-                places = uniquePlaces
-            ))
+            Result.success(
+                VacationPlannerResult(
+                    vacation = Vacation(vacationId, userId, vacationDTO.title, vacationDTO.createdAt, uniquePlaces.size),
+                    places = uniquePlaces
+                )
+            )
 
+        } catch (e: AppException) {
+            Result.failure(e)
         } catch (e: Exception) {
             Log.e(TAG, "Error: ${e.message}", e)
-            Result.success(VacationPlannerResponse.Error(resourceProvider.getString(R.string.error_creating_vacation)))
+            Result.failure(AppException(AppError.ERROR_CREATING_VACATION))
         }
     }
 }

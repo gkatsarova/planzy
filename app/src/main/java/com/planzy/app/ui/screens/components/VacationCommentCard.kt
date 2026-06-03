@@ -145,7 +145,7 @@ fun VacationCommentCard(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
-                        text = comment.userName,
+                        text = comment.userName ?: stringResource(R.string.unknown_user),
                         fontFamily = Raleway,
                         fontSize = 16.sp,
                         color = Lavender,
@@ -153,7 +153,7 @@ fun VacationCommentCard(
                             Modifier
                                 .weight(1f)
                                 .clickable {
-                                    comment.userName.let { username ->
+                                    comment.userName?.let { username ->
                                         navController.navigate(ProfileDetails.createRoute(username))
                                     }
                                 }

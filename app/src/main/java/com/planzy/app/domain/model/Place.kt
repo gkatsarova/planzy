@@ -30,3 +30,9 @@ data class PlaceReview(
     val text: String?,
     val date: String
 )
+
+data class PlaceDetailsData(
+    val place: Place,
+    val reviews: List<PlaceReview>,
+    val userComments: List<UserComment>
+)

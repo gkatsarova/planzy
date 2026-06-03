@@ -31,11 +31,10 @@ fun Navigation(
     searchViewModel: SearchViewModel,
     modifier: Modifier = Modifier
 ) {
-    val deepLinkResult by deepLinkViewModel.deepLinkResult.collectAsState()
     var hasHandledDeepLink by remember { mutableStateOf(false) }
 
-    LaunchedEffect(deepLinkResult) {
-        when (deepLinkResult) {
+    LaunchedEffect(deepLinkViewModel.deepLinkResult) {
+        when (deepLinkViewModel.deepLinkResult) {
             is DeepLinkResult.EmailVerified -> {
                 if (!hasHandledDeepLink) {
                     hasHandledDeepLink = true

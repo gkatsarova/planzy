@@ -7,6 +7,10 @@ class UploadProfilePictureUseCase(
     private val userRepository: UserRepository
 ) {
     suspend operator fun invoke(imageFile: File): Result<String> {
-        return userRepository.uploadProfilePicture(imageFile)
+        val url = userRepository.uploadProfilePicture(imageFile)
+            .getOrElse { return Result.failure(it) }
+
+        return userRepository.updateProfilePictureUrl(url)
+            .map { url }
     }
 }

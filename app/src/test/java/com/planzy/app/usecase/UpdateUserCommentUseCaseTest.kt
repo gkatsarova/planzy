@@ -1,56 +1,63 @@
 package com.planzy.app.usecase
 
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.repository.PlacesRepository
 import com.planzy.app.domain.usecase.place.UpdateUserCommentUseCase
-import io.mockk.every
-import io.mockk.mockk
-import org.junit.Before
-import org.junit.Test
-import com.planzy.app.R
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert
+import org.junit.Before
+import org.junit.Test
 
 class UpdateUserCommentUseCaseTest {
 
     private lateinit var repository: PlacesRepository
-    private lateinit var resourceProvider: ResourceProvider
     private lateinit var useCase: UpdateUserCommentUseCase
 
     @Before
     fun setup() {
         repository = mockk()
-        resourceProvider = mockk()
-        useCase = UpdateUserCommentUseCase(repository, resourceProvider)
-
-        every { resourceProvider.getString(R.string.empty_comment_text) } returns "Empty"
-        every { resourceProvider.getString(R.string.rating_error) } returns "Error"
+        useCase = UpdateUserCommentUseCase(repository)
     }
 
-    @Test
-    fun `blank text returns failure and doesn't call repository`() = runTest {
-        val result = useCase("id", "   ", 5)
-
-        Assert.assertTrue(result.isFailure)
-        coVerify(exactly = 0) { repository.updateUserComment(any(), any(), any()) }
-    }
+    @After
+    fun tearDown() = clearAllMocks()
 
     @Test
-    fun `invalid rating returns failure`() = runTest {
-        val result = useCase("id", "Good", 0)
-
-        Assert.assertTrue(result.isFailure)
-        coVerify(exactly = 0) { repository.updateUserComment(any(), any(), any()) }
-    }
-
-    @Test
-    fun `valid update calls repository`() = runTest {
+    fun `update valid comment returns success`() = runTest {
         coEvery { repository.updateUserComment("id", "Updated", 4) } returns Result.success(Unit)
 
         val result = useCase("id", "Updated", 4)
 
         Assert.assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `update blank text returns failure`() = runTest {
+        val result = useCase("id", "   ", 5)
+
+        Assert.assertTrue(result.isFailure)
+        Assert.assertEquals(
+            AppError.EMPTY_COMMENT_TEXT,
+            (result.exceptionOrNull() as? AppException)?.error
+        )
+        coVerify(exactly = 0) { repository.updateUserComment(any(), any(), any()) }
+    }
+
+    @Test
+    fun `update invalid rating returns failure`() = runTest {
+        val result = useCase("id", "Good", 0)
+
+        Assert.assertTrue(result.isFailure)
+        Assert.assertEquals(
+            AppError.RATING_ERROR,
+            (result.exceptionOrNull() as? AppException)?.error
+        )
+        coVerify(exactly = 0) { repository.updateUserComment(any(), any(), any()) }
     }
 }

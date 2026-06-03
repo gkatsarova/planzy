@@ -13,16 +13,13 @@ import com.planzy.app.domain.model.PlaceReview
 import com.planzy.app.domain.model.UserComment
 import com.planzy.app.domain.usecase.place.AddUserCommentUseCase
 import com.planzy.app.domain.usecase.place.DeleteUserCommentUseCase
-import com.planzy.app.domain.usecase.place.GetPlaceDetailsUseCase
-import com.planzy.app.domain.usecase.place.GetPlaceReviewsUseCase
-import com.planzy.app.domain.usecase.place.GetUserCommentsUseCase
+import com.planzy.app.domain.usecase.place.GetPlaceDataUseCase
 import com.planzy.app.domain.usecase.place.UpdateUserCommentUseCase
+import com.planzy.app.ui.util.toUserMessage
 import kotlinx.coroutines.launch
 
 class PlaceDetailsViewModel(
-    private val getPlaceDetailsUseCase: GetPlaceDetailsUseCase,
-    private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase,
-    private val getUserCommentsUseCase: GetUserCommentsUseCase,
+    private val getPlaceDataUseCase: GetPlaceDataUseCase,
     private val addUserCommentUseCase: AddUserCommentUseCase,
     private val updateUserCommentUseCase: UpdateUserCommentUseCase,
     private val deleteUserCommentUseCase: DeleteUserCommentUseCase,
@@ -36,19 +33,19 @@ class PlaceDetailsViewModel(
     var reviews by mutableStateOf<List<PlaceReview>>(emptyList())
         private set
 
+    var userComments by mutableStateOf<List<UserComment>>(emptyList())
+        private set
+
     var isLoading by mutableStateOf(false)
         private set
 
     var isLoadingReviews by mutableStateOf(false)
         private set
 
-    var errorMessage by mutableStateOf<String?>(null)
-        private set
-
-    var userComments by mutableStateOf<List<UserComment>>(emptyList())
-        private set
-
     var isLoadingUserComments by mutableStateOf(false)
+        private set
+
+    var errorMessage by mutableStateOf<String?>(null)
         private set
 
     var userCommentsErrorMessage by mutableStateOf<String?>(null)
@@ -75,45 +72,32 @@ class PlaceDetailsViewModel(
     }
 
     private fun loadAllData() {
-        loadPlaceDetails()
-        loadTripadvisorReviews()
-        loadUserComments()
-    }
-
-    private fun loadPlaceDetails() {
         viewModelScope.launch {
             isLoading = true
-            errorMessage = null
-            getPlaceDetailsUseCase(locationId)
-                .onSuccess { place = it }
-                .onFailure { errorMessage = it.message }
-            isLoading = false
-        }
-    }
-
-    private fun loadTripadvisorReviews() {
-        viewModelScope.launch {
             isLoadingReviews = true
-            getPlaceReviewsUseCase(locationId, limit = 5)
-                .onSuccess { reviews = it }
+            isLoadingUserComments = true
+            errorMessage = null
+            userCommentsErrorMessage = null
+
+            getPlaceDataUseCase(locationId)
+                .onSuccess { data ->
+                    place = data.place
+                    reviews = data.reviews
+                    userComments = data.userComments
+                }
+                .onFailure { error ->
+                    errorMessage = error.toUserMessage(resourceProvider)
+                    userCommentsErrorMessage = resourceProvider.getString(R.string.error_loading_community_comments)
+                }
+
+            isLoading = false
             isLoadingReviews = false
+            isLoadingUserComments = false
         }
     }
 
     fun loadUserComments() {
-        viewModelScope.launch {
-            isLoadingUserComments = true
-            userCommentsErrorMessage = null
-            getUserCommentsUseCase(locationId)
-                .onSuccess {
-                    userComments = it
-                    isLoadingUserComments = false
-                }
-                .onFailure {
-                    userCommentsErrorMessage = resourceProvider.getString(R.string.error_loading_community_comments)
-                    isLoadingUserComments = false
-                }
-        }
+        loadAllData()
     }
 
     fun addUserComment(text: String, rating: Int) {
@@ -127,7 +111,7 @@ class PlaceDetailsViewModel(
                     isSubmittingComment = false
                 }
                 .onFailure { error ->
-                    commentErrorMessage = error.message
+                    commentErrorMessage = error.toUserMessage(resourceProvider)
                     isSubmittingComment = false
                 }
         }
@@ -144,7 +128,7 @@ class PlaceDetailsViewModel(
                     isUpdatingComment = false
                 }
                 .onFailure { error ->
-                    commentErrorMessage = error.message
+                    commentErrorMessage = error.toUserMessage(resourceProvider)
                     isUpdatingComment = false
                 }
         }
@@ -153,23 +137,23 @@ class PlaceDetailsViewModel(
     fun deleteUserComment(commentId: String) {
         viewModelScope.launch {
             isDeletingComment = true
+            commentErrorMessage = null
 
             deleteUserCommentUseCase(commentId)
                 .onSuccess {
                     userComments = userComments.filter { it.id != commentId }
                     isDeletingComment = false
                 }
-                .onFailure {
+                .onFailure { error ->
+                    commentErrorMessage = error.toUserMessage(resourceProvider)
                     isDeletingComment = false
                 }
         }
     }
 
     class Factory(
-        private val getPlaceDetailsUseCase: GetPlaceDetailsUseCase,
-        private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase,
-        private val getUserCommentsUseCase: GetUserCommentsUseCase,
-        private val addUserCommentUseCase: AddUserCommentUseCase,
+        private val getPlaceDataUseCase: GetPlaceDataUseCase,
+        private val addCommentUseCase: AddUserCommentUseCase,
         private val updateUserCommentUseCase: UpdateUserCommentUseCase,
         private val deleteUserCommentUseCase: DeleteUserCommentUseCase,
         private val resourceProvider: ResourceProvider,
@@ -178,10 +162,8 @@ class PlaceDetailsViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return PlaceDetailsViewModel(
-                getPlaceDetailsUseCase,
-                getPlaceReviewsUseCase,
-                getUserCommentsUseCase,
-                addUserCommentUseCase,
+                getPlaceDataUseCase,
+                addCommentUseCase,
                 updateUserCommentUseCase,
                 deleteUserCommentUseCase,
                 resourceProvider,

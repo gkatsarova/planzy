@@ -22,7 +22,7 @@ class CheckUsernameAvailabilityUseCaseTest {
     fun setup() {
         userRepository = mockk()
         resourceProvider = mockk()
-        useCase = CheckUsernameAvailabilityUseCase(userRepository, resourceProvider)
+        useCase = CheckUsernameAvailabilityUseCase(userRepository)
     }
 
     @After

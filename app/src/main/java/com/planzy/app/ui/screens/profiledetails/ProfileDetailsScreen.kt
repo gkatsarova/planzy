@@ -40,11 +40,6 @@ import com.planzy.app.data.repository.UserRepositoryImpl
 import com.planzy.app.data.repository.VacationsRepositoryImpl
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProviderImpl
-import com.planzy.app.domain.usecase.follow.FollowUserUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
-import com.planzy.app.domain.usecase.follow.UnfollowUserUseCase
 import com.planzy.app.domain.usecase.user.GetUserByUsernameUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsByIdUseCase
 import com.planzy.app.ui.navigation.VacationDetails
@@ -60,6 +55,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.planzy.app.data.repository.AuthRepositoryImpl
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowDataUseCase
+import com.planzy.app.domain.usecase.follow.ManageFollowUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.screens.SearchViewModel
 import com.planzy.app.ui.screens.components.SearchResultsOverlay
@@ -73,18 +70,15 @@ fun ProfileDetailsScreen(
 ) {
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context) }
-    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
-    val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient, resourceProvider) }
-    val followRepository = remember { FollowRepositoryImpl(resourceProvider) }
-    val authRepository = remember { AuthRepositoryImpl(resourceProvider) }
+    val userRepository = remember { UserRepositoryImpl() }
+    val vacationsRepository = remember { VacationsRepositoryImpl(SupabaseClient) }
+    val followRepository = remember { FollowRepositoryImpl() }
+    val authRepository = remember { AuthRepositoryImpl() }
 
     val getUserByUsernameUseCase = remember { GetUserByUsernameUseCase(userRepository) }
     val getUserVacationsByIdUseCase = remember { GetUserVacationsByIdUseCase(vacationsRepository) }
-    val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }
-    val getFollowersUseCase = remember { GetFollowersUseCase(followRepository) }
-    val getFollowingUseCase = remember { GetFollowingUseCase(followRepository) }
-    val followUserUseCase = remember { FollowUserUseCase(followRepository) }
-    val unfollowUserUseCase = remember { UnfollowUserUseCase(followRepository) }
+    val getFollowDataUseCase = remember { GetFollowDataUseCase(followRepository) }
+    val manageFollowUseCase = remember { ManageFollowUseCase(followRepository) }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
     val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
 
@@ -93,11 +87,8 @@ fun ProfileDetailsScreen(
             ProfileDetailsViewModel.Factory(
                 getUserByUsernameUseCase = getUserByUsernameUseCase,
                 getUserVacationsByIdUseCase = getUserVacationsByIdUseCase,
-                getFollowStatsUseCase = getFollowStatsUseCase,
-                getFollowersUseCase = getFollowersUseCase,
-                getFollowingUseCase = getFollowingUseCase,
-                followUserUseCase = followUserUseCase,
-                unfollowUserUseCase = unfollowUserUseCase,
+                getFollowDataUseCase = getFollowDataUseCase,
+                manageFollowUseCase = manageFollowUseCase,
                 getCurrentUserUseCase = getCurrentUserUseCase,
                 resourceProvider = resourceProvider
             )

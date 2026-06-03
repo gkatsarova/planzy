@@ -3,7 +3,6 @@ package com.planzy.app.data.ml
 import android.content.Context
 import com.planzy.app.data.model.VacationIntent
 import com.planzy.app.data.model.VacationPreferences
-import com.planzy.app.data.util.ResourceProvider
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -12,12 +11,10 @@ import com.google.mlkit.nl.entityextraction.EntityAnnotation
 import com.google.mlkit.nl.entityextraction.EntityExtraction
 import com.google.mlkit.nl.entityextraction.EntityExtractionParams
 import com.google.mlkit.nl.entityextraction.EntityExtractorOptions
-import com.planzy.app.R
 import com.google.mlkit.nl.entityextraction.Entity
 
 class VacationIntentParser(
-    private val context: Context,
-    private val recourseProvider: ResourceProvider
+    private val context: Context
 ) {
     companion object {
         private val DESTINATION_REGEX = Regex("""(?i)\b(?:in|to|at)\b\s+([A-Z][a-z]+)""")
@@ -91,7 +88,7 @@ class VacationIntentParser(
     suspend fun parseIntent(userMessage: String): Result<VacationIntent> {
         return try {
             val entities = extractEntities(userMessage)
-            val destination = extractDestination(entities, userMessage) ?: recourseProvider.getString(R.string.unknown)
+            val destination = extractDestination(entities, userMessage) ?: "Unknown"
             val duration = extractNumbers(userMessage).firstOrNull { it in 1..30 } ?: 3
             val theme = classifyTheme(userMessage)
 
@@ -145,6 +142,6 @@ class VacationIntentParser(
     private fun loadLearnedData(): LearnedThemeData {
         val prefs = context.getSharedPreferences("ml_prefs", Context.MODE_PRIVATE)
         val raw = prefs.getString("data", null) ?: return LearnedThemeData()
-        return try { json.decodeFromString(LearnedThemeData.serializer(), raw) } catch (e: Exception) { LearnedThemeData() }
+        return try { json.decodeFromString(LearnedThemeData.serializer(), raw) } catch (_: Exception) { LearnedThemeData() }
     }
 }

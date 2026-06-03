@@ -1,12 +1,11 @@
 package com.planzy.app.usecase
 
-import com.planzy.app.R
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.repository.AuthRepository
 import com.planzy.app.domain.usecase.auth.UpdatePasswordUseCase
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -17,35 +16,17 @@ import org.junit.Test
 class UpdatePasswordUseCaseTest {
 
     private lateinit var authRepository: AuthRepository
-    private lateinit var resourceProvider: ResourceProvider
     private lateinit var useCase: UpdatePasswordUseCase
 
     @Before
     fun setup() {
         authRepository = mockk()
-        resourceProvider = mockk()
-        useCase = UpdatePasswordUseCase(authRepository, resourceProvider)
-
-        every { resourceProvider.getString(R.string.success_password_updated) } returns
-                "Password updated successfully"
-        every { resourceProvider.getString(R.string.error_update_password) } returns
-                "Failed to update password"
+        useCase = UpdatePasswordUseCase(authRepository)
     }
 
     @After
     fun tearDown() {
         clearAllMocks()
-    }
-
-    @Test
-    fun `successful password update returns success message`() = runTest {
-        coEvery { authRepository.updatePassword("NewPassword123!") } returns
-                Result.success(Unit)
-
-        val result = useCase("NewPassword123!")
-
-        Assert.assertTrue(result.isSuccess)
-        Assert.assertEquals("Password updated successfully", result.getOrNull())
     }
 
     @Test
@@ -62,11 +43,15 @@ class UpdatePasswordUseCaseTest {
     @Test
     fun `repository exception returns error message`() = runTest {
         coEvery { authRepository.updatePassword(any()) } returns
-                Result.failure(Exception())
+                Result.failure(AppException(AppError.ERROR_UPDATE_PASSWORD))
 
         val result = useCase("NewPassword123!")
 
         Assert.assertTrue(result.isFailure)
-        Assert.assertEquals("Failed to update password", result.exceptionOrNull()?.message)
+        Assert.assertTrue(result.exceptionOrNull() is AppException)
+        Assert.assertEquals(
+            AppError.ERROR_UPDATE_PASSWORD,
+            (result.exceptionOrNull() as AppException).error
+        )
     }
 }

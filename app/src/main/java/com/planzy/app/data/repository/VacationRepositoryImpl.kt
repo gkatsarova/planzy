@@ -1,11 +1,11 @@
 package com.planzy.app.data.repository
 
 import android.util.Log
-import com.planzy.app.R
 import com.planzy.app.data.model.*
 import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.remote.SupabaseClient.currentUserIdFlow
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.model.VacationPlace
 import com.planzy.app.domain.repository.VacationsRepository
@@ -27,11 +27,16 @@ data class UserInfo(
 )
 
 class VacationsRepositoryImpl(
-    private val supabaseClient: SupabaseClient,
-    private val resourceProvider: ResourceProvider
+    private val supabaseClient: SupabaseClient
 ) : VacationsRepository {
 
     private val TAG = VacationsRepositoryImpl::class.java.simpleName
+
+    companion object {
+        private const val DUPLICATE = "duplicate"
+        private const val UNIQUE_CONSTRAINT = "unique constraint"
+        private const val CURRENT_USER_PLACEHOLDER = "you"
+    }
 
     override suspend fun getUserVacations(): Result<List<Vacation>> {
         return try {
@@ -39,7 +44,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             val vacationsResponse = supabaseClient.client.postgrest
                 .from("vacations")
@@ -82,17 +87,17 @@ class VacationsRepositoryImpl(
             Result.success(vacationsWithCount)
         } catch (e: Exception) {
             Log.e(TAG, "Error getting vacations: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_loading_vacations)))
+            Result.failure(AppException(AppError.ERROR_LOADING_VACATIONS))
         }
     }
 
     override suspend fun createVacation(title: String): Result<Vacation> {
         return try {
             val currentUserId = supabaseClient.client.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+                ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             if (title.isBlank()) {
-                return Result.failure(Exception(resourceProvider.getString(R.string.error_empty_vacation_title)))
+                return Result.failure(AppException(AppError.ERROR_EMPTY_VACATION_TITLE))
             }
 
             val vacationToInsert = VacationInsertDTO(
@@ -110,7 +115,7 @@ class VacationsRepositoryImpl(
             Result.success(vacation)
         } catch (e: Exception) {
             Log.e(TAG, "Error creating vacation: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_creating_vacation)))
+            Result.failure(AppException(AppError.ERROR_CREATING_VACATION))
         }
     }
 
@@ -122,7 +127,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow.filterNotNull().first()
                 } == null ) {
                 Log.e(TAG, "User not logged in")
-                return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+                return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
             }
 
             val vacationCheck = supabaseClient.client.postgrest
@@ -143,7 +148,7 @@ class VacationsRepositoryImpl(
 
             if (vacation == null) {
                 Log.e(TAG, "Vacation $vacationId does not exist")
-                return Result.failure(Exception(resourceProvider.getString(R.string.error_vacation_not_found)))
+                return Result.failure(AppException(AppError.VACATION_NOT_FOUND))
             }
 
             val existingPlaceCheck = supabaseClient.client.postgrest
@@ -164,7 +169,7 @@ class VacationsRepositoryImpl(
 
             if (placeAlreadyExists) {
                 Log.w(TAG, "Place already exists in vacation")
-                return Result.failure(Exception(resourceProvider.getString(R.string.error_place_already_in_vacation)))
+                return Result.failure(AppException(AppError.PLACE_ALREADY_IN_VACATION))
             }
 
             val existingPlaces = supabaseClient.client.postgrest
@@ -206,11 +211,11 @@ class VacationsRepositoryImpl(
             Log.e(TAG, "Error adding place to vacation: ${e.message}", e)
             Log.e(TAG, "Stack trace:", e)
 
-            if (e.message?.contains("unique constraint", ignoreCase = true) == true ||
-                e.message?.contains("duplicate", ignoreCase = true) == true) {
-                Result.failure(Exception(resourceProvider.getString(R.string.error_place_already_in_vacation)))
+            if (e.message?.contains(UNIQUE_CONSTRAINT, ignoreCase = true) == true ||
+                e.message?.contains(DUPLICATE, ignoreCase = true) == true) {
+                Result.failure(AppException(AppError.PLACE_ALREADY_IN_VACATION))
             } else {
-                Result.failure(Exception(resourceProvider.getString(R.string.error_adding_place_to_vacation)))
+                Result.failure(AppException(AppError.ERROR_ADDING_PLACE_TO_VACATION))
             }
         }
     }
@@ -262,17 +267,17 @@ class VacationsRepositoryImpl(
             Result.success(vacationsWithCount)
         } catch (e: Exception) {
             Log.e(TAG, "Error searching vacations: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_loading_vacations)))
+            Result.failure(AppException(AppError.ERROR_LOADING_VACATION))
         }
     }
 
-    override suspend fun getVacationWithUser(vacationId: String): Result<Pair<Vacation, String>> {
+    override suspend fun getVacationWithUser(vacationId: String): Result<Pair<Vacation, String?>> {
         return try {
             val currentUserId = withTimeoutOrNull(1500L) {
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             val vacationResponse = supabaseClient.client.postgrest
                 .from("vacations")
@@ -286,7 +291,7 @@ class VacationsRepositoryImpl(
             val vacationDTO = vacationResponse.decodeSingle<VacationDTO>()
 
             val username = if (vacationDTO.userId == currentUserId) {
-                resourceProvider.getString(R.string.you)
+                CURRENT_USER_PLACEHOLDER
             } else {
                 try {
                     val userResponse = supabaseClient.client.postgrest
@@ -302,7 +307,7 @@ class VacationsRepositoryImpl(
                     user.username
                 } catch (e: Exception) {
                     Log.e(TAG, "Error getting user info: ${e.message}", e)
-                    "Unknown User"
+                    null
                 }
             }
 
@@ -334,7 +339,7 @@ class VacationsRepositoryImpl(
             Result.success(Pair(vacation, username))
         } catch (e: Exception) {
             Log.e(TAG, "Error getting vacation with user: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_loading_vacation)))
+            Result.failure(AppException(AppError.ERROR_LOADING_VACATION))
         }
     }
 
@@ -355,7 +360,7 @@ class VacationsRepositoryImpl(
             Result.success(placeIds)
         } catch (e: Exception) {
             Log.e(TAG, "Error getting vacation place IDs: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_loading_places)))
+            Result.failure(AppException(AppError.ERROR_LOADING_PLACES))
         }
     }
 
@@ -365,7 +370,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             val vacationCheck = supabaseClient.client.postgrest
                 .from("vacations")
@@ -384,7 +389,7 @@ class VacationsRepositoryImpl(
             }
 
             if (!vacationExists) {
-                return Result.failure(Exception(resourceProvider.getString(R.string.error_vacation_not_found)))
+                return Result.failure(AppException(AppError.VACATION_NOT_FOUND))
             }
 
             supabaseClient.client.postgrest
@@ -399,7 +404,7 @@ class VacationsRepositoryImpl(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error removing place from vacation: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_removing_place)))
+            Result.failure(AppException(AppError.ERROR_REMOVING_PLACE))
         }
     }
 
@@ -432,7 +437,7 @@ class VacationsRepositoryImpl(
                     userInfo.username
                 } catch (e: Exception) {
                     Log.e(TAG, "Error fetching username for user ${dto.userId}: ${e.message}", e)
-                    resourceProvider.getString(R.string.unknown_user)
+                    null
                 }
 
                 VacationComment(
@@ -449,10 +454,10 @@ class VacationsRepositoryImpl(
             Result.success(comments)
         } catch (e: SerializationException) {
             Log.e(TAG, "Serialization error: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_parsing_comments)))
+            Result.failure(AppException(AppError.ERROR_PARSING_COMMENTS))
         } catch (e: Exception) {
             Log.e(TAG, "Error getting vacation comments: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.unknown_error)))
+            Result.failure(AppException(AppError.UNKNOWN_ERROR))
         }
     }
 
@@ -465,7 +470,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             val commentToInsert = VacationCommentInsertDTO(
                 vacationId = vacationId,
@@ -495,7 +500,7 @@ class VacationsRepositoryImpl(
                 userInfo.username
             } catch (e: Exception) {
                 Log.e(TAG, "Error fetching username: ${e.message}", e)
-                "Unknown User"
+                null
             }
 
             val comment = VacationComment(
@@ -511,7 +516,7 @@ class VacationsRepositoryImpl(
             Result.success(comment)
         } catch (e: Exception) {
             Log.e(TAG, "Error adding vacation comment: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_posting_comment)))
+            Result.failure(AppException(AppError.ERROR_POSTING_COMMENT))
         }
     }
 
@@ -524,7 +529,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             supabaseClient.client.postgrest
                 .from("vacation_comments")
@@ -540,7 +545,7 @@ class VacationsRepositoryImpl(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error updating vacation comment: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_updating_comment)))
+            Result.failure(AppException(AppError.ERROR_UPDATING_COMMENT))
         }
     }
 
@@ -550,7 +555,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             supabaseClient.client.postgrest
                 .from("vacation_comments")
@@ -564,7 +569,7 @@ class VacationsRepositoryImpl(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error deleting vacation comment: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_deleting_comment)))
+            Result.failure(AppException(AppError.ERROR_DELETING_COMMENT))
         }
     }
 
@@ -592,7 +597,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             supabaseClient.client.from("saved_vacations")
                 .insert(
@@ -604,7 +609,7 @@ class VacationsRepositoryImpl(
 
             Result.success(Unit)
         } catch (_: Exception) {
-            Result.failure(Exception(resourceProvider.getString(R.string.failed_to_save_vacation)))
+            Result.failure(AppException(AppError.FAILED_TO_SAVE_VACATION))
         }
     }
 
@@ -614,7 +619,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             supabaseClient.client.from("saved_vacations")
                 .delete {
@@ -626,7 +631,7 @@ class VacationsRepositoryImpl(
 
             Result.success(Unit)
         } catch (_: Exception) {
-            Result.failure(Exception(resourceProvider.getString(R.string.failed_to_unsave_vacation)))
+            Result.failure(AppException(AppError.FAILED_TO_UNSAVE_VACATION))
         }
     }
 
@@ -636,7 +641,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             val savedVacationDtos = supabaseClient.client.from("saved_vacations")
                 .select {
@@ -710,7 +715,7 @@ class VacationsRepositoryImpl(
             Result.success(vacations)
         } catch (e: Exception) {
             Log.e(TAG, "getSavedVacations: Critical error: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.failed_to_load_saved_vacations)))
+            Result.failure(AppException(AppError.FAILED_TO_LOAD_SAVED_VACATIONS))
         }
     }
 
@@ -720,7 +725,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             val result = supabaseClient.client.from("saved_vacations")
                 .select {
@@ -733,7 +738,7 @@ class VacationsRepositoryImpl(
 
             Result.success(result.isNotEmpty())
         } catch (_: Exception) {
-            Result.failure(Exception(resourceProvider.getString(R.string.failed_to_check_saved_status)))
+            Result.failure(AppException(AppError.FAILED_TO_CHECK_SAVED_STATUS))
         }
     }
 
@@ -743,7 +748,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             val vacationCheck = supabaseClient.client.postgrest
                 .from("vacations")
@@ -764,7 +769,7 @@ class VacationsRepositoryImpl(
 
             if (vacation == null) {
                 Log.e(TAG, "Vacation $vacationId not found or user is not the owner")
-                return Result.failure(Exception(resourceProvider.getString(R.string.error_vacation_not_found_or_no_permission)))
+                return Result.failure(AppException(AppError.ERROR_VACATION_NOT_FOUND_OR_NO_PERMISSION))
             }
 
             supabaseClient.client.postgrest
@@ -780,7 +785,7 @@ class VacationsRepositoryImpl(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error deleting vacation: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_deleting_vacation)))
+            Result.failure(AppException(AppError.ERROR_DELETING_VACATION))
         }
     }
 
@@ -830,7 +835,7 @@ class VacationsRepositoryImpl(
             Result.success(vacationsWithCount)
         } catch (e: Exception) {
             Log.e(TAG, "Error getting vacations for user $userId: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_loading_vacations)))
+            Result.failure(AppException(AppError.ERROR_LOADING_VACATIONS))
         }
     }
 
@@ -840,7 +845,7 @@ class VacationsRepositoryImpl(
                 currentUserIdFlow
                     .filterNotNull()
                     .first()
-            } ?: return Result.failure(Exception(resourceProvider.getString(R.string.error_user_not_logged_in)))
+            } ?: return Result.failure(AppException(AppError.USER_NOT_LOGGED_IN))
 
             Log.d(TAG, "Getting vacations from followed users for user: $currentUserId")
 
@@ -916,7 +921,7 @@ class VacationsRepositoryImpl(
 
         } catch (e: Exception) {
             Log.e(TAG, "Error getting followed users vacations: ${e.message}", e)
-            Result.failure(Exception(resourceProvider.getString(R.string.error_loading_vacations)))
+            Result.failure(AppException(AppError.ERROR_LOADING_VACATIONS))
         }
     }
 }

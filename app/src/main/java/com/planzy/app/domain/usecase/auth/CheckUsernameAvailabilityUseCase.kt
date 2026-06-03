@@ -1,12 +1,11 @@
 package com.planzy.app.domain.usecase.auth
 
-import com.planzy.app.R
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.repository.UserRepository
 
 class CheckUsernameAvailabilityUseCase(
-    private val userRepository: UserRepository,
-    private val resourceProvider: ResourceProvider
+    private val userRepository: UserRepository
 ) {
     suspend operator fun invoke(username: String): Result<Boolean> {
         return try {
@@ -15,7 +14,7 @@ class CheckUsernameAvailabilityUseCase(
                 Result.success(result.getOrNull() == null)
             } else {
                 val exception = result.exceptionOrNull()
-                    ?: Exception(resourceProvider.getString(R.string.error_username_exists))
+                    ?: AppException(AppError.ERROR_USERNAME_EXISTS)
                 Result.failure(exception)
             }
         } catch (e: Exception) {
