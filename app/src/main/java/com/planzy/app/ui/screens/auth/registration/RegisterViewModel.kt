@@ -1,11 +1,16 @@
 package com.planzy.app.ui.screens.auth.registration
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
 import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.repository.AuthRepository
 import com.planzy.app.domain.repository.UserRepository
 import com.planzy.app.domain.usecase.auth.CheckEmailAvailabilityUseCase
@@ -13,8 +18,6 @@ import com.planzy.app.domain.usecase.auth.CheckUsernameAvailabilityUseCase
 import com.planzy.app.domain.usecase.auth.RegisterUserUseCase
 import com.planzy.app.domain.usecase.auth.ResendVerificationEmailUseCase
 import com.planzy.app.ui.screens.auth.BaseAuthViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 data class FieldError(
@@ -36,40 +39,32 @@ class RegisterViewModel(
         private val USERNAME_REGEX = Regex("^[a-z0-9._]{3,20}$")
     }
 
-    private val _success = MutableStateFlow(false)
-    override val success: StateFlow<Boolean> = _success
+    override var success by mutableStateOf(false)
 
-    private val _fieldErrors = MutableStateFlow(FieldError())
-    val fieldErrors: StateFlow<FieldError> = _fieldErrors
+    var fieldErrors by mutableStateOf(FieldError())
+        private set
 
     fun signUp(email: String, password: String, username: String) {
         viewModelScope.launch {
-            _loading.value = true
-            _error.value = null
-            _success.value = false
-            _successMessage.value = null
+            loading = true
+            error = null
+            success = false
+            successMessage = null
 
             val result = registerUserUseCase(email, password, username)
 
-            _loading.value = false
+            loading = false
             if (result.isSuccess) {
-                _success.value = true
-                val message = result.getOrNull() ?: ""
-                _successMessage.value = if (message.contains(
-                        resourceProvider.getString(R.string.verification_email),
-                        ignoreCase = true
-                    )
-                ) {
-                    resourceProvider.getString(R.string.success_verification_email_sent)
-                } else {
-                    message
-                }
-
-                if (message.contains(resourceProvider.getString(R.string.verification_email), ignoreCase = true)) {
-                    startResendCooldown()
-                }
+                success = true
+                successMessage = resourceProvider.getString(R.string.success_verification_email_sent)
+                startResendCooldown()
             } else {
-                _error.value = result.exceptionOrNull()?.message
+                val appError = (result.exceptionOrNull() as? AppException)?.error ?: AppError.ERROR_REGISTRATION_FAILED
+                error = when (appError) {
+                    AppError.ERROR_NO_INTERNET -> resourceProvider.getString(R.string.error_no_internet)
+                    AppError.ERROR_EMAIL_EXISTS -> resourceProvider.getString(R.string.error_email_exists)
+                    else -> resourceProvider.getString(R.string.error_registration_failed)
+                }
             }
         }
     }
@@ -84,7 +79,7 @@ class RegisterViewModel(
                 checkUsernameAvailability(username)
             } else null
 
-            _fieldErrors.value = _fieldErrors.value.copy(
+            fieldErrors = fieldErrors.copy(
                 usernameError = formatError ?: availabilityError
             )
         }
@@ -100,7 +95,7 @@ class RegisterViewModel(
                 checkEmailAvailability(email)
             } else null
 
-            _fieldErrors.value = _fieldErrors.value.copy(
+            fieldErrors = fieldErrors.copy(
                 emailError = formatError ?: availabilityError
             )
         }
@@ -111,7 +106,7 @@ class RegisterViewModel(
             resourceProvider.getString(R.string.error_password_invalid)
         } else null
 
-        _fieldErrors.value = _fieldErrors.value.copy(passwordError = error)
+        fieldErrors = fieldErrors.copy(passwordError = error)
     }
 
     private suspend fun checkUsernameAvailability(username: String): String? {
@@ -132,17 +127,21 @@ class RegisterViewModel(
 
     fun resendVerificationEmail(email: String) {
         viewModelScope.launch {
-            _loading.value = true
-            _error.value = null
+            loading = true
+            error = null
 
             val result = resendVerificationEmailUseCase(email)
 
-            _loading.value = false
+            loading = false
             if (result.isSuccess) {
-                _successMessage.value = result.getOrNull()
+                successMessage = resourceProvider.getString(R.string.success_resend_verification_email)
                 startResendCooldown()
             } else {
-                _error.value = result.exceptionOrNull()?.message
+                val appError = (result.exceptionOrNull() as? AppException)?.error ?: AppError.ERROR_VERIFICATION_EMAIL_RESEND
+                error = when (appError) {
+                    AppError.ERROR_NO_INTERNET -> resourceProvider.getString(R.string.error_no_internet)
+                    else -> resourceProvider.getString(R.string.error_verification_email_resend)
+                }
             }
         }
     }
@@ -157,10 +156,10 @@ class RegisterViewModel(
             if (modelClass.isAssignableFrom(RegisterViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
                 return RegisterViewModel(
-                    RegisterUserUseCase(authRepository, resourceProvider),
-                    CheckUsernameAvailabilityUseCase(userRepository, resourceProvider),
-                    CheckEmailAvailabilityUseCase(authRepository, resourceProvider),
-                    ResendVerificationEmailUseCase(authRepository, resourceProvider),
+                    RegisterUserUseCase(authRepository),
+                    CheckUsernameAvailabilityUseCase(userRepository),
+                    CheckEmailAvailabilityUseCase(authRepository),
+                    ResendVerificationEmailUseCase(authRepository),
                     resourceProvider,
                     cooldownManager
                 ) as T

@@ -49,13 +49,6 @@
     <string name="success_login">Login successful!</string>
     <string name="error_invalid_credentials">Invalid email or password</string>
     <string name="error_auth_failed">Authentication failed. Please try again</string>
-    <string name="auth_error_keyword_unknown_exception">UnknownException</string>
-    <string name="auth_error_keyword_invalid_credentials">invalid_credentials</string>
-    <string name="auth_error_keyword_email_not_confirmed">email_not_confirmed</string>
-    <string name="auth_error_keyword_not_confirmed">not_confirmed</string>
-    <string name="duplicate">duplicate</string>
-    <string name="already_exists">already exists</string>
-    <string name="unique">unique</string>
     <string name="password_reset_email_sent">Check your email for reset instructions.</string>
     <string name="forgot_password">Forgot password?</string>
     <string name="reset_password_description">Enter your new password below</string>
@@ -132,7 +125,6 @@
     <string name="create">Create</string>
     <string name="error_no_results_found">No results found.</string>
     <string name="places">Places</string>
-    <string name="created_by">created by</string>
     <string name="no_places_in_vacation">No places added yet</string>
     <string name="places_in_vacation">Places in vacation</string>
     <string name="error_loading_vacation">Error loading vacation</string>
@@ -203,4 +195,30 @@
     <string name="error_loading_following">Error loading following</string>
     <string name="error_loading_follow_stats">Error loading follow stats</string>
     <string name="follow_users_to_see_their_vacations_here">"Follow users to see their vacations here"</string>
+
+    <string name="error_failed_to_verify_email">Failed to verify email: %1$s</string>
+    <string name="trip_to_destination">Trip to %1$s</string>
+
+    <string name="title_home">Home</string>
+    <string name="title_profile">Profile</string>
+    <string name="title_details">Details</string>
+    <string name="title_vacation_details">Vacation Details</string>
+    <string name="title_vacation_planner">Vacation Planner</string>
+    <string name="title_history">History</string>
+
+    <string name="resend_cooldown">Resend in %1$ds</string>
+
+    <plurals name="comments_count">
+        <item quantity="one">%1$d comment</item>
+        <item quantity="other">%1$d comments</item>
+    </plurals>
+
+    <plurals name="places_count">
+        <item quantity="one">%1$d place</item>
+        <item quantity="other">%1$d places</item>
+    </plurals>
+
+    <string name="created_by">Created by %1$s</string>
+
+    <string name="welcome_planner_text">Hello, %1$s! %2$s</string>
 </resources>

@@ -10,7 +10,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,30 +41,26 @@ fun PlaceDetailsScreen(
     searchViewModel: SearchViewModel
 ) {
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp.dp
 
     val tripadvisorApi = remember { TripadvisorApi() }
     val resourceProvider = remember { ResourceProviderImpl(context) }
 
     val placesRepository = remember {
-        PlacesRepositoryImpl(tripadvisorApi, SupabaseClient, resourceProvider)
+        PlacesRepositoryImpl(tripadvisorApi, SupabaseClient)
     }
 
     val vacationsRepository = remember {
-        VacationsRepositoryImpl(SupabaseClient, resourceProvider)
+        VacationsRepositoryImpl(SupabaseClient)
     }
 
-    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
+    val userRepository = remember { UserRepositoryImpl() }
 
-    val getPlaceDetailsUseCase = remember { GetPlaceDetailsUseCase(placesRepository) }
-    val getPlaceReviewsUseCase = remember { GetPlaceReviewsUseCase(placesRepository) }
-    val getUserCommentsUseCase = remember { GetUserCommentsUseCase(placesRepository) }
-    val addUserCommentUseCase = remember { AddUserCommentUseCase(placesRepository, resourceProvider) }
-    val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(placesRepository, resourceProvider) }
+    val getPlaceDataUseCase = remember { GetPlaceDataUseCase(placesRepository) }
+    val addUserCommentUseCase = remember { AddUserCommentUseCase(placesRepository) }
+    val updateUserCommentUseCase = remember { UpdateUserCommentUseCase(placesRepository) }
     val deleteUserCommentUseCase = remember { DeleteUserCommentUseCase(placesRepository) }
 
-    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository, resourceProvider) }
+    val getUserVacationsUseCase = remember { GetUserVacationsUseCase(vacationsRepository) }
     val createVacationUseCase = remember { CreateVacationUseCase(vacationsRepository) }
     val addPlaceToVacationUseCase = remember { AddPlaceToVacationUseCase(vacationsRepository, placesRepository) }
 
@@ -76,10 +71,8 @@ fun PlaceDetailsScreen(
 
     val viewModel: PlaceDetailsViewModel = viewModel(
         factory = PlaceDetailsViewModel.Factory(
-            getPlaceDetailsUseCase = getPlaceDetailsUseCase,
-            getPlaceReviewsUseCase = getPlaceReviewsUseCase,
-            getUserCommentsUseCase = getUserCommentsUseCase,
-            addUserCommentUseCase = addUserCommentUseCase,
+            getPlaceDataUseCase = getPlaceDataUseCase,
+            addCommentUseCase = addUserCommentUseCase,
             updateUserCommentUseCase = updateUserCommentUseCase,
             deleteUserCommentUseCase = deleteUserCommentUseCase,
             resourceProvider = resourceProvider,
@@ -96,12 +89,17 @@ fun PlaceDetailsScreen(
         )
     )
 
-    val showAddCommentSection = searchViewModel.placesWithStats.isEmpty() &&
+    val showAddCommentSection = !searchViewModel.isSearchBarFocused &&
+            searchViewModel.placesWithStats.isEmpty() &&
             searchViewModel.vacations.isEmpty() &&
             !searchViewModel.isLoading &&
             !isEditingAnyComment
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    val mainColumnModifier = Modifier.fillMaxSize().let {
+        if (isEditingAnyComment) it.imePadding() else it
+    }
+
+    Column(modifier = mainColumnModifier) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -161,8 +159,7 @@ fun PlaceDetailsScreen(
                             item {
                                 ReviewsSection(
                                     reviews = viewModel.reviews,
-                                    isLoading = viewModel.isLoadingReviews,
-                                    modifier = Modifier.heightIn(max = screenHeight * 0.35f)
+                                    isLoading = viewModel.isLoadingReviews
                                 )
                             }
 
@@ -197,7 +194,7 @@ fun PlaceDetailsScreen(
                                     },
                                     onEditStart = { isEditingAnyComment = true },
                                     onEditCancel = { isEditingAnyComment = false },
-                                    modifier = Modifier.heightIn(max = screenHeight * 0.35f),
+                                    modifier = Modifier.fillParentMaxHeight(0.35f),
                                     navController = navController,
                                     getUserByAuthIdUseCase = getUserByAuthIdUseCase
                                 )
@@ -250,7 +247,7 @@ fun PlaceDetailsScreen(
                 color = Lavender,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .imePadding()
+                    .windowInsetsPadding(WindowInsets.ime)
             ) {
                 AddCommentSection(
                     isSubmitting = viewModel.isSubmittingComment,

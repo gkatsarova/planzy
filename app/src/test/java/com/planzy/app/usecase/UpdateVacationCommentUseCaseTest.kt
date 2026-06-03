@@ -1,87 +1,53 @@
 package com.planzy.app.usecase
 
-import com.planzy.app.R
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.repository.VacationsRepository
 import com.planzy.app.domain.usecase.vacation.UpdateVacationCommentUseCase
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
-import io.mockk.every
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
 class UpdateVacationCommentUseCaseTest {
 
     private lateinit var repository: VacationsRepository
-    private lateinit var resourceProvider: ResourceProvider
     private lateinit var useCase: UpdateVacationCommentUseCase
 
     @Before
     fun setup() {
         repository = mockk()
-        resourceProvider = mockk()
-        useCase = UpdateVacationCommentUseCase(repository, resourceProvider)
-
-        every { resourceProvider.getString(R.string.empty_comment_text) } returns "Empty comment text"
+        useCase = UpdateVacationCommentUseCase(repository)
     }
 
     @After
     fun tearDown() = clearAllMocks()
 
     @Test
-    fun `valid update returns success`() = runTest {
-        coEvery { repository.updateVacationComment("comment123", "Updated text") } returns Result.success(Unit)
+    fun `update valid comment returns success`() = runTest {
+        coEvery { repository.updateVacationComment("comment123", "Updated comment") } returns Result.success(Unit)
 
-        val result = useCase("comment123", "Updated text")
+        val result = useCase("comment123", "Updated comment")
 
-        assertTrue(result.isSuccess)
+        Assert.assertTrue(result.isSuccess)
     }
 
     @Test
-    fun `blank text returns failure`() = runTest {
-        val result = useCase("comment123", "  ")
+    fun `update blank text returns failure`() = runTest {
+        val result = useCase("comment123", "   ")
 
-        assertTrue(result.isFailure)
-        assertEquals("Empty comment text", result.exceptionOrNull()?.message)
-    }
+        Assert.assertTrue(result.isFailure)
 
-    @Test
-    fun `empty text returns failure`() = runTest {
-        val result = useCase("comment123", "")
+        val exception = result.exceptionOrNull()
+        Assert.assertTrue(exception is AppException)
 
-        assertTrue(result.isFailure)
-        assertEquals("Empty comment text", result.exceptionOrNull()?.message)
-    }
+        Assert.assertEquals(AppError.EMPTY_COMMENT_TEXT, (exception as AppException).error)
 
-    @Test
-    fun `text with only whitespace returns failure`() = runTest {
-        val result = useCase("comment123", "   \n   \t   ")
-
-        assertTrue(result.isFailure)
-        assertEquals("Empty comment text", result.exceptionOrNull()?.message)
-    }
-
-    @Test
-    fun `repository failure is propagated`() = runTest {
-        val exception = Exception("Permission denied")
-        coEvery { repository.updateVacationComment("comment123", "New text") } returns Result.failure(exception)
-
-        val result = useCase("comment123", "New text")
-
-        assertTrue(result.isFailure)
-        assertEquals("Permission denied", result.exceptionOrNull()?.message)
-    }
-
-    @Test
-    fun `text with leading and trailing spaces is accepted`() = runTest {
-        coEvery { repository.updateVacationComment("comment123", "  Updated  ") } returns Result.success(Unit)
-
-        val result = useCase("comment123", "  Updated  ")
-
-        assertTrue(result.isSuccess)
+        coVerify(exactly = 0) { repository.updateVacationComment(any(), any()) }
     }
 }

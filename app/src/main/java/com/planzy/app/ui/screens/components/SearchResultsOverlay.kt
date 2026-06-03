@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,7 +24,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.planzy.app.R
 import com.planzy.app.data.repository.UserRepositoryImpl
-import com.planzy.app.data.util.ResourceProviderImpl
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
 import com.planzy.app.ui.navigation.PlaceDetails
 import com.planzy.app.ui.navigation.ProfileDetails
@@ -45,9 +43,7 @@ fun SearchResultsOverlay(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val context = LocalContext.current
-    val resourceProvider = remember { ResourceProviderImpl(context) }
-    val userRepository = remember { UserRepositoryImpl(resourceProvider) }
+    val userRepository = remember { UserRepositoryImpl() }
     val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
 
     Box(modifier = modifier.fillMaxSize()) {

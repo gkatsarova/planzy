@@ -1,13 +1,15 @@
 package com.planzy.app.ui.screens.auth
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.planzy.app.data.util.CooldownManager
 import com.planzy.app.data.util.ResourceProvider
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 abstract class BaseAuthViewModel(
@@ -21,23 +23,23 @@ abstract class BaseAuthViewModel(
         const val DEFAULT_RESEND_COOLDOWN_SECONDS = 60
     }
 
-    protected val _loading = MutableStateFlow(false)
-    val loading: StateFlow<Boolean> = _loading
+    var loading by mutableStateOf(false)
+        protected set
 
-    protected val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error
+    var error by mutableStateOf<String?>(null)
+        protected set
 
-    protected val _successMessage = MutableStateFlow<String?>(null)
-    val successMessage: StateFlow<String?> = _successMessage
+    var successMessage by mutableStateOf<String?>(null)
+        protected set
 
-    protected val _canResendEmail = MutableStateFlow(true)
-    val canResendEmail: StateFlow<Boolean> = _canResendEmail
+    var canResendEmail by mutableStateOf(true)
+        protected set
 
-    protected val _resendCooldownSeconds = MutableStateFlow(0)
-    val resendCooldownSeconds: StateFlow<Int> = _resendCooldownSeconds
+    var resendCooldownSeconds by mutableIntStateOf(0)
+        protected set
 
-    private val _success = MutableStateFlow(false)
-    open val success: StateFlow<Boolean> = _success
+    open var success by mutableStateOf(false)
+        protected set
 
     private var resendCooldownJob: Job? = null
 
@@ -61,8 +63,8 @@ abstract class BaseAuthViewModel(
     }
 
     fun startResendCooldown(seconds: Int = DEFAULT_RESEND_COOLDOWN_SECONDS) {
-        _canResendEmail.value = false
-        _resendCooldownSeconds.value = seconds
+        canResendEmail = false
+        resendCooldownSeconds = seconds
 
         val endTimeMillis = System.currentTimeMillis() + (seconds * 1000L)
         cooldownManager.setCooldownEndTime(endTimeMillis)
@@ -71,20 +73,20 @@ abstract class BaseAuthViewModel(
         resendCooldownJob = viewModelScope.launch {
             repeat(seconds) {
                 delay(1_000)
-                _resendCooldownSeconds.value = seconds - (it + 1)
+                resendCooldownSeconds = seconds - (it + 1)
             }
-            _canResendEmail.value = true
-            _resendCooldownSeconds.value = 0
+            canResendEmail = true
+            resendCooldownSeconds = 0
             cooldownManager.clearCooldown()
         }
     }
 
     fun clearError() {
-        _error.value = null
+        error = null
     }
 
     fun clearSuccess() {
-        _successMessage.value = null
+        successMessage = null
     }
 
     override fun onCleared() {
@@ -92,9 +94,9 @@ abstract class BaseAuthViewModel(
         resendCooldownJob?.cancel()
     }
 
-    fun setError(message: String) {
-        _error.value = message
-        _success.value = false
-        _successMessage.value = null
+    fun setAuthError(message: String) {
+        error = message
+        success = false
+        successMessage = null
     }
 }

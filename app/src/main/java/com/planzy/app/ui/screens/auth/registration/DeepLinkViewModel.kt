@@ -1,44 +1,75 @@
 package com.planzy.app.ui.screens.auth.registration
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.planzy.app.R
 import com.planzy.app.data.repository.DeepLinkResult
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
 
-class DeepLinkViewModel : ViewModel() {
+class DeepLinkViewModel(
+    private val resourceProvider: ResourceProvider
+) : ViewModel() {
 
-    private val _deepLinkResult = MutableStateFlow<DeepLinkResult>(DeepLinkResult.NoDeepLink)
-    val deepLinkResult: StateFlow<DeepLinkResult> = _deepLinkResult
+    var deepLinkResult by mutableStateOf<DeepLinkResult>(DeepLinkResult.NoDeepLink)
+        private set
 
-    private val _lastRoute = MutableStateFlow<String?>(null)
+    private var lastRoute by mutableStateOf<String?>(null)
 
-    private val _pendingEmail = MutableStateFlow<String?>(null)
+    private var pendingEmail by mutableStateOf<String?>(null)
 
-    private val _pendingPassword = MutableStateFlow<String?>(null)
+    private var pendingPassword by mutableStateOf<String?>(null)
 
     fun handleDeepLinkResult(result: DeepLinkResult) {
-        _deepLinkResult.value = result
+        deepLinkResult = result
+    }
+
+    fun getErrorMessage(): String {
+        val currentResult = deepLinkResult
+        if (currentResult is DeepLinkResult.Error) {
+            if (currentResult.error == AppError.ERROR_EMAIL_VERIFICATION && currentResult.emailArg != null) {
+                val baseTemplate = resourceProvider.getString(R.string.error_failed_to_verify_email)
+                return String.format(baseTemplate, currentResult.emailArg)
+            }
+            return resourceProvider.getString(R.string.error_registration_failed)
+        }
+        return resourceProvider.getString(R.string.error_registration_failed)
     }
 
     fun clearDeepLinkResult() {
-        _deepLinkResult.value = DeepLinkResult.NoDeepLink
+        deepLinkResult = DeepLinkResult.NoDeepLink
     }
 
     fun saveLastRoute(route: String) {
-        _lastRoute.value = route
+        lastRoute = route
     }
 
     fun savePendingCredentials(email: String, password: String) {
-        _pendingEmail.value = email
-        _pendingPassword.value = password
+        pendingEmail = email
+        pendingPassword = password
     }
 
     fun getPendingCredentials(): Pair<String?, String?> {
-        return Pair(_pendingEmail.value, _pendingPassword.value)
+        return Pair(pendingEmail, pendingPassword)
     }
 
     fun clearPendingCredentials() {
-        _pendingEmail.value = null
-        _pendingPassword.value = null
+        pendingEmail = null
+        pendingPassword = null
+    }
+
+    class Factory(
+        private val resourceProvider: ResourceProvider
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(DeepLinkViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return DeepLinkViewModel(resourceProvider) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
     }
 }

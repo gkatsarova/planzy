@@ -1,12 +1,11 @@
 package com.planzy.app.domain.usecase.place
 
-import com.planzy.app.R
-import com.planzy.app.data.util.ResourceProvider
+import com.planzy.app.domain.model.AppError
+import com.planzy.app.domain.model.AppException
 import com.planzy.app.domain.repository.PlacesRepository
 
 class UpdateUserCommentUseCase(
-    private val repository: PlacesRepository,
-    private val resourceProvider: ResourceProvider
+    private val repository: PlacesRepository
 ) {
     suspend operator fun invoke(
         commentId: String,
@@ -14,14 +13,10 @@ class UpdateUserCommentUseCase(
         rating: Int
     ): Result<Unit> {
         if (text.isBlank()) {
-            return Result.failure(
-                Exception(resourceProvider.getString(R.string.empty_comment_text))
-            )
+            return Result.failure(AppException(AppError.EMPTY_COMMENT_TEXT))
         }
         if (rating !in 1..5) {
-            return Result.failure(
-                Exception(resourceProvider.getString(R.string.rating_error))
-            )
+            return Result.failure(AppException(AppError.RATING_ERROR))
         }
         return repository.updateUserComment(commentId, text, rating)
     }

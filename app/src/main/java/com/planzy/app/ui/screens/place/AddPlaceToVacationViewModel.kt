@@ -12,6 +12,7 @@ import com.planzy.app.domain.model.Vacation
 import com.planzy.app.domain.usecase.vacation.AddPlaceToVacationUseCase
 import com.planzy.app.domain.usecase.vacation.CreateVacationUseCase
 import com.planzy.app.domain.usecase.vacation.GetUserVacationsUseCase
+import com.planzy.app.ui.util.toUserMessage
 import kotlinx.coroutines.launch
 
 class AddToVacationViewModel(
@@ -51,7 +52,9 @@ class AddToVacationViewModel(
                 .onSuccess { (myVacationsList, _) ->
                     vacations = myVacationsList
                 }
-                .onFailure { errorMessage = it.message }
+                .onFailure { error ->
+                    errorMessage = error.toUserMessage(resourceProvider)
+                }
             isLoading = false
         }
     }
@@ -68,7 +71,7 @@ class AddToVacationViewModel(
                     onSuccess(newVacation)
                 }
                 .onFailure { error ->
-                    errorMessage = error.message
+                    errorMessage = error.toUserMessage(resourceProvider)
                     isCreatingVacation = false
                 }
         }
@@ -88,7 +91,7 @@ class AddToVacationViewModel(
                     onSuccess()
                 }
                 .onFailure { error ->
-                    errorMessage = error.message
+                    errorMessage = error.toUserMessage(resourceProvider)
                     isAddingPlace = false
                 }
         }

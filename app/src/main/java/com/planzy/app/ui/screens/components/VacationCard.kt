@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,6 +68,8 @@ fun VacationCard(
             isLoadingUser = false
         }
     }
+
+    val displayName = user?.username ?: if (isOwner) stringResource(id = R.string.you) else stringResource(id = R.string.unknown_user)
 
     Card(
         modifier = modifier
@@ -124,7 +127,7 @@ fun VacationCard(
                     }
 
                     Text(
-                        text = user?.username ?: stringResource(id = R.string.unknown_user),
+                        text = displayName,
                         fontFamily = Raleway,
                         fontSize = 14.sp,
                         color = Lavender,
@@ -179,7 +182,11 @@ fun VacationCard(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "${vacation.placesCount} places",
+                        text = pluralStringResource(
+                            id = R.plurals.places_count,
+                            count = vacation.placesCount,
+                            vacation.placesCount
+                        ),
                         fontFamily = Raleway,
                         fontSize = 12.sp,
                         color = Lavender
@@ -197,7 +204,11 @@ fun VacationCard(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "${vacation.commentsCount} comments",
+                        text = pluralStringResource(
+                            id = R.plurals.comments_count,
+                            count = vacation.commentsCount,
+                            vacation.commentsCount
+                        ),
                         fontFamily = Raleway,
                         fontSize = 12.sp,
                         color = Lavender

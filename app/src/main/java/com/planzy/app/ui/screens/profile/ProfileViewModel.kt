@@ -8,21 +8,17 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.planzy.app.R
 import com.planzy.app.data.model.User
-import com.planzy.app.data.remote.SupabaseClient
 import com.planzy.app.data.util.ResourceProvider
 import com.planzy.app.domain.manager.ProfilePictureManager
 import com.planzy.app.domain.model.FollowStats
 import com.planzy.app.domain.usecase.auth.DeleteAccountUseCase
 import com.planzy.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.planzy.app.domain.usecase.auth.SignOutUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowStatsUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowersUseCase
-import com.planzy.app.domain.usecase.follow.GetFollowingUseCase
+import com.planzy.app.domain.usecase.follow.GetFollowDataUseCase
 import com.planzy.app.domain.usecase.user.DeleteProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.GetUserByAuthIdUseCase
-import com.planzy.app.domain.usecase.user.UpdateProfilePictureUseCase
 import com.planzy.app.domain.usecase.user.UploadProfilePictureUseCase
-import io.github.jan.supabase.auth.auth
+import com.planzy.app.ui.util.toUserMessage
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -32,11 +28,8 @@ class ProfileViewModel(
     private val signOutUseCase: SignOutUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase,
     private val uploadProfilePictureUseCase: UploadProfilePictureUseCase,
-    private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
     private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
-    private val getFollowStatsUseCase: GetFollowStatsUseCase,
-    private val getFollowersUseCase: GetFollowersUseCase,
-    private val getFollowingUseCase: GetFollowingUseCase,
+    private val getFollowDataUseCase: GetFollowDataUseCase,
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
@@ -104,7 +97,6 @@ class ProfileViewModel(
             errorMessage = null
 
             try {
-                SupabaseClient.client.auth.refreshCurrentSession()
                 val currentUser = getCurrentUserUseCase()
 
                 if (currentUser != null) {
@@ -118,12 +110,12 @@ class ProfileViewModel(
                                 email = user.email
                                 profilePictureUrl = user.profilePictureUrl
                                 ProfilePictureManager.updateUrl(user.profilePictureUrl)
-                                loadFollowStats(authId)
+                                loadFollowData(authId)
                             }
                             isLoading = false
                         }
                         .onFailure { exception ->
-                            errorMessage = exception.message
+                            errorMessage = exception.toUserMessage(resourceProvider)
                             isLoading = false
                         }
                 } else {
@@ -131,65 +123,54 @@ class ProfileViewModel(
                     isLoading = false
                 }
             } catch (e: Exception) {
-                errorMessage = e.message
+                errorMessage = e.toUserMessage(resourceProvider)
                 isLoading = false
             }
         }
     }
 
-    private fun loadFollowStats(authId: String) {
+    private fun loadFollowData(authId: String) {
         viewModelScope.launch {
             isLoadingFollowStats = true
+            isLoadingFollowers = true
+            isLoadingFollowing = true
+            followersError = null
+            followingError = null
 
-            getFollowStatsUseCase(authId)
-                .onSuccess { stats ->
-                    followStats = stats
+            getFollowDataUseCase(authId)
+                .onSuccess { data ->
+                    followStats = FollowStats(
+                        isFollowing = data.isFollowing,
+                        followersCount = data.followersCount,
+                        followingCount = data.followingCount
+                    )
+                    followers = data.followers
+                    following = data.following
                 }
                 .onFailure { exception ->
-                    errorMessage = null
+                    val message = exception.toUserMessage(resourceProvider)
+                    followersError = message
+                    followingError = message
                 }
 
             isLoadingFollowStats = false
-        }
-    }
-
-    fun loadFollowers() {
-        viewModelScope.launch {
-            isLoadingFollowers = true
-            followersError = null
-
-            getFollowersUseCase(currentUserAuthId)
-                .onSuccess { followersList ->
-                    followers = followersList
-                }
-                .onFailure { exception ->
-                    followersError = resourceProvider.getString(R.string.error_loading_followers)
-                }
-
             isLoadingFollowers = false
-        }
-    }
-
-    fun loadFollowing() {
-        viewModelScope.launch {
-            isLoadingFollowing = true
-            followingError = null
-
-            getFollowingUseCase(currentUserAuthId)
-                .onSuccess { followingList ->
-                    following = followingList
-                }
-                .onFailure { exception ->
-                    followingError = resourceProvider.getString(R.string.error_loading_following)
-                }
-
             isLoadingFollowing = false
         }
     }
 
+    fun loadFollowers() {
+        loadFollowData(currentUserAuthId)
+    }
+
+    fun loadFollowing() {
+        loadFollowData(currentUserAuthId)
+    }
+
     fun refreshFollowStats() {
-        val currentAuthId = SupabaseClient.client.auth.currentUserOrNull()?.id ?: return
-        loadFollowStats(currentAuthId)
+        if (currentUserAuthId.isNotEmpty()) {
+            loadFollowData(currentUserAuthId)
+        }
     }
 
     fun signOut() {
@@ -204,7 +185,7 @@ class ProfileViewModel(
                     isLogoutSuccessful = true
                 }
                 .onFailure { exception ->
-                    errorMessage = exception.message
+                    errorMessage = exception.toUserMessage(resourceProvider)
                     isLoading = false
                 }
         }
@@ -231,7 +212,7 @@ class ProfileViewModel(
                     isDeleteSuccessful = true
                 }
                 .onFailure { exception ->
-                    errorMessage = exception.message
+                    errorMessage = exception.toUserMessage(resourceProvider)
                     isLoading = false
                 }
         }
@@ -242,21 +223,14 @@ class ProfileViewModel(
             isUploadingPicture = true
             errorMessage = null
 
-            uploadProfilePictureUseCase(imageFile)
+           uploadProfilePictureUseCase(imageFile)
                 .onSuccess { url ->
-                    updateProfilePictureUseCase(url)
-                        .onSuccess {
-                            profilePictureUrl = url
-                            ProfilePictureManager.updateUrl(url)
-                            isUploadingPicture = false
-                        }
-                        .onFailure { exception ->
-                            errorMessage = exception.message
-                            isUploadingPicture = false
-                        }
+                    profilePictureUrl = url
+                    ProfilePictureManager.updateUrl(url)
+                    isUploadingPicture = false
                 }
                 .onFailure { exception ->
-                    errorMessage = exception.message
+                    errorMessage = exception.toUserMessage(resourceProvider)
                     isUploadingPicture = false
                 }
         }
@@ -279,7 +253,7 @@ class ProfileViewModel(
                     isUploadingPicture = false
                 }
                 .onFailure { exception ->
-                    errorMessage = exception.message
+                    errorMessage = exception.toUserMessage(resourceProvider)
                     isUploadingPicture = false
                 }
         }
@@ -295,11 +269,8 @@ class ProfileViewModel(
         private val signOutUseCase: SignOutUseCase,
         private val deleteAccountUseCase: DeleteAccountUseCase,
         private val uploadProfilePictureUseCase: UploadProfilePictureUseCase,
-        private val updateProfilePictureUseCase: UpdateProfilePictureUseCase,
         private val deleteProfilePictureUseCase: DeleteProfilePictureUseCase,
-        private val getFollowStatsUseCase: GetFollowStatsUseCase,
-        private val getFollowersUseCase: GetFollowersUseCase,
-        private val getFollowingUseCase: GetFollowingUseCase,
+        private val getFollowDataUseCase: GetFollowDataUseCase,
         private val resourceProvider: ResourceProvider
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -310,11 +281,8 @@ class ProfileViewModel(
                 signOutUseCase,
                 deleteAccountUseCase,
                 uploadProfilePictureUseCase,
-                updateProfilePictureUseCase,
                 deleteProfilePictureUseCase,
-                getFollowStatsUseCase,
-                getFollowersUseCase,
-                getFollowingUseCase,
+                getFollowDataUseCase,
                 resourceProvider
             ) as T
         }

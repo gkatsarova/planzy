@@ -39,8 +39,8 @@ fun RegisterScreen(
 ) {
     val context = LocalContext.current
     val resourceProvider = remember { ResourceProviderImpl(context = context) }
-    val authRepo = remember { AuthRepositoryImpl(resourceProvider = resourceProvider) }
-    val userRepo = remember { UserRepositoryImpl(resourceProvider = resourceProvider) }
+    val authRepo = remember { AuthRepositoryImpl() }
+    val userRepo = remember { UserRepositoryImpl() }
     val cooldownManager = remember { CooldownManager(context) }
 
     val viewModel: RegisterViewModel = viewModel(
@@ -56,16 +56,8 @@ fun RegisterScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val loading by viewModel.loading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val success by viewModel.success.collectAsState()
-    val successMessage by viewModel.successMessage.collectAsState()
-    val fieldErrors by viewModel.fieldErrors.collectAsState()
-    val canResendEmail by viewModel.canResendEmail.collectAsState()
-    val resendCooldownSeconds by viewModel.resendCooldownSeconds.collectAsState()
-
-    LaunchedEffect(success) {
-        if (success) {
+    LaunchedEffect(viewModel.success) {
+        if (viewModel.success) {
             deepLinkViewModel.savePendingCredentials(email, password)
         }
     }
@@ -111,9 +103,9 @@ fun RegisterScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
                     .height(70.dp),
-                isError = fieldErrors.usernameError != null
+                isError = viewModel.fieldErrors.usernameError != null
             )
-            fieldErrors.usernameError?.let { errorMsg ->
+            viewModel.fieldErrors.usernameError?.let { errorMsg ->
                 Text(
                     text = errorMsg,
                     color = ErrorColor,
@@ -137,9 +129,9 @@ fun RegisterScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
                     .height(70.dp),
-                isError = fieldErrors.emailError != null
+                isError = viewModel.fieldErrors.emailError != null
             )
-            fieldErrors.emailError?.let { errorMsg ->
+            viewModel.fieldErrors.emailError?.let { errorMsg ->
                 Text(
                     text = errorMsg,
                     color = ErrorColor,
@@ -159,13 +151,13 @@ fun RegisterScreen(
                     password = it
                     viewModel.validatePassword(it)
                 },
-                isError = fieldErrors.passwordError != null,
+                isError = viewModel.fieldErrors.passwordError != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
                     .height(70.dp)
             )
-            fieldErrors.passwordError?.let { errorMsg ->
+            viewModel.fieldErrors.passwordError?.let { errorMsg ->
                 Text(
                     text = errorMsg,
                     color = ErrorColor,
@@ -189,20 +181,20 @@ fun RegisterScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
                     .height(60.dp),
-                enabled = !loading &&
+                enabled = !viewModel.loading &&
                         email.isNotBlank() &&
                         username.isNotBlank() &&
                         password.isNotBlank() &&
-                        fieldErrors.usernameError == null &&
-                        fieldErrors.emailError == null &&
-                        fieldErrors.passwordError == null,
-                loading = loading,
+                        viewModel.fieldErrors.usernameError == null &&
+                        viewModel.fieldErrors.emailError == null &&
+                        viewModel.fieldErrors.passwordError == null,
+                loading = viewModel.loading,
                 loadingText = stringResource(id = R.string.registering)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            error?.let { errorMessage ->
+            viewModel.error?.let { errorMessage ->
                 MessageCard(
                     message = errorMessage,
                     type = MessageType.ERROR,
@@ -211,8 +203,8 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            if (success) {
-                successMessage?.let { message ->
+            if (viewModel.success) {
+                viewModel.successMessage?.let { message ->
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -232,10 +224,10 @@ fun RegisterScreen(
                             Spacer(modifier = Modifier.height(12.dp))
 
                             OutlinedAppButton(
-                                text = if (canResendEmail) {
+                                text = if (viewModel.canResendEmail) {
                                     stringResource(id = R.string.resend_verification_email)
                                 } else {
-                                    "Resend in ${resendCooldownSeconds}s"
+                                    "Resend in ${viewModel.resendCooldownSeconds}s"
                                 },
                                 onClick = {
                                     viewModel.clearError()
@@ -244,8 +236,8 @@ fun RegisterScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(50.dp),
-                                enabled = canResendEmail,
-                                loading = loading,
+                                enabled = viewModel.canResendEmail,
+                                loading = viewModel.loading,
                                 loadingText = stringResource(id = R.string.sending),
                                 fontSize = 20.sp
                             )

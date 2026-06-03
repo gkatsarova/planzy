@@ -7,12 +7,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -44,10 +46,11 @@ import com.planzy.app.ui.theme.PlanzyTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private val deepLinkViewModel: DeepLinkViewModel by viewModels()
-    private val resourceProvider by lazy { ResourceProviderImpl(this) }
+    private val deepLinkViewModel: DeepLinkViewModel by viewModels {
+        DeepLinkViewModel.Factory(ResourceProviderImpl(this))
+    }
     private val recoverySessionManager by lazy { RecoverySessionManager(this) }
-    private val deepLinkHandler by lazy { DeepLinkHandler(resourceProvider, recoverySessionManager) }
+    private val deepLinkHandler by lazy { DeepLinkHandler(recoverySessionManager) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,8 +66,8 @@ class MainActivity : ComponentActivity() {
 
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
-                val authRepository = remember { AuthRepositoryImpl(resourceProvider) }
-                val userRepository = remember { UserRepositoryImpl(resourceProvider) }
+                val authRepository = remember { AuthRepositoryImpl() }
+                val userRepository = remember { UserRepositoryImpl() }
                 val getCurrentUserUseCase = remember { GetCurrentUserUseCase(authRepository) }
                 val getUserByAuthIdUseCase = remember { GetUserByAuthIdUseCase(userRepository) }
 
@@ -89,25 +92,26 @@ class MainActivity : ComponentActivity() {
                             context = this@MainActivity,
                             repository = PlacesRepositoryImpl(
                                 TripadvisorApi(),
-                                SupabaseClient,
-                                ResourceProviderImpl(this@MainActivity)
+                                SupabaseClient
                             ),
                             entityExtractor = LocationEntityExtractor(),
                             resourceProvider = ResourceProviderImpl(this@MainActivity),
                             vacationsRepository = VacationsRepositoryImpl(
-                                supabaseClient =SupabaseClient,
-                                resourceProvider = ResourceProviderImpl(this@MainActivity)
+                                supabaseClient =SupabaseClient
                             ),
-                            userRepository = UserRepositoryImpl(ResourceProviderImpl(this@MainActivity))
+                            userRepository = UserRepositoryImpl()
                         )
                     }
                 )
 
                 val title = when {
                     currentRoute?.startsWith(ProfileDetails.route) == true -> {
-                        navBackStackEntry?.arguments?.getString(ProfileDetails.ARG_USERNAME) ?: "Profile"
+                        navBackStackEntry?.arguments?.getString(ProfileDetails.ARG_USERNAME) ?: stringResource(R.string.title_profile)
                     }
-                    else -> getTitleForRoute(currentRoute)
+                    else -> {
+                        val titleResId = getTitleForRoute(currentRoute)
+                        stringResource(id = titleResId)
+                    }
                 }
 
                 Scaffold(
@@ -118,7 +122,9 @@ class MainActivity : ComponentActivity() {
                                 profilePictureUrl = plazyTopBarViewModel.profilePictureUrl,
                                 navController = navController,
                                 searchQuery = searchViewModel.searchQuery,
-                                onSearch = { query -> searchViewModel.search(query) }
+                                onQueryChange = { query -> searchViewModel.updateQuery(query) },
+                                onSearch = { searchViewModel.submitSearch() },
+                                onSearchFocusChanged = { focused -> searchViewModel.updateSearchBarFocus(focused) }
                             )
                         }
                     },
@@ -136,6 +142,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(innerPadding)
+                            .consumeWindowInsets(innerPadding)
                     )
                 }
             }
